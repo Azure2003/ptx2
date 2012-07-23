@@ -1,0 +1,120 @@
+#include "utils/options.h"
+#include "newimage/newimageall.h"
+#include "csv.h"
+#include "stdlib.h"
+#include "string.h"
+#include "miscmaths/miscmaths.h"
+#include "warpfns/warpfns.h"
+#include "warpfns/fnirt_file_reader.h"
+
+
+
+
+using namespace Utilities;
+using namespace std;
+using namespace NEWIMAGE;
+using namespace MISCMATHS;
+
+
+string title="";
+string examples="";
+
+
+Option<string> surfin(string("--surfin"),string(""),
+		      string("input surface"),
+		      true,requires_argument);
+Option<string> surfout(string("--surfout"),string(""),
+		       string("output surface"),
+		       true,requires_argument);
+Option<string> convin(string("--convin"),string(""),
+		      string("input convention"),
+		      true,requires_argument);
+Option<string> convout(string("--convout"),string(""),
+		       string("output convention [default=same as input]"),
+		       false,requires_argument);
+Option<string> volin(string("--volin"),string(""),
+		     string("input volume"),
+		     true,requires_argument);
+Option<string> volout(string("--volout"),string(""),
+		      string("output volume [default=same as input]"),
+		      false,requires_argument);
+Option<string> xfm(string("--xfm"),"",
+		   string("in-to-out transformation (ascii matrix or out-to-in warp) [default=identity]"),
+		   false,requires_argument);
+
+
+int main(int argc,char *argv[]){
+
+  OptionParser options(title,examples);
+  
+  
+  options.add(surfin);
+  options.add(surfout);
+  options.add(convin);
+  options.add(convout);
+  options.add(volin);
+  options.add(volout);
+  options.add(xfm);
+
+  
+  options.parse_command_line(argc,argv);
+  if(!options.check_compulsory_arguments(true)){
+    options.usage();
+    return(1);
+  }
+  
+
+  volume<short int> refvolin,refvolout;
+  read_volume(refvolin,volin.value());
+  if(volout.set()){
+    read_volume(refvolout,volout.value());
+  }
+  else{
+    refvolout.reinitialize(refvolin.xsize(),refvolin.ysize(),refvolin.zsize());
+    refvolout=refvolin;
+  }
+
+  CSV csv(refvolin);
+  csv.set_convention(convin.value());
+  csv.load_rois(surfin.value());
+
+  bool isWarp=false;
+  volume4D<float> vox2vox_warp;
+  Matrix          vox2vox;
+  ColumnVector old_dims(3);
+  old_dims << refvolin.xdim() << refvolin.ydim() << refvolin.zdim();
+  if(xfm.set()){
+    if(fsl_imageexists(xfm.value())){
+      isWarp=true;
+      FnirtFileReader ffr(xfm.value());
+      vox2vox_warp=ffr.FieldAsNewimageVolume4D(true);
+    }
+    else{
+      vox2vox=read_ascii_matrix(xfm.value());
+    }
+  }
+  else
+    vox2vox=IdentityMatrix(4);
+
+  csv.set_refvol(refvolout);
+  if(convout.set()){
+    if(!isWarp)
+      csv.switch_convention(convout.value(),vox2vox,old_dims);
+    else
+      csv.switch_convention(convout.value(),vox2vox_warp,refvolin,refvolout);
+  }
+  else{
+    if(!isWarp)
+      csv.switch_convention(convin.value(),vox2vox,old_dims);
+    else
+      csv.switch_convention(convin.value(),vox2vox_warp,refvolin,refvolout);
+  }
+
+  csv.save_roi(0,surfout.value());
+
+
+  return 0;
+}
+
+
+
