@@ -793,10 +793,12 @@ void CSV::load_rois(const string& filename,bool do_change_refvol){
       }
     }
   }
-  init_surfvol();
+  if(refvolset)
+    init_surfvol();
 
   // second read pass on volumes to update lookup table
-  init_hitvol(fnames);
+  if(refvolset)
+    init_hitvol(fnames);
 
 
 }
@@ -815,7 +817,7 @@ void CSV::save_roi(const int& roiind,const string& fname){
     save_volume(tmpvol,fname);
   }
   else{
-    roimesh[roisubind[roiind]].save_ascii(fname);
+    roimesh[roisubind[roiind]].save_gifti(fname);
   }
 }
 

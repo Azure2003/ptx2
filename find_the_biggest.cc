@@ -114,10 +114,9 @@ bool test_input(const vector<string>& filenames){
 int main ( int argc, char **argv ){
   if(argc<3){
     cerr<<" "<<endl;
-    cerr<<"usage: find_the_biggest <lots of volumes> output"<<endl;
+    cerr<<"usage: find_the_biggest <lots of volumes/surfaces> output"<<endl;
     cerr<<"  output is index in order of inputs"<<endl;
-    cerr<<"  output will be of the same type as input, i.e. either volume or surface"<<endl;
-    cerr<<"  cannot use mixtures of volumes and surfaces"<<endl;
+    cerr<<"  please use EITHER volumes OR surfaces"<<endl;
     cerr<<" "<<endl;
     exit(1);
   }

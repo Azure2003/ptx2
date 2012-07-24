@@ -2,9 +2,9 @@
 #define CSV_MESH_H
 
 
-#define CSV_ASCII 0
-#define CSV_GIFTI 1
-#define CSV_VTK   2
+#define CSV_ASCII 5
+#define CSV_VTK   6
+#define CSV_GIFTI 7
 
 #include <stdio.h>
 #include "meshclass/point.h"
@@ -207,7 +207,7 @@ class CsvMesh {
 
   void save(const string& filename, const int& type)const;
   void save_ascii(const string& s)const;
-  void save_gifti(const string& s)const;
+  void save_gifti(const string& s,const int& type=GIFTI_ENCODING_B64GZ)const;
   void save_vtk(const string& s)const;
 
 

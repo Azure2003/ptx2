@@ -191,16 +191,13 @@ void CsvMesh::save(const string& filename, const int& type)const{
     {
     case CSV_ASCII:
       save_ascii(filename);break;
-    case CSV_GIFTI:
-      save_gifti(filename);break;
     case CSV_VTK:
       save_vtk(filename);break;
     default:
-      cerr<<"CsvMesh::save():Unrecognised type "<<type<<endl;
-      exit(1);
+      save_gifti(filename,type);break;
     }
 }
-void CsvMesh::save_gifti(const string& s)const{
+void CsvMesh::save_gifti(const string& s,const int& type)const{
   string filename(s);
   string last_3 = filename.substr(filename.size()-3, 3);
   if( last_3 != "gii" ){
@@ -210,11 +207,21 @@ void CsvMesh::save_gifti(const string& s)const{
   }
   
   fslSurface<float,unsigned int> surf;
+  string subtype = filename.substr(filename.size()-8, 4);
+  //if(subtype == "surf"){
+  //surf.setVertices(getPointsAsVectors());
+  //surf.setFaces(getTrianglesAsVectors());
+  //}
+  //else if(subtype == "func"){
+  //surf.insertScalars(getValuesAsVectors(),0,"MyScalars");
+  //}
+  //else{
   surf.setVertices(getPointsAsVectors());
   surf.setFaces(getTrianglesAsVectors());
   surf.insertScalars(getValuesAsVectors(),0,"MyScalars");
+    //}
 
-  writeGIFTI(surf,filename);
+  writeGIFTI(surf,filename,type);
 }
 void CsvMesh::save_vtk(const string& s)const{
   string filename(s);

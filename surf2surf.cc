@@ -16,31 +16,35 @@ using namespace NEWIMAGE;
 using namespace MISCMATHS;
 
 
-string title="";
-string examples="";
+string title="surf2surf - conversions between surface formats and/or conventions";
+string examples="Usage: surf2surf -i <inputSurface> -o <outputSurface> [options]";
 
 
-Option<string> surfin(string("--surfin"),string(""),
+Option<string> surfin(string("-i,--surfin"),string(""),
 		      string("input surface"),
 		      true,requires_argument);
-Option<string> surfout(string("--surfout"),string(""),
+Option<string> surfout(string("-o,--surfout"),string(""),
 		       string("output surface"),
 		       true,requires_argument);
 Option<string> convin(string("--convin"),string(""),
-		      string("input convention"),
-		      true,requires_argument);
+		      string("input convention [default=caret] - only used if output convention is different"),
+		      false,requires_argument);
 Option<string> convout(string("--convout"),string(""),
 		       string("output convention [default=same as input]"),
 		       false,requires_argument);
 Option<string> volin(string("--volin"),string(""),
-		     string("input volume"),
-		     true,requires_argument);
+		     string("\tinput ref volume - Must set this if changing conventions"),
+		     false,requires_argument);
 Option<string> volout(string("--volout"),string(""),
-		      string("output volume [default=same as input]"),
+		      string("output ref volume [default=same as input]"),
 		      false,requires_argument);
 Option<string> xfm(string("--xfm"),"",
-		   string("in-to-out transformation (ascii matrix or out-to-in warp) [default=identity]"),
+		   string("\tin-to-out ascii matrix or out-to-in warpfield [default=identity]"),
 		   false,requires_argument);
+Option<string> otype(string("--outputtype"),"GIFTI_BIN_GZ",
+		     string("output type: ASCII, VTK, GIFTI_ASCII, GIFTI_BIN, GIFTI_BIN_GZ (default)"),
+		     false,requires_argument);
+
 
 
 int main(int argc,char *argv[]){
@@ -55,6 +59,7 @@ int main(int argc,char *argv[]){
   options.add(volin);
   options.add(volout);
   options.add(xfm);
+  options.add(otype);
 
   
   options.parse_command_line(argc,argv);
@@ -63,9 +68,21 @@ int main(int argc,char *argv[]){
     return(1);
   }
   
+  // check options
+  if(convin.value()!=convout.value()){
+    if(volin.value()==""){
+      cerr<<"Please specify input reference volume"<<endl;
+      return(1);
+    }
+  }
 
   volume<short int> refvolin,refvolout;
-  read_volume(refvolin,volin.value());
+  CSV csv;
+  if(volin.set()){
+    read_volume(refvolin,volin.value());
+    csv.reinitialize(refvolin);
+    csv.set_convention(convin.value());
+  }
   if(volout.set()){
     read_volume(refvolout,volout.value());
   }
@@ -74,43 +91,59 @@ int main(int argc,char *argv[]){
     refvolout=refvolin;
   }
 
-  CSV csv(refvolin);
-  csv.set_convention(convin.value());
   csv.load_rois(surfin.value());
 
-  bool isWarp=false;
-  volume4D<float> vox2vox_warp;
-  Matrix          vox2vox;
-  ColumnVector old_dims(3);
-  old_dims << refvolin.xdim() << refvolin.ydim() << refvolin.zdim();
-  if(xfm.set()){
-    if(fsl_imageexists(xfm.value())){
-      isWarp=true;
-      FnirtFileReader ffr(xfm.value());
-      vox2vox_warp=ffr.FieldAsNewimageVolume4D(true);
+  if(convin.value()!=convout.value()){  
+    bool isWarp=false;
+    volume4D<float> vox2vox_warp;
+    Matrix          vox2vox;
+    ColumnVector old_dims(3);
+    old_dims << refvolin.xdim() << refvolin.ydim() << refvolin.zdim();
+    if(xfm.set()){
+      if(fsl_imageexists(xfm.value())){
+	isWarp=true;
+	FnirtFileReader ffr(xfm.value());
+	vox2vox_warp=ffr.FieldAsNewimageVolume4D(true);
+      }
+      else{
+	vox2vox=read_ascii_matrix(xfm.value());
+      }
+    }
+    else
+      vox2vox=IdentityMatrix(4);
+    
+    csv.set_refvol(refvolout);
+    if(convout.set()){
+      if(!isWarp)
+	csv.switch_convention(convout.value(),vox2vox,old_dims);
+      else
+	csv.switch_convention(convout.value(),vox2vox_warp,refvolin,refvolout);
     }
     else{
-      vox2vox=read_ascii_matrix(xfm.value());
+      if(!isWarp)
+	csv.switch_convention(convin.value(),vox2vox,old_dims);
+      else
+	csv.switch_convention(convin.value(),vox2vox_warp,refvolin,refvolout);
     }
   }
-  else
-    vox2vox=IdentityMatrix(4);
 
-  csv.set_refvol(refvolout);
-  if(convout.set()){
-    if(!isWarp)
-      csv.switch_convention(convout.value(),vox2vox,old_dims);
-    else
-      csv.switch_convention(convout.value(),vox2vox_warp,refvolin,refvolout);
-  }
+  //csv.save_roi(0,surfout.value());
+  int o;
+  if(otype.value()=="ASCII")
+    o=CSV_ASCII;
+  else if(otype.value()=="VTK")
+    o=CSV_VTK;
+  else if(otype.value()=="GIFTI_ASCII")
+    o=GIFTI_ENCODING_ASCII;
+  else if(otype.value()=="GIFTI_BIN")
+    o=GIFTI_ENCODING_B64BIN;
+  else if(otype.value()=="GIFTI_BIN_GZ")
+    o=GIFTI_ENCODING_B64GZ;
   else{
-    if(!isWarp)
-      csv.switch_convention(convin.value(),vox2vox,old_dims);
-    else
-      csv.switch_convention(convin.value(),vox2vox_warp,refvolin,refvolout);
+    cerr<<"Unknown format "<<otype.value()<<endl;
+    exit(1);
   }
-
-  csv.save_roi(0,surfout.value());
+  csv.get_mesh(0).save(surfout.value(),o);
 
 
   return 0;

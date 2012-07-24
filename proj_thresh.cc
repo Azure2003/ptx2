@@ -45,8 +45,37 @@ void proj_thresh_volumes(const vector<string>& innames,const float& thresh){
   }
 }
 void proj_thresh_surfaces(const vector<string>& innames,const float& thresh){
-  cerr<<"Surface option not implemented yet"<<endl;
-  exit(1);
+  vector<CsvMesh> meshes;
+  CsvMesh m;
+  cout<<"number of inputs "<<innames.size()<<endl;
+  for (unsigned int i=0;i<innames.size();i++){
+    m.load(innames[i]);
+    meshes.push_back(m);
+  }
+  cerr<<"threshold "<<thresh<<endl;
+  CsvMesh tot;
+  tot=m;
+  for (int i=0;i<m.nvertices();i++){
+    float totval=0;
+    for (unsigned int j=0;j<innames.size();j++){
+      totval += (meshes[j].get_pvalue(i)>thresh?meshes[j].get_pvalue(i):0);
+    }
+    tot.set_pvalue(i,totval);
+    for (unsigned int j=0;j<innames.size();j++){
+      if(meshes[j].get_pvalue(i)<=thresh || totval==0)
+	meshes[j].set_pvalue(i,0);
+      else{
+	meshes[j].set_pvalue(i,meshes[j].get_pvalue(i)/totval);
+      }
+    }
+  }
+  tot.save("total",meshFileType(innames[0]));
+  for(unsigned int i=0;i<innames.size();i++){    
+    string outname =innames[i];
+    make_basename(outname);
+    string thrname="_thr_"+num2str(thresh);
+    meshes[i].save(outname+"_proj_seg"+thrname,meshFileType(innames[i]));
+  }
 }
 bool test_input(const vector<string>& filenames){
   int nsurfs=0,nvols=0;

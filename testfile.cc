@@ -20,6 +20,8 @@ int main(int argc, char** argv){
 
   //m.save("grot.asc",CSV_ASCII);
   m.save("grot.surf.gii",CSV_GIFTI);
+  m.save("grot.asc",CSV_ASCII);
+  //  m.save("grot.func.gii",CSV_GIFTI);
 
   return 0;
 }

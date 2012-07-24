@@ -117,20 +117,23 @@ private:
   vector<int>           roisubind;          // roi is which subindex?
 
   volume<short int>     refvol;             // reference volume (in case no volume-like ROI is used)
+  bool                  refvolset;          // flag: do we have a refvol?
 
   vector<ColumnVector>  maps;               // extra maps associated with CSV locations
 
 public:
   CSV(){
+    refvolset=false;
     init_dims();
   }
   CSV(const volume<short int>& ref):refvol(ref){
+    refvolset=true;
     init_dims();
     _xdim=refvol.xdim();
     _ydim=refvol.ydim();
     _zdim=refvol.zdim();
     _dims.ReSize(3);_dims<<_xdim<<_ydim<<_zdim;
-    set_convention("freesurfer");
+    set_convention("caret");
     roivol.reinitialize(refvol.xsize(),refvol.ysize(),refvol.zsize());
     copybasicproperties(refvol,roivol);
     roivol=0;
@@ -159,7 +162,7 @@ public:
     _ydim=vol.ydim();
     _zdim=vol.zdim();
     _dims.ReSize(3);_dims<<_xdim<<_ydim<<_zdim;
-    set_convention("freesurfer");
+    set_convention("caret");
     set_refvol(vol);
     clear_all();
   }
@@ -173,6 +176,7 @@ public:
   // get/set
   const volume<short int>& get_refvol()const{return refvol;}
   void set_refvol(const volume<short int>& vol){
+    refvolset=true;
     refvol=vol;
     _xdim=refvol.xdim();
     _ydim=refvol.ydim();
@@ -419,6 +423,7 @@ public:
     roitype=rhs.roitype;
     roisubind=rhs.roisubind;
     refvol=rhs.refvol;
+    refvolset=rhs.refvolset;
     maps=rhs.maps;
     return *this;
   }
