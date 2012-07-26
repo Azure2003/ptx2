@@ -85,10 +85,15 @@ void CsvMesh::load_gifti(const string& filename) {
     _triangles.push_back(t);                    
   }        
 
-  //count = 0;
-  //for ( vector<float>::const_iterator i= surf->const_scbegin(0); i!= surf->const_scend(0);++i,++count){
-  // set_pvalue(count,*i);
-  //}
+
+  reset_pvalues();
+  count = 0;
+  if (surf.getNumberOfScalarData()>0) {
+    for ( vector<float>::const_iterator i= surf.const_scbegin(0); i!= surf.const_scend(0);++i,++count){
+      set_pvalue(count,*i);
+    }
+  }
+
 }
 
 void CsvMesh::load_vtk(const string& filename) {
@@ -209,18 +214,18 @@ void CsvMesh::save_gifti(const string& s,const int& type)const{
   fslSurface<float,unsigned int> surf;
   string subtype = filename.substr(filename.size()-8, 4);
 
-  //if(subtype == "surf"){
-  //surf.setVertices(getPointsAsVectors());
-  //surf.setFaces(getTrianglesAsVectors());
-  //}
-  //else if(subtype == "func"){
-  //surf.insertScalars(getValuesAsVectors(),0,"MyScalars");
-  //}
-  //else{
-  surf.setVertices(getPointsAsVectors());
-  surf.setFaces(getTrianglesAsVectors());
-  surf.insertScalars(getValuesAsVectors(),0,"MyScalars");
-    //}
+  if(subtype == "surf"){
+    surf.setVertices(getPointsAsVectors());
+    surf.setFaces(getTrianglesAsVectors());
+  }
+  else if(subtype == "func"){
+    surf.insertScalars(getValuesAsVectors(),0,"MyScalars");
+  }
+  else{
+    surf.setVertices(getPointsAsVectors());
+    surf.setFaces(getTrianglesAsVectors());
+    surf.insertScalars(getValuesAsVectors(),0,"MyScalars");
+  }
 
   writeGIFTI(surf,filename,type);
 }
