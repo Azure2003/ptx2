@@ -124,7 +124,7 @@ int main(int argc,char *argv[]){
     m.set_pvalues(IDs,1);
   }
 
-  m.save_ascii(osurf.value());
+  m.save(osurf.value());
 
   return 0;
 }
