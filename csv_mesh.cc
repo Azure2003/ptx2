@@ -208,6 +208,7 @@ void CsvMesh::save_gifti(const string& s,const int& type)const{
   
   fslSurface<float,unsigned int> surf;
   string subtype = filename.substr(filename.size()-8, 4);
+
   //if(subtype == "surf"){
   //surf.setVertices(getPointsAsVectors());
   //surf.setFaces(getTrianglesAsVectors());

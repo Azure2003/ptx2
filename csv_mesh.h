@@ -148,6 +148,14 @@ class CsvMesh {
   void set_pvalues(const vector<int>& ids,const float& val){
     for(unsigned int i=0;i<ids.size();i++){_pvalues[ids[i]]=val;}
   }
+  void set_pvalues(const ColumnVector& vals){
+    if(vals.Nrows()!=(int)_points.size()){
+      cerr<<"CsvMesh::set_pvalues:incompatible number of scalars"<<endl;
+      exit(1);
+    }
+    for(int i=1;i<=vals.Nrows();i++)
+      _pvalues[i-1]=vals(i);
+  }
 
   vector< float > getPointsAsVectors()const{
     vector< float > ret;
@@ -205,7 +213,7 @@ class CsvMesh {
   void load_ascii(const string& filename);
   void load_vtk(const string& filename);
 
-  void save(const string& filename, const int& type)const;
+  void save(const string& filename, const int& type=GIFTI_ENCODING_B64GZ)const;
   void save_ascii(const string& s)const;
   void save_gifti(const string& s,const int& type=GIFTI_ENCODING_B64GZ)const;
   void save_vtk(const string& s)const;

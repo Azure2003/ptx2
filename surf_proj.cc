@@ -51,7 +51,9 @@ Option<float> dir(string("--direction"),0,
 Option<string> operation(string("--operation"),"mean",
 			 string("what to do with values: 'mean' (default), 'max', 'median', 'last'"),
 			 false,requires_argument);
-
+Option<bool> surfout(string("--surfout"),false,
+			 string("output surface file, not ascii matrix (valid only for scalars)"),
+			 false,no_argument);
 
 float calc_mean(const vector<float>& vec){
   float ret=0;
@@ -107,6 +109,8 @@ int main(int argc,char *argv[]){
   options.add(dist);  
   options.add(dir);
   options.add(operation);
+  options.add(surfout);
+
 
   options.parse_command_line(argc,argv);
   if(!options.check_compulsory_arguments(true)){
@@ -151,7 +155,7 @@ int main(int argc,char *argv[]){
 
   float step = dist.value(); // mm
 
-  cout<<"loop"<<endl;
+  cout<<"project data"<<endl;
   // loop over surface vertices
   // for each vertex, go along normal for a fixed distance, and average the data
 
@@ -185,8 +189,7 @@ int main(int argc,char *argv[]){
       ix = (int)round((float)data_vox(1));
       iy = (int)round((float)data_vox(2));
       iz = (int)round((float)data_vox(3));
-      
-      
+            
       for(int j=0;j<data.tsize();j++){	
 	vals[j].push_back(data(ix,iy,iz,j));
       }
@@ -237,8 +240,12 @@ int main(int argc,char *argv[]){
   //osurfs[t]->save_roi(0,out.value()+"_"+num2str(t+1)+".asc");
   //}
 
-
-  write_ascii_matrix(surfdata,out.value());
+  if(!surfout.value())
+    write_ascii_matrix(surfdata,out.value());
+  else{
+    csv.get_mesh(0).set_pvalues(surfdata.Column(1));
+    csv.get_mesh(0).save(out.value());
+  }
 
   return 0;
 }

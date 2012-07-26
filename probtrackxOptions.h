@@ -50,6 +50,7 @@ class probtrackxOptions {
   Option<string>           waypoints;
   Option<string>           waycond;
   Option<bool>             wayorder;
+  Option<bool>             onewaycondition;  // apply waypoint conditions to half the tract
   Option<string>           rubbishfile;
   Option<string>           stopfile;
 
@@ -89,7 +90,6 @@ class probtrackxOptions {
   FmribOption<string>      skipmask;         // inside this mask, ignore data (inertia)
   FmribOption<bool>        forcefirststep;   // always take at least one step 
   FmribOption<bool>        osampfib;         // not yet
-  FmribOption<bool>        onewaycondition;  // only apply waypoint conditions to half the tract
   FmribOption<bool>        onewayonly;       // in surface mode, track towards the brain (assumes surface normal points towards the brain)
   FmribOption<bool>        opathdir;         // like fdt_paths but with average local tract orientation
   FmribOption<bool>        save_paths;       // save paths to ascii file
@@ -182,6 +182,9 @@ class probtrackxOptions {
    wayorder(string("--wayorder"),false,
 	    string("Reject streamlines that do not hit waypoints in given order. Only valid if waycond=AND"),
 	    false,no_argument),
+   onewaycondition(string("--onewaycondition"),false,
+	    string("Apply waypoint conditions to each half tract separately"),
+	    false, no_argument),
    rubbishfile(string("--avoid"), string(""),
 	       string("\tReject pathways passing through locations given by this mask"),
 	       false, requires_argument),
@@ -208,7 +211,7 @@ class probtrackxOptions {
 	 string("Mask used for NxN connectivity matrix (or Nxn if lrtarget3 is set)"),
 	 false, requires_argument), 
    lrmask3(string("--lrtarget3"), "",
-	 string("Low resolution mask used for Nxn connectivity matrix"),
+	 string("Column-space mask used for Nxn connectivity matrix"),
 	 false, requires_argument), 
    distthresh3(string("--distthresh3"), 0,
 	       string("Discards samples (in matrix3) shorter than this threshold (in mm - default=0)\n\n"),
@@ -224,7 +227,7 @@ class probtrackxOptions {
 	   string("Reference vol to define seed space in simple mode - diffusion space assumed if absent"),
 	   false, requires_argument),
    meshspace(string("--meshspace"), string("freesurfer"),
-	     string("Mesh reference space - either 'freesurfer' (default) or 'caret' or 'first'\n\n"),
+	     string("Mesh reference space - either 'caret' (default) or 'freesurfer' or 'first' or 'vox' \n\n"),
 	     false, requires_argument),
 
    nparticles(string("-P,--nsamples"), 5000,
@@ -283,9 +286,6 @@ class probtrackxOptions {
    osampfib(string("--osampfib"),false,
 	    string("Output sampled fibres"),
 	    false, no_argument),
-   onewaycondition(string("--onewaycondition"),false,
-	    string("Apply waypoint conditions to each half tract separately"),
-	    false, no_argument),
    onewayonly(string("--onewayonly"),false,
 	      string("Track in one direction only (towards the brain - only valid for surface seeds)"),
 	      false, no_argument),
@@ -324,6 +324,7 @@ class probtrackxOptions {
        options.add(waypoints);
        options.add(waycond);
        options.add(wayorder);
+       options.add(onewaycondition);
        options.add(rubbishfile);
        options.add(stopfile);
 
@@ -362,7 +363,6 @@ class probtrackxOptions {
        options.add(prefdirfile);
        options.add(forcefirststep);
        options.add(osampfib);
-       options.add(onewaycondition);
        options.add(onewayonly);
        options.add(opathdir);
        options.add(save_paths);
