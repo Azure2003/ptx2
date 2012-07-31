@@ -39,7 +39,7 @@ L2S=label2surf
 L2SOBJS=label2surf.o csv_mesh.o
 
 
-XFILES = probtrackx2 surf2surf surf2volume surf_proj label2surf find_the_biggest
+XFILES = probtrackx2 surf2surf surf2volume surf_proj label2surf find_the_biggest proj_thresh
 
 
 all: ${XFILES} 
