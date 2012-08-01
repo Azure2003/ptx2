@@ -31,14 +31,14 @@ Option<string> surf(string("--surf"),string(""),
 		    string("surface file"),
 		    true,requires_argument);
 Option<string> surfvol(string("--meshref"),string(""),
-		    string("surface volume ref"),
-		    true,requires_argument);
+		    string("surface volume ref (default=same as data)"),
+		    false,requires_argument);
 Option<string> xfm(string("--xfm"),string(""),
-		   string("data2surf transform"),
-		   true,requires_argument);
-Option<string> meshspace(string("--meshspace"),string("freesurfer"),
-		   string("meshspace (default='freesurfer')"),
-		   true,requires_argument);
+		   string("data2surf transform (default=Identity)"),
+		   false,requires_argument);
+Option<string> meshspace(string("--meshspace"),string("caret"),
+		   string("meshspace (default='caret')"),
+		   false,requires_argument);
 Option<string> out(string("--out"),string(""),
 		   string("output file"),
 		   true,requires_argument);
@@ -96,6 +96,14 @@ float calc_last(const vector<float>& vec){
   return vec[ vec.size()-1 ];
 }
 
+// debug
+void outvals(const vector<float>& vals){
+  cout<<endl;
+  for(unsigned int i=0;i<vals.size();i++)
+    cout<<vals[i]<<" ";
+  cout<<endl;
+}
+
 int main(int argc,char *argv[]){
 
   OptionParser options(title,examples);
@@ -119,11 +127,14 @@ int main(int argc,char *argv[]){
   }
   
   cout<<"read data"<<endl;
-  volume<short int> refvol;
-  read_volume(refvol,surfvol.value());
   volume4D<float> data;
   read_volume4D(data,datafile.value());
 
+  volume<short int> refvol;
+  if(surfvol.value()!="")
+    read_volume(refvol,surfvol.value());
+  else
+    copyconvert(data[0],refvol);
 
   cout<<"read surface"<<endl;
   CSV csv(refvol);
@@ -177,10 +188,13 @@ int main(int argc,char *argv[]){
 
     ColumnVector xx(3);
     vector< vector<float> > vals(data.tsize());
+    //OUT(step);
+    //OUT(n.t());
     for(int s=0;s<nsteps;s++){
       xx<<x(1)+(float)s/float(nsteps-1.0)*step/surfdim(1)*n(1)
 	<<x(2)+(float)s/float(nsteps-1.0)*step/surfdim(2)*n(2)
 	<<x(3)+(float)s/float(nsteps-1.0)*step/surfdim(3)*n(3);
+      //OUT(xx.t());
       if(!isWarp)
 	data_vox = vox_to_vox(xx,surfdim,datadim,surf2data);
       else
@@ -210,14 +224,17 @@ int main(int argc,char *argv[]){
 	
 	for(int j=0;j<data.tsize();j++){
 	  vals[j].push_back(data(ix,iy,iz,j));
-	}
-      
+	}     	
+
       }
     }
 
     for(int j=1;j<=data.tsize();j++){
-      if(operation.value()=="mean")
+      if(operation.value()=="mean"){
 	surfdata(i+1,j) = calc_mean(vals[j-1]);
+	if(surfdata(i+1,j)!=0)
+	  outvals(vals[j-1]);
+      }
       else if(operation.value()=="median")
 	surfdata(i+1,j) = calc_median(vals[j-1]);
       else if(operation.value()=="max")
