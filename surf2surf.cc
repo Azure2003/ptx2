@@ -26,7 +26,7 @@ Option<string> surfin(string("-i,--surfin"),string(""),
 Option<string> surfout(string("-o,--surfout"),string(""),
 		       string("output surface"),
 		       true,requires_argument);
-Option<string> convin(string("--convin"),string(""),
+Option<string> convin(string("--convin"),string("caret"),
 		      string("input convention [default=caret] - only used if output convention is different"),
 		      false,requires_argument);
 Option<string> convout(string("--convout"),string(""),
