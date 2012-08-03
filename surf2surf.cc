@@ -29,7 +29,7 @@ Option<string> surfout(string("-o,--surfout"),string(""),
 Option<string> convin(string("--convin"),string("caret"),
 		      string("input convention [default=caret] - only used if output convention is different"),
 		      false,requires_argument);
-Option<string> convout(string("--convout"),string(""),
+Option<string> convout(string("--convout"),string("caret"),
 		       string("output convention [default=same as input]"),
 		       false,requires_argument);
 Option<string> volin(string("--volin"),string(""),
