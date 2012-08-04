@@ -226,7 +226,7 @@ class probtrackxOptions {
    seedref(string("--seedref"),"",
 	   string("Reference vol to define seed space in simple mode - diffusion space assumed if absent"),
 	   false, requires_argument),
-   meshspace(string("--meshspace"), string("freesurfer"),
+   meshspace(string("--meshspace"), string("caret"),
 	     string("Mesh reference space - either 'caret' (default) or 'freesurfer' or 'first' or 'vox' \n\n"),
 	     false, requires_argument),
 

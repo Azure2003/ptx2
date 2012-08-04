@@ -692,6 +692,8 @@ bool lookAtAllMesh(CsvMesh& m){
     if(m.get_pvalue(i)!=0){nnz++;}
     else{nz++;}
   }
+  OUT(nz);
+  OUT(nnz);
   return (nz==0 || nnz==0);
 }
 
@@ -708,7 +710,8 @@ void CSV::load_surface(const string& filename){
   for(int i=0;i<m.nvertices();i++){
     npts++;
     if(allMesh || m.get_pvalue(i)!=0){
-      m.set_pvalue(i,1.0);
+      if(allMesh)
+	m.set_pvalue(i,1.0);
 
       nlocs++;
       lu1.push_back(nlocs-1);
@@ -730,7 +733,7 @@ void CSV::load_surface(const string& filename){
     }
   }
   mesh2loc.push_back(lu1);
-
+  //OUT(nlocs);
   roimesh.push_back(m);
   surfind.push_back(nrois);
   roitype.push_back(SURFACE);
@@ -818,6 +821,7 @@ void CSV::save_roi(const int& roiind,const string& fname){
   }
   else{
     roimesh[roisubind[roiind]].save_gifti(fname);
+    //roimesh[roisubind[roiind]].save_ascii(fname);
   }
 }
 

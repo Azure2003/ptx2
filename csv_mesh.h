@@ -233,6 +233,10 @@ class CsvMesh {
 	  <<_triangles[i].get_vertice(1).get_no()<<" "
 	  <<_triangles[i].get_vertice(2).get_no()<<endl;
     }
+    fs<<_pvalues.size()<<" scalars"<<endl;
+    for(unsigned int i=0;i<_pvalues.size();i++){
+      if(_pvalues[i]!=0){fs<<_pvalues[i]<<endl;}
+    }
     fs.close();
   }
 

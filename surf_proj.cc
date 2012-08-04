@@ -232,8 +232,6 @@ int main(int argc,char *argv[]){
     for(int j=1;j<=data.tsize();j++){
       if(operation.value()=="mean"){
 	surfdata(i+1,j) = calc_mean(vals[j-1]);
-	if(surfdata(i+1,j)!=0)
-	  outvals(vals[j-1]);
       }
       else if(operation.value()=="median")
 	surfdata(i+1,j) = calc_median(vals[j-1]);

@@ -231,6 +231,7 @@ namespace TRACTVOLSX{
 	  if(init_sample){//go for the specified fibre on the first jump or generate at random
 	    if(!opts.fibst.set())
 	      fibst=sample_fibre(col,samp,opts.randfib.value());
+
 	    theta=thsamples[fibst](samp,col);
 	    phi=phsamples[fibst](samp,col);
 	    init_sample=false;

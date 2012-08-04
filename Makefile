@@ -37,7 +37,8 @@ S2V=surf2volume
 S2VOBJS=surf2volume.o csv.o csv_mesh.o
 L2S=label2surf
 L2SOBJS=label2surf.o csv_mesh.o
-
+AS=addsurfs
+ASOBJS=addsurfs.o csv_mesh.o
 
 XFILES = probtrackx2 surf2surf surf2volume surf_proj label2surf find_the_biggest proj_thresh
 
@@ -82,4 +83,7 @@ ${S2V}:         ${S2VOBJS}
 
 ${L2S}:         ${L2SOBJS}
 		${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${L2SOBJS} ${DLIBS}
+
+${AS}:         ${ASOBJS}
+		${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${ASOBJS} ${DLIBS}
 

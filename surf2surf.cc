@@ -92,6 +92,7 @@ int main(int argc,char *argv[]){
   }
 
   csv.load_rois(surfin.value());
+  //csv.get_mesh(0).print("grot.txt");
 
   if(convin.value()!=convout.value()){  
     bool isWarp=false;

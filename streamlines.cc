@@ -19,6 +19,13 @@ namespace TRACT{
       exit(0);
     }
   }
+  void write_matrix_as_volume(const Matrix& M,const string& filename){
+    volume<float> tmp(M.Nrows(),M.Ncols(),1);
+    for(int i=1;i<=M.Nrows();i++)
+      for(int j=1;j<=M.Ncols();j++)
+	tmp(i-1,j-1,0)=M(i,j);
+    save_volume(tmp,filename);    
+  }
 
   ColumnVector mean_sph_pol(ColumnVector& A, ColumnVector& B){
     // A and B contain th, ph f. 
@@ -635,7 +642,8 @@ namespace TRACT{
 			 << roicind[i];
     
     applycoordchange(CoordMat1, m_stline.get_seeds().get_refvol().niftivox2newimagevox_mat().i());
-    write_ascii_matrix(CoordMat1,logger.appendDir("coords_for_fdt_matrix1"));
+    //MISCMATHS::write_binary_matrix(CoordMat1,logger.appendDir("coords_for_fdt_matrix1"));
+    write_matrix_as_volume(CoordMat1,logger.appendDir("coords_for_fdt_matrix1"));
      
   }
   
@@ -645,6 +653,7 @@ namespace TRACT{
     read_volume(m_lrmask,opts.lrmask.value());
     m_beenhere2.reinitialize(m_lrmask.xsize(),m_lrmask.ysize(),m_lrmask.zsize());
     m_lookup2.reinitialize(m_lrmask.xsize(),m_lrmask.ysize(),m_lrmask.zsize());
+    copybasicproperties(m_lrmask,m_lookup2);
     m_lookup2=0;
     m_lrdim.ReSize(3);
     m_lrdim<<m_lrmask.xdim()<<m_lrmask.ydim()<<m_lrmask.zdim();
@@ -671,7 +680,8 @@ namespace TRACT{
 	  }
 
     applycoordchange(CoordMat_tract2, m_lrmask.niftivox2newimagevox_mat().i());
-    write_ascii_matrix(CoordMat_tract2,logger.appendDir("tract_space_coords_for_fdt_matrix2"));
+    //MISCMATHS::write_ascii_matrix(CoordMat_tract2,logger.appendDir("tract_space_coords_for_fdt_matrix2.txt"));
+    write_matrix_as_volume(CoordMat_tract2,logger.appendDir("tract_space_coords_for_fdt_matrix2"));
     save_volume(m_lookup2,logger.appendDir("lookup_tractspace_fdt_matrix2"));
 
     
@@ -692,7 +702,9 @@ namespace TRACT{
 			   << roicind[i];
       
       applycoordchange(CoordMat2, m_stline.get_seeds().get_refvol().niftivox2newimagevox_mat().i());
-      write_ascii_matrix(CoordMat2,logger.appendDir("coords_for_fdt_matrix2"));
+      //MISCMATHS::write_ascii_matrix(CoordMat2,logger.appendDir("coords_for_fdt_matrix2.txt"));
+      write_matrix_as_volume(CoordMat2,logger.appendDir("coords_for_fdt_matrix2"));            
+
     }
 
 
@@ -734,7 +746,8 @@ namespace TRACT{
 		   << roicind[i];
     
     applycoordchange(mat, m_stline.get_seeds().get_refvol().niftivox2newimagevox_mat().i());
-    write_ascii_matrix(mat,logger.appendDir("coords_for_fdt_matrix3"));
+    //MISCMATHS::write_ascii_matrix(mat,logger.appendDir("coords_for_fdt_matrix3"));
+    write_matrix_as_volume(mat,logger.appendDir("coords_for_fdt_matrix3"));
 
     if(opts.lrmask3.value()!=""){
       CSV lrmask3(m_stline.get_lrmask3());
@@ -751,7 +764,8 @@ namespace TRACT{
 		     << lrroicind[i];
     
       applycoordchange(lrmat, m_stline.get_seeds().get_refvol().niftivox2newimagevox_mat().i());
-      write_ascii_matrix(lrmat,logger.appendDir("tract_space_coords_for_fdt_matrix3"));
+      //MISCMATHS::write_ascii_matrix(lrmat,logger.appendDir("tract_space_coords_for_fdt_matrix3"));
+      write_matrix_as_volume(lrmat,logger.appendDir("tract_space_coords_for_fdt_matrix3"));
     }
 
   }
@@ -1162,7 +1176,8 @@ namespace TRACT{
     }
 
     if(opts.s2tastext.value()){
-      write_ascii_matrix(m_s2tastext,logger.appendDir("matrix_seeds_to_all_targets"));
+      //write_ascii_matrix(m_s2tastext,logger.appendDir("matrix_seeds_to_all_targets"));
+      write_matrix_as_volume(m_s2tastext,logger.appendDir("matrix_seeds_to_all_targets"));
     }
 
     
