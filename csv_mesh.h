@@ -1,3 +1,6 @@
+/*    Copyright (C) 2012 University of Oxford  */
+
+/*  CCOPYRIGHT  */
 #if !defined (CSV_MESH_H)
 #define CSV_MESH_H
 

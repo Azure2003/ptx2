@@ -1,3 +1,6 @@
+/*    Copyright (C) 2012 University of Oxford  */
+
+/*  CCOPYRIGHT  */
 #include "utils/options.h"
 #include "newimage/newimageall.h"
 #include "csv.h"
