@@ -2,8 +2,10 @@ include $(FSLCONFDIR)/default.mk
 
 PROJNAME = fdt
 
-OPTFLAGS = -ggdb
+#OPTFLAGS = -ggdb
 
+#ARCHFLAGS = -arch i386
+#ARCHLDFLAGS = -arch i386
 
 ifeq ($(FSLMACHTYPE),apple-darwin8-gcc4.0)
         ARCHFLAGS =  -arch i386 -isysroot /Developer/SDKs/MacOSX10.4u.sdk -I/usr/X11R6/include/
