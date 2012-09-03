@@ -296,7 +296,7 @@ class probtrackxOptions {
 	      string("Save path coordinates to ascii file"),
 	      false, no_argument),
 
-   options("probtrackx","probtrackx -s <basename> -m <maskname> -x <seedfile> -o <output> --targetmasks=<textfile>\n probtrackx --help\n")
+   options("probtrackx","probtrackx2 -s <basename> -m <maskname> -x <seedfile> -o <output> --targetmasks=<textfile>\n probtrackx2 --help\n")
    {
      
     
