@@ -85,10 +85,9 @@ void CsvMesh::load_gifti(const string& filename) {
     CsvMpoint m3 = get_point(*(i+2));
     
     CsvTriangle t(m1,m2,m3,count);
-    _triangles.push_back(t);    
+    //_triangles.push_back(t);    
     push_triangle(t);
   }        
-
 
   reset_pvalues();
   count = 0;
