@@ -345,6 +345,7 @@ public:
   void  reset_maps(){maps.clear();}
   void  add_map(){
     ColumnVector map(nlocs);
+    map=0.0;
     maps.push_back(map);
   }
   void  add_map(const ColumnVector& map){
