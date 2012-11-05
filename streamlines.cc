@@ -1,9 +1,217 @@
 /*    Copyright (C) 2012 University of Oxford  */
 
-/*  CCOPYRIGHT  */
+/*  Part of FSL - FMRIB's Software Library
+    http://www.fmrib.ox.ac.uk/fsl
+    fsl@fmrib.ox.ac.uk
+    
+    Developed at FMRIB (Oxford Centre for Functional Magnetic Resonance
+    Imaging of the Brain), Department of Clinical Neurology, Oxford
+    University, Oxford, UK
+    
+    
+    LICENCE
+    
+    FMRIB Software Library, Release 5.0 (c) 2012, The University of
+    Oxford (the "Software")
+    
+    The Software remains the property of the University of Oxford ("the
+    University").
+    
+    The Software is distributed "AS IS" under this Licence solely for
+    non-commercial use in the hope that it will be useful, but in order
+    that the University as a charitable foundation protects its assets for
+    the benefit of its educational and research purposes, the University
+    makes clear that no condition is made or to be implied, nor is any
+    warranty given or to be implied, as to the accuracy of the Software,
+    or that it will be suitable for any particular purpose or for use
+    under any specific conditions. Furthermore, the University disclaims
+    all responsibility for the use which is made of the Software. It
+    further disclaims any liability for the outcomes arising from using
+    the Software.
+    
+    The Licensee agrees to indemnify the University and hold the
+    University harmless from and against any and all claims, damages and
+    liabilities asserted by third parties (including claims for
+    negligence) which arise directly or indirectly from the use of the
+    Software or the sale of any products based on the Software.
+    
+    No part of the Software may be reproduced, modified, transmitted or
+    transferred in any form or by any means, electronic or mechanical,
+    without the express permission of the University. The permission of
+    the University is not required if the said reproduction, modification,
+    transmission or transference is done without financial return, the
+    conditions of this Licence are imposed upon the receiver of the
+    product, and all original and amended source code is included in any
+    transmitted product. You may be held legally responsible for any
+    copyright infringement that is caused or encouraged by your failure to
+    abide by these terms and conditions.
+    
+    You are not permitted under this Licence to use this Software
+    commercially. Use for which any financial return is received shall be
+    defined as commercial use, and includes (1) integration of all or part
+    of the source code or the Software into a product for sale or license
+    by or on behalf of Licensee to third parties or (2) use of the
+    Software or any derivative of it for research with the final aim of
+    developing software products for sale or license to a third party or
+    (3) use of the Software or any derivative of it for research with the
+    final aim of developing non-software products for sale or license to a
+    third party, or (4) use of the Software to provide any service to an
+    external organisation for which payment is received. If you are
+    interested in using the Software commercially, please contact Isis
+    Innovation Limited ("Isis"), the technology transfer company of the
+    University, to negotiate a licence. Contact details are:
+    innovation@isis.ox.ac.uk quoting reference DE/9564. */
 #include "streamlines.h"
 #include "warpfns/fnirt_file_reader.h"
 #include "warpfns/warpfns.h"
+
+#define MaxDimNIFTI 65536
+
+  // // Trajectory file writer
+  // int SpMat_HCP::SaveTrajFile(const string& basename)const
+  // {
+  //   if ( (basename.size()<1) ) return -1;
+  //   string extension="mtx";
+  //   string file1=basename+"1."+extension;
+  //   string file2=basename+"2."+extension;
+  //   string file3=basename+"3."+extension;
+  //   // FIRST FILE (text file of matrix dimensions)
+  //   ofstream fs1(file1.c_str());
+  //   if (!fs1) { 
+  //     cerr << "Could not open file " << file1 << " for writing" << endl;
+  //     return -1;
+  //   }
+  //   fs1 << _m << endl;
+  //   fs1 << _n << endl;
+  //   fs1.close();
+
+  //   // SECOND FILE (binary file of lengths)
+  //   ofstream fs2(file2.c_str(), ios::out | ios::binary);
+  //   if (!fs2) { 
+  //     cerr << "Could not open file " << file2 << " for writing" << endl;
+  //     return -1;
+  //   }
+
+  //   for(unsigned int c=0; c < _n; c++) {
+  //     int64_t sz = _ri[c].size();  
+  //     fs2.write((char*)&sz,sizeof(sz));
+  //   }
+  //   fs2.close();
+
+  //   // THIRD FILE (binary file of contents, integer coded)
+  //   ofstream fs3(file3.c_str(), ios::out | ios::binary);
+  //   if (!fs3) { 
+  //     cerr << "Could not open file " << file3 << " for writing" << endl;
+  //     return -1;
+  //   }
+
+  //   int64_t code1, code2;
+  //   int64_t two32=(1LL<<32), mult=1001;    
+  //   int MAX_LENGTH=1000;
+  //   cout<<"Saving matrix4"<<endl;
+  //   for(unsigned int c=0; c < _n; c++) {
+  //     if(_ri[c].size()){
+  // 	const std::vector<unsigned int>&    ri = _ri[c];
+  // 	const std::vector<MatCell>&               val = _val[c];
+  // 	for (unsigned int r=0; r<ri.size(); r++) { 	
+  // 	  code1 = ri[r];
+  // 	  int64_t fibre_count, fibre_prop1, fibre_prop2, length_val;
+  // 	  // fibre_prop1, fibre_prop2 and length_val ***MUST*** BE WITHIN 0 and 1000 INCLUSIVE	  
+  // 	  OUT(val[r].get_nsamples());
+  // 	  fibre_count = MIN((int64_t)val[r].get_nsamples(),two32-1);
+  // 	  OUT(fibre_count);
+  // 	  OUT(val[r].get_fibprop(0));
+  // 	  fibre_prop1 = MIN(MISCMATHS::round(val[r].get_fibprop(0)*1000),1000);
+  // 	  OUT(fibre_prop1);
+  // 	  OUT(val[r].get_fibprop(1));
+  // 	  fibre_prop2 = MIN(MISCMATHS::round(val[r].get_fibprop(1)*1000),1000);
+  // 	  OUT(fibre_prop2);
+  // 	  OUT(val[r].get_avg_length());
+  // 	  length_val  = MIN(MISCMATHS::round(val[r].get_avg_length()/MAX_LENGTH*1000),1000);
+  // 	  OUT(length_val);
+	  
+  // 	  code2 = two32*fibre_count + mult*mult*fibre_prop1 + mult*fibre_prop2 + length_val;
+  // 	  fs3.write((char*)&code1,sizeof(code1));
+  // 	  fs3.write((char*)&code2,sizeof(code2));
+  // 	}
+  //     }
+  //   }  
+  //   fs3.close();
+     
+  //   return 0;
+    
+  // }
+
+// Trajectory file writer
+  int SpMat_HCP::SaveTrajFile(const string& basename)const
+  {
+    if ( (basename.size()<1) ) return -1;
+    string extension="mtx";
+    string file1=basename+"1."+extension;
+    string file2=basename+"2."+extension;
+    string file3=basename+"3."+extension;
+    // FIRST FILE (text file of matrix dimensions)
+    ofstream fs1(file1.c_str());
+    if (!fs1) { 
+      cerr << "Could not open file " << file1 << " for writing" << endl;
+      return -1;
+    }
+    fs1 << Nrows() << endl;
+    fs1 << Ncols() << endl;
+    fs1.close();
+
+    // SECOND FILE (binary file of lengths)
+    ofstream fs2(file2.c_str(), ios::out | ios::binary);
+    if (!fs2) { 
+      cerr << "Could not open file " << file2 << " for writing" << endl;
+      return -1;
+    }
+
+    for(unsigned int c=0; c < Ncols(); c++) {
+      int64_t sz = get_ri(c).size();  
+      fs2.write((char*)&sz,sizeof(sz));
+    }
+    fs2.close();
+
+    // THIRD FILE (binary file of contents, integer coded)
+    ofstream fs3(file3.c_str(), ios::out | ios::binary);
+    if (!fs3) { 
+      cerr << "Could not open file " << file3 << " for writing" << endl;
+      return -1;
+    }
+
+    int64_t code1, code2;
+    int64_t two32=(1LL<<32), mult=1001;    
+    //int MAX_LENGTH=1000;
+
+    for(unsigned int c=0; c < Ncols(); c++) {
+      if(get_ri(c).size()){
+	const std::vector<unsigned int>&    ri = get_ri(c);
+	const std::vector<MatCell>&         val = get_val(c);
+	for (unsigned int r=0; r<ri.size(); r++) { 	
+	  code1 = ri[r];
+	  int64_t fibre_count, fibre_prop1, fibre_prop2, length_val;
+	  // fibre_prop1, fibre_prop2 and length_val ***MUST*** BE WITHIN 0 and 1000 INCLUSIVE	  
+	  fibre_count = (int64_t)MIN((int64_t)val[r].get_nsamples(),two32-1);
+	  fibre_prop1 = (int64_t)MIN((int64_t)(MISCMATHS::round(val[r].get_fibprop(1)*1000)),1000);
+	  fibre_prop2 = (int64_t)MIN((int64_t)(MISCMATHS::round(val[r].get_fibprop(2)*1000)),1000);
+	  length_val  = (int64_t)MIN((int64_t)(MISCMATHS::round(val[r].get_avg_length())),1000);
+	  
+
+	  code2 = two32*fibre_count + mult*mult*fibre_prop1 + mult*fibre_prop2 + length_val;
+	  fs3.write((char*)&code1,sizeof(code1));
+	  fs3.write((char*)&code2,sizeof(code2));
+	}
+      }
+    }  
+    fs3.close();
+     
+    return 0;
+    
+  }
+
+
+
 
 namespace TRACT{
 
@@ -197,6 +405,7 @@ namespace TRACT{
     
     vols.initialise(opts.basename.value(),m_mask);
     m_path.reserve(opts.nsteps.value());
+    m_diff_path.reserve(opts.nsteps.value());
     m_x_s_init=0;
     m_y_s_init=0;
     m_z_s_init=0;
@@ -250,6 +459,7 @@ namespace TRACT{
     float xst,yst,zst,x,y,z,tmp2;
     float pref_x=0,pref_y=0,pref_z=0;
     int x_s,y_s,z_s;
+    int sampled_fib=fibst;
 
     // find xyz in dti space
     if(!m_IsNonlinXfm)
@@ -261,6 +471,7 @@ namespace TRACT{
 
     xst=xyz_dti(1);yst=xyz_dti(2);zst=xyz_dti(3);
     m_path.clear();
+    m_diff_path.clear();
     x=xst;y=yst;z=zst;
     m_part.change_xyz(x,y,z);
 
@@ -363,19 +574,7 @@ namespace TRACT{
 	if(cnt>0)
 	  pathlength += opts.steplength.value();
 
-
-	// // // if first step and onewayonly
-// // 	if(opts.onewayonly.value() && m_path.size()==2){
-// // 	  Vec step(m_path[1](1)-m_path[0](1),
-// // 		   m_path[1](2)-m_path[0](2),
-// // 		   m_path[1](3)-m_path[0](3));
-
-// // 	  if(m_seeds.coord_sign(seed_ind,m_path[0]+0.001*(m_path[1]-m_path[0]))<0){
-// // 	    rubbish_passed=1;
-// // 	    break;
-// // 	  }	  
-// // 	}
-
+	
 	
 	
 	// only test exclusion after at least one step
@@ -433,23 +632,10 @@ namespace TRACT{
 	}
 
 
-
-
-	// only test stopping after at least one step
-	if(opts.stopfile.value()!="" && m_path.size()>1){
-	  if(m_path.size()==2 && opts.forcefirststep.value()){
-	    // do nothing
-	  }
-	  else if(m_stop.has_crossed(m_path[cnt-1],m_path[cnt])){
-	    break;	    
-	  }	  
-	}
-
-
 	// //////////////////////////////
 
 	// sample a new fibre orientation
-	int sampled_fib,newx,newy,newz;	
+	int newx,newy,newz;	
 	if(opts.skipmask.value() == ""){
 	  //Tracer_Plus tr("sample");
 	  th_ph_f = vols.sample(m_part.x(),m_part.y(),m_part.z(),    // sample at this location
@@ -469,16 +655,22 @@ namespace TRACT{
 				newx,newy,newz);
 	}
 	
+	ColumnVector voxfib(4);
+	voxfib<<newx<<newy<<newz<<sampled_fib;
+	m_diff_path.push_back(voxfib);
+	
 
-// 	// depending on which fibre has been sampled, decide whether to forcedir
-// 	forcedir=false;
-// 	if(opts.prefdirfile.value()!=""){
-// 	  if(m_prefdir.tsize()==2){
-// 	    if(m_prefdir(newx,newy,newz,1)==sampled_fib)
-// 	      forcedir=true;
-// 	  }
-// 	}
- 
+	// only test stopping after at least one step
+	if(opts.stopfile.value()!="" && m_path.size()>1){
+	  if(m_path.size()==2 && opts.forcefirststep.value()){
+	    // do nothing
+	  }
+	  else if(m_stop.has_crossed(m_path[cnt-1],m_path[cnt])){
+	    break;	    
+	  }	  
+	}
+
+
 	// jump
 	tmp2=(float)rand()/(float)RAND_MAX;	
 
@@ -598,6 +790,9 @@ namespace TRACT{
     if(opts.matrix3out.value()){
       initialise_matrix3();
     }
+    if(opts.matrix4out.value()){
+      initialise_matrix4();
+    }
   }
 
   
@@ -646,8 +841,10 @@ namespace TRACT{
     
     applycoordchange(CoordMat1, m_stline.get_seeds().get_refvol().niftivox2newimagevox_mat().i());
     //MISCMATHS::write_binary_matrix(CoordMat1,logger.appendDir("coords_for_fdt_matrix1"));
-    write_matrix_as_volume(CoordMat1,logger.appendDir("coords_for_fdt_matrix1"));
-     
+    //if(CoordMat1.Nrows()<MaxDimNIFTI && CoordMat1.Ncols()<MaxDimNIFTI)
+    //write_matrix_as_volume(CoordMat1,logger.appendDir("coords_for_fdt_matrix1"));
+    //else
+      write_ascii_matrix(CoordMat1,logger.appendDir("coords_for_fdt_matrix1"));
   }
   
   // matrix2 is nseeds X nlrmask
@@ -683,8 +880,11 @@ namespace TRACT{
 	  }
 
     applycoordchange(CoordMat_tract2, m_lrmask.niftivox2newimagevox_mat().i());
-    //MISCMATHS::write_ascii_matrix(CoordMat_tract2,logger.appendDir("tract_space_coords_for_fdt_matrix2.txt"));
-    write_matrix_as_volume(CoordMat_tract2,logger.appendDir("tract_space_coords_for_fdt_matrix2"));
+    //if(MAX(CoordMat_tract2.Nrows(),CoordMat_tract2.Ncols())<MaxDimNIFTI)
+    // write_matrix_as_volume(CoordMat_tract2,logger.appendDir("tract_space_coords_for_fdt_matrix2"));
+    //else
+      write_ascii_matrix(CoordMat_tract2,logger.appendDir("tract_space_coords_for_fdt_matrix2"));
+
     save_volume(m_lookup2,logger.appendDir("lookup_tractspace_fdt_matrix2"));
 
     
@@ -706,7 +906,10 @@ namespace TRACT{
       
       applycoordchange(CoordMat2, m_stline.get_seeds().get_refvol().niftivox2newimagevox_mat().i());
       //MISCMATHS::write_ascii_matrix(CoordMat2,logger.appendDir("coords_for_fdt_matrix2.txt"));
-      write_matrix_as_volume(CoordMat2,logger.appendDir("coords_for_fdt_matrix2"));            
+      //if(MAX(CoordMat2.Ncols(),CoordMat2.Nrows())<MaxDimNIFTI)
+      //write_matrix_as_volume(CoordMat2,logger.appendDir("coords_for_fdt_matrix2"));            
+      //else
+	write_ascii_matrix(CoordMat2,logger.appendDir("coords_for_fdt_matrix2"));            
 
     }
 
@@ -749,8 +952,11 @@ namespace TRACT{
 		   << roicind[i];
     
     applycoordchange(mat, m_stline.get_seeds().get_refvol().niftivox2newimagevox_mat().i());
-    //MISCMATHS::write_ascii_matrix(mat,logger.appendDir("coords_for_fdt_matrix3"));
-    write_matrix_as_volume(mat,logger.appendDir("coords_for_fdt_matrix3"));
+
+    //if(MAX(mat.Nrows(),mat.Ncols())<MaxDimNIFTI)
+    //write_matrix_as_volume(mat,logger.appendDir("coords_for_fdt_matrix3"));
+    //else
+      write_ascii_matrix(mat,logger.appendDir("coords_for_fdt_matrix3"));
 
     if(opts.lrmask3.value()!=""){
       CSV lrmask3(m_stline.get_lrmask3());
@@ -773,6 +979,75 @@ namespace TRACT{
 
   }
 
+
+ 
+  // matrix4 is nseeds X ndtimask
+  void Counter::initialise_matrix4(){
+    if(opts.simple.value()){
+      cerr<<"Matrix4 output not compatible with --simple mode"<<endl;
+      exit(1);
+    }
+
+    // columns are brain mask in diffusion space
+    read_volume(m_dtimask,opts.dtimask.value());
+    m_beenhere4.reinitialize(m_dtimask.xsize(),m_dtimask.ysize(),m_dtimask.zsize());
+    m_lookup4.reinitialize(m_dtimask.xsize(),m_dtimask.ysize(),m_dtimask.zsize());
+    copybasicproperties(m_dtimask,m_lookup4);
+    m_lookup4=0;
+    m_dtidim.ReSize(3);
+    m_dtidim<<m_dtimask.xdim()<<m_dtimask.ydim()<<m_dtimask.zdim();
+    int numnz=0;    
+    for(int Wz=m_dtimask.minz();Wz<=m_dtimask.maxz();Wz++)
+      for(int Wy=m_dtimask.miny();Wy<=m_dtimask.maxy();Wy++)
+	for(int Wx=m_dtimask.minx();Wx<=m_dtimask.maxx();Wx++)
+	  if(m_dtimask.value(Wx,Wy,Wz)!=0){
+	    numnz++;
+	    m_lookup4(Wx,Wy,Wz)=numnz;
+	  }
+    Matrix CoordMat_tract4(numnz,3);
+    int mytrow=1;
+    for(int Wz=m_dtimask.minz();Wz<=m_dtimask.maxz();Wz++)
+      for(int Wy=m_dtimask.miny();Wy<=m_dtimask.maxy();Wy++)
+	for(int Wx=m_dtimask.minx();Wx<=m_dtimask.maxx();Wx++)
+	  if(m_dtimask(Wx,Wy,Wz)!=0){
+	    CoordMat_tract4(mytrow,1)=Wx;
+	    CoordMat_tract4(mytrow,2)=Wy;
+	    CoordMat_tract4(mytrow,3)=Wz;
+	    mytrow++;
+	  }
+
+    applycoordchange(CoordMat_tract4, m_dtimask.niftivox2newimagevox_mat().i());
+    //if(MAX(CoordMat_tract4.Nrows(),CoordMat_tract4.Ncols())<MaxDimNIFTI)
+    //write_matrix_as_volume(CoordMat_tract4,logger.appendDir("tract_space_coords_for_fdt_matrix4"));
+    //else
+      write_ascii_matrix(CoordMat_tract4,logger.appendDir("tract_space_coords_for_fdt_matrix4"));
+    save_volume(m_lookup4,logger.appendDir("lookup_tractspace_fdt_matrix4"));
+
+    
+    // init matrix4-related
+    m_ConMat4 = new SpMat_HCP(numnz,m_numseeds);    
+
+    vector<ColumnVector> coords = m_stline.get_seeds().get_locs_coords();
+    vector<int> roicind         = m_stline.get_seeds().get_locs_coord_index();
+    vector<int> roiind          = m_stline.get_seeds().get_locs_roi_index();
+
+    Matrix CoordMat4(m_numseeds,5);
+    for (unsigned int i=0;i<coords.size();i++)
+      CoordMat4.Row(i+1) << (float)coords[i](1) 
+			 << (float)coords[i](2)
+			 << (float)coords[i](3)
+			 << roiind[i]
+			 << roicind[i];
+    
+    applycoordchange(CoordMat4, m_stline.get_seeds().get_refvol().niftivox2newimagevox_mat().i());
+
+    //if(MAX(CoordMat4.Nrows(),CoordMat4.Ncols())<MaxDimNIFTI)
+    //write_matrix_as_volume(CoordMat4,logger.appendDir("coords_for_fdt_matrix4"));                    
+    //else
+      write_ascii_matrix(CoordMat4,logger.appendDir("coords_for_fdt_matrix4"));                    
+  }
+  
+
   void Counter::count_streamline(){
     if(opts.save_paths.value()){
       add_path();
@@ -785,6 +1060,9 @@ namespace TRACT{
     }
     if(opts.matrix2out.value()){
       update_matrix2_row();
+    }
+    if(opts.matrix4out.value()){
+      update_matrix4_col();
     }
   }
 
@@ -809,6 +1087,9 @@ namespace TRACT{
     }
     if(opts.matrix3out.value()){
       reset_beenhere3();
+    }
+    if(opts.matrix4out.value()){
+      reset_beenhere4();
     }
   }
 
@@ -1080,6 +1361,43 @@ namespace TRACT{
     }    
   }
 
+  void Counter::reset_beenhere4(){
+    ColumnVector xyz(3);
+    for(unsigned int i=0;i<m_diff_path.size();i++){
+      xyz<<m_diff_path[i](1)<<m_diff_path[i](2)<<m_diff_path[i](3);
+      m_beenhere4((int)round((float)xyz(1)),
+		  (int)round((float)xyz(2)),
+		  (int)round((float)xyz(3)))=0;
+    }    
+  }
+
+
+  void Counter::update_matrix4_col(){
+    float d=opts.steplength.value();
+    int x,y,z,Conrow4;
+    ColumnVector xyz(3);
+    for(unsigned int i=0;i<m_diff_path.size();i++){
+      // check here if back to seed
+      if(i>0 && (m_path[i]-m_path[0]).MaximumAbsoluteValue()==0)
+	d=opts.steplength.value();
+
+      xyz<<m_diff_path[i](1)<<m_diff_path[i](2)<<m_diff_path[i](3);
+      x=(int)round((float)xyz(1));
+      y=(int)round((float)xyz(2));
+      z=(int)round((float)xyz(3));
+      Conrow4=m_lookup4(x,y,z);
+
+      if(Conrow4>0){
+	if(m_beenhere4(x,y,z)==0){
+	  m_ConMat4->AddToTraj(Conrow4,m_curloc+1,d,(int)m_diff_path[i](4));	  
+ 	  m_beenhere4(x,y,z)=1;
+ 	  d+=opts.steplength.value();
+	}
+      }
+    } 
+  }
+
+
   void Counter::save_total(const int& keeptotal){
     // save total number of particles that made it through the streamlining
     ColumnVector keeptotvec(1);
@@ -1113,6 +1431,9 @@ namespace TRACT{
     }
     if(opts.matrix3out.value()){
       save_matrix3();
+    }
+    if(opts.matrix4out.value()){
+      save_matrix4();
     }
   }
   
@@ -1205,9 +1526,9 @@ namespace TRACT{
       ColumnVector v(4);
       v << coordvol(n,1) << coordvol(n,2) << coordvol(n,3) << 1.0;
       v = old2new_mat * v;
-      coordvol(n,1) = v(1);
-      coordvol(n,2) = v(2);
-      coordvol(n,3) = v(3);
+      coordvol(n,1) = MISCMATHS::round(v(1));
+      coordvol(n,2) = MISCMATHS::round(v(2));
+      coordvol(n,3) = MISCMATHS::round(v(3));
     }
   }
 
@@ -1219,9 +1540,11 @@ namespace TRACT{
     m_ConMat2->Print(logger.appendDir("fdt_matrix2.dot")); 
   }
 
-
   void Counter::save_matrix3(){
     m_ConMat3->Print(logger.appendDir("fdt_matrix3.dot"));
+  }
+  void Counter::save_matrix4(){
+    m_ConMat4->SaveTrajFile(logger.appendDir("fdt_matrix4_"));    
   }
 
   int Seedmanager::run(const float& x,const float& y,const float& z,
