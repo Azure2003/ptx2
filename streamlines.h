@@ -11,7 +11,7 @@
 #include "probtrackxOptions.h"
 #include "particle.h"
 #include "tractvolsx.h"
-#include "miscmaths/SpMat.h" 
+#include "/home/fs0/saad/fsl/src/miscmaths/SpMat.h" 
 #include "csv.h"
 #include "utils/tracer_plus.h"
 
@@ -21,6 +21,65 @@ using namespace Utilities;
 using namespace TRACTVOLSX;
 using namespace mesh;
 using namespace PARTICLE;
+
+  class MatCell{
+    // This class contains information on entries for matrix4 format
+  public:
+    MatCell():nsamples(0),length_tot(0.0){fibcnt.clear();fibcnt.resize(3,0);}
+    MatCell(double val):nsamples(0),length_tot(0.0){fibcnt.clear();fibcnt.resize(3,0);}
+    float   get_avg_length()const{return (length_tot/(float)nsamples);}
+    int     get_nsamples()const{return nsamples;}
+    float   get_fibprop(const int& f)const{return float(fibcnt[f-1])/float(nsamples);}
+    float   get_fibcnt(const int& f)const{return fibcnt[f-1];}
+    void    add_one(float dist,int fib){
+      fibcnt[fib-1]+=1;
+      length_tot+=dist;
+      nsamples+=1;      
+    }
+    void print()const{
+      cout<<"nsamples   = "<<nsamples<<endl;
+      cout<<"fibcnt[0]  = "<<fibcnt[0]<<endl;
+      cout<<"fibcnt[1]  = "<<fibcnt[1]<<endl;
+      cout<<"fibcnt[2]  = "<<fibcnt[2]<<endl;
+      cout<<"length_tot = "<<length_tot<<endl;
+      cout<<"avg_length = "<<length_tot/float(nsamples)<<endl;
+      cout<<"----------------------"<<endl;
+    }
+    MatCell(const MatCell& rhs){
+      *this=rhs;
+    }
+    MatCell& operator=(const MatCell& rhs){
+      fibcnt=rhs.fibcnt;
+      nsamples=rhs.nsamples;
+      length_tot=rhs.length_tot;
+      return *this;
+    }
+  private:
+    vector<int> fibcnt;
+    int         nsamples;
+    float       length_tot;
+  };
+
+  class SpMat_HCP : public SpMat<MatCell>
+  {
+    public:
+    SpMat_HCP():SpMat<MatCell>::SpMat(){}
+    SpMat_HCP(unsigned int m, unsigned int n):SpMat<MatCell>::SpMat(m,n){}
+    ~SpMat_HCP(){}
+    // HCP Trajectory-file writer (MJ+SJ)
+    int SaveTrajFile(const string& basename)const;
+    void AddToTraj(unsigned int r,unsigned int c,
+		   float dist,int fib){
+      MatCell mc=this->Peek(r,c);     
+      mc.add_one(dist,fib);
+      Set(r,c,mc);
+      //here(r,c).add_one(dist,fib);
+      //Set(r,c,this->Peek(r,c).add_one(dist,fib));
+    } 
+    //  private:
+    //MatCell mc;
+    
+  };
 
 namespace TRACT{
 
@@ -40,6 +99,7 @@ namespace TRACT{
 
     Particle                      m_part;
     vector<ColumnVector>          m_path;
+    vector<ColumnVector>          m_diff_path;
     int                           m_tracksign;
 
     volume<float>                 m_mask;
@@ -99,6 +159,8 @@ namespace TRACT{
     inline const float get_z_seed() const {return m_z_s_init;}
     const vector<ColumnVector>& get_path_ref() const{return m_path;}
     vector<ColumnVector>        get_path()     const{return m_path;}
+    const vector<ColumnVector>& get_diff_path_ref() const{return m_diff_path;}
+    vector<ColumnVector>        get_diff_path()     const{return m_diff_path;}
 
     inline void reset(){
       m_part.reset();
@@ -234,6 +296,7 @@ namespace TRACT{
     volume<int>                  m_beenhere;
     Matrix                       m_I;
     vector<ColumnVector>         m_path;
+    vector<ColumnVector>         m_diff_path;
     CSV                          m_prob_alt;  // spatial histogram of tracts with alternative user-defined mask
     CSV                          m_beenhere_alt;
 
@@ -271,6 +334,13 @@ namespace TRACT{
     // MATRIX 3
     SpMat<float>                 *m_ConMat3; // using sparse
     vector<int>                  m_inmask3;
+
+    // MATRIX 4 - columns are seed space, rows are diffusion space
+    SpMat_HCP               *m_ConMat4;     
+    volume<int>                  m_dtimask;
+    volume<int>                  m_lookup4;
+    volume<int>                  m_beenhere4;
+    ColumnVector                 m_dtidim;
 
     // misc    
     ColumnVector                 m_seedsdim;
@@ -333,20 +403,28 @@ namespace TRACT{
     void initialise_matrix1(); 
     void initialise_matrix2();
     void initialise_matrix3();
+    void initialise_matrix4();
     
     void forceNumSeeds(const int& n) {m_numseeds=n;}
     void updateSeedLocation(int loc) {m_curloc=loc;}
 
-    void store_path(){ m_path=m_stline.get_path();}
-    void append_path(){
-      for(unsigned int i=0;i<m_stline.get_path_ref().size();i++)
+    void store_path(){ 
+      m_path=m_stline.get_path();
+      if(opts.matrix4out.value())
+	m_diff_path=m_stline.get_diff_path();
+    }
+    void append_path(){      
+      for(unsigned int i=0;i<m_stline.get_path_ref().size();i++){
 	m_path.push_back(m_stline.get_path_ref()[i]);
+	if(opts.matrix4out.value())
+	  m_diff_path.push_back(m_stline.get_diff_path_ref()[i]);
+      }
     }
     float calc_pathlength(const int& redund=0){
       return( float(m_path.size()-redund)*opts.steplength.value() );
     }
 
-    void clear_path(){ m_path.clear(); };
+    void clear_path(){ m_path.clear(); if(opts.matrix4out.value())m_diff_path.clear(); };
 
     void count_streamline();
     void count_seed();
@@ -371,6 +449,8 @@ namespace TRACT{
     void update_matrix3();
     void reset_beenhere3();
 
+    void update_matrix4_col(); 
+    void reset_beenhere4();
     
     void save_total(const int& keeptotal);
     void save_total(const vector<int>& keeptotal);
@@ -381,6 +461,7 @@ namespace TRACT{
     void save_matrix1();
     void save_matrix2();
     void save_matrix3();
+    void save_matrix4();
 
     void add_path();
     void save_paths();
