@@ -64,6 +64,8 @@ void nmasks()
   time_t _time;
   _time=time(NULL);
 
+  srand(opts.rseed.value()); // need to reinitialise random seed because of GIFTI!!
+
   // seed from volume-like ROIs
   if(seeds.nVols()>0){
     cout << "Volume seeds" << endl;

@@ -67,81 +67,6 @@
 
 #define MaxDimNIFTI 65536
 
-  // // Trajectory file writer
-  // int SpMat_HCP::SaveTrajFile(const string& basename)const
-  // {
-  //   if ( (basename.size()<1) ) return -1;
-  //   string extension="mtx";
-  //   string file1=basename+"1."+extension;
-  //   string file2=basename+"2."+extension;
-  //   string file3=basename+"3."+extension;
-  //   // FIRST FILE (text file of matrix dimensions)
-  //   ofstream fs1(file1.c_str());
-  //   if (!fs1) { 
-  //     cerr << "Could not open file " << file1 << " for writing" << endl;
-  //     return -1;
-  //   }
-  //   fs1 << _m << endl;
-  //   fs1 << _n << endl;
-  //   fs1.close();
-
-  //   // SECOND FILE (binary file of lengths)
-  //   ofstream fs2(file2.c_str(), ios::out | ios::binary);
-  //   if (!fs2) { 
-  //     cerr << "Could not open file " << file2 << " for writing" << endl;
-  //     return -1;
-  //   }
-
-  //   for(unsigned int c=0; c < _n; c++) {
-  //     int64_t sz = _ri[c].size();  
-  //     fs2.write((char*)&sz,sizeof(sz));
-  //   }
-  //   fs2.close();
-
-  //   // THIRD FILE (binary file of contents, integer coded)
-  //   ofstream fs3(file3.c_str(), ios::out | ios::binary);
-  //   if (!fs3) { 
-  //     cerr << "Could not open file " << file3 << " for writing" << endl;
-  //     return -1;
-  //   }
-
-  //   int64_t code1, code2;
-  //   int64_t two32=(1LL<<32), mult=1001;    
-  //   int MAX_LENGTH=1000;
-  //   cout<<"Saving matrix4"<<endl;
-  //   for(unsigned int c=0; c < _n; c++) {
-  //     if(_ri[c].size()){
-  // 	const std::vector<unsigned int>&    ri = _ri[c];
-  // 	const std::vector<MatCell>&               val = _val[c];
-  // 	for (unsigned int r=0; r<ri.size(); r++) { 	
-  // 	  code1 = ri[r];
-  // 	  int64_t fibre_count, fibre_prop1, fibre_prop2, length_val;
-  // 	  // fibre_prop1, fibre_prop2 and length_val ***MUST*** BE WITHIN 0 and 1000 INCLUSIVE	  
-  // 	  OUT(val[r].get_nsamples());
-  // 	  fibre_count = MIN((int64_t)val[r].get_nsamples(),two32-1);
-  // 	  OUT(fibre_count);
-  // 	  OUT(val[r].get_fibprop(0));
-  // 	  fibre_prop1 = MIN(MISCMATHS::round(val[r].get_fibprop(0)*1000),1000);
-  // 	  OUT(fibre_prop1);
-  // 	  OUT(val[r].get_fibprop(1));
-  // 	  fibre_prop2 = MIN(MISCMATHS::round(val[r].get_fibprop(1)*1000),1000);
-  // 	  OUT(fibre_prop2);
-  // 	  OUT(val[r].get_avg_length());
-  // 	  length_val  = MIN(MISCMATHS::round(val[r].get_avg_length()/MAX_LENGTH*1000),1000);
-  // 	  OUT(length_val);
-	  
-  // 	  code2 = two32*fibre_count + mult*mult*fibre_prop1 + mult*fibre_prop2 + length_val;
-  // 	  fs3.write((char*)&code1,sizeof(code1));
-  // 	  fs3.write((char*)&code2,sizeof(code2));
-  // 	}
-  //     }
-  //   }  
-  //   fs3.close();
-     
-  //   return 0;
-    
-  // }
-
 // Trajectory file writer
   int SpMat_HCP::SaveTrajFile(const string& basename)const
   {
@@ -1104,6 +1029,7 @@ namespace TRACT{
       z_s=(int)round((float)m_path[i](3));
       // check here if back to seed
       if(i>0 && (m_path[i]-m_path[0]).MaximumAbsoluteValue()==0){
+	m_lastpoint(x_s,y_s,z_s)+=1;  
 	pathlength=0;
       }
       if(m_beenhere(x_s,y_s,z_s)==0){
@@ -1112,7 +1038,7 @@ namespace TRACT{
 	else
 	  m_prob(x_s,y_s,z_s)+=pathlength;
 	m_beenhere(x_s,y_s,z_s)=1;
-
+	
 	if(opts.opathdir.value() && i>0){
 	  ColumnVector v(3);
 	  v=m_path[i]-m_path[i-1];
@@ -1122,7 +1048,7 @@ namespace TRACT{
 	  m_localdir(x_s,y_s,z_s,2)+=v(3);
 	}
       }
-
+      
       // Fill alternative mask
       // This mask's values are:
       //  0: location not to be considered
@@ -1148,7 +1074,13 @@ namespace TRACT{
       }
       pathlength+=opts.steplength.value();
       
-    } 
+    }
+    // Fill last point
+    int i=m_path.size()-1;
+    x_s=(int)round((float)m_path[i](1));
+    y_s=(int)round((float)m_path[i](2));
+    z_s=(int)round((float)m_path[i](3));
+    m_lastpoint(x_s,y_s,z_s)+=1;  
   }
 
   void Counter::reset_beenhere(){
@@ -1440,6 +1372,10 @@ namespace TRACT{
   void Counter::save_pathdist(){  
     m_prob.setDisplayMaximumMinimum(m_prob.max(),m_prob.min());
     save_volume(m_prob,logger.appendDir(opts.outfile.value()));
+
+    m_lastpoint.setDisplayMaximumMinimum(m_lastpoint.max(),m_lastpoint.min());
+    save_volume(m_lastpoint,logger.appendDir("lastpoint"));
+
     if(opts.pathfile.set()){
       m_prob_alt.save_rois(logger.appendDir(opts.outfile.value())+"_alt");
       //m_beenhere_alt.save_rois(logger.appendDir(opts.outfile.value())+"_beenhere");

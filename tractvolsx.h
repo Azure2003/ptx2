@@ -132,8 +132,8 @@ namespace TRACTVOLSX{
       //Initialise
       void initialise(const string& basename,const volume<float>& mask){
 	volume4D<float> tmpvol;
-	Matrix          tmpmat;
-	
+	Matrix          tmpmat;		
+
 	cout<<"Load bedpostx samples"<<endl;
 	if(fsl_imageexists(basename+"_thsamples")){
 	  cout<<"1"<<endl;

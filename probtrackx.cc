@@ -8,6 +8,7 @@
 #include "utils/log.h"
 #include "probtrackx.h"
 #include "utils/tracer_plus.h"
+#include "stdlib.h"
 
 using namespace std;
 using namespace NEWIMAGE;
@@ -22,6 +23,8 @@ int main ( int argc, char **argv ){
   Log& logger = LogSingleton::getInstance();
   opts.parse_command_line(argc,argv,logger);
   srand(opts.rseed.value());
+  //cout<<rand()<<" "<<rand()<<" "<<rand()<<endl;
+  //return 0;
   
   if(opts.verbose.value()>0){
     opts.status();

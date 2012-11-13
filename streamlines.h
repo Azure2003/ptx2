@@ -300,6 +300,9 @@ namespace TRACT{
     CSV                          m_prob_alt;  // spatial histogram of tracts with alternative user-defined mask
     CSV                          m_beenhere_alt;
 
+    // temp 
+    volume<float>                m_lastpoint; // store last point in trajectory
+
     vector< vector<ColumnVector> > m_save_paths;
 
     // do we still need these?
@@ -378,6 +381,12 @@ namespace TRACT{
 			  m_stline.get_seeds().zsize());
       copybasicproperties(m_stline.get_seeds().get_refvol(),m_prob);
       m_prob=0;
+      m_lastpoint.reinitialize(m_stline.get_seeds().xsize(),
+			       m_stline.get_seeds().ysize(),
+			       m_stline.get_seeds().zsize());
+      copybasicproperties(m_stline.get_seeds().get_refvol(),m_lastpoint);
+      m_lastpoint=0;
+      
       if(opts.opathdir.value()){
 	m_localdir.reinitialize(m_stline.get_seeds().xsize(),
 				m_stline.get_seeds().ysize(),

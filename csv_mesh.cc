@@ -451,8 +451,7 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
     r = a / b;
     if (r < 0.0)                   // ray goes away from triangle
       return false;                  // => no intersect
-    if(r > 1.0)
-      return false;
+    
     // for a segment, also test if (r > 1.0) => no intersect
     Pt I;
     I = p[0] + r * dir;           // intersect point of ray and plane
@@ -514,8 +513,7 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
     r = a / b;
     if (r < 0.0)                   // ray goes away from triangle
       return false;                  // => no intersect
-    if(r > 1.0)
-      return false;
+    
     // for a segment, also test if (r > 1.0) => no intersect
     Pt I;
     I = p[0] + r * dir;           // intersect point of ray and plane

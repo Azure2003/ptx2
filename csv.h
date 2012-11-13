@@ -47,7 +47,7 @@ using namespace Utilities;
 // useful routines for collision detection
 bool triBoxOverlap(float boxcenter[3],float boxhalfsize[3],float triverts[3][3]);
 bool rayBoxIntersection(float origin[3],float direction[3],float vminmax[2][3]);
-bool segTriangleIntersection(float seg[2][3],float tri[3][3]);
+bool segTriangleIntersection(float seg[2][3],float tri[3][3],bool verb=false);
 float triDistPoint(const Triangle& t,const ColumnVector pos);
 
 
@@ -396,7 +396,6 @@ public:
     isinroi=rhs.isinroi;
     mat2vol=rhs.mat2vol;
     vol2mat=rhs.vol2mat;
-    vol2loc=rhs.vol2loc;
     surfvol=rhs.surfvol;
     triangles=rhs.triangles;
     mm2vox=rhs.mm2vox;

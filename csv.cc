@@ -88,7 +88,14 @@ bool CSV::has_crossed(const ColumnVector& x1,const ColumnVector& x2,
       // get the triangle
       t = roimesh[indmesh].get_triangle(indtri);
       
-      if(t.intersect(segment)){
+      // float seg[2][3]={{x1mm(1),x1mm(2),x1mm(3)},{x2mm(1),x2mm(2),x2mm(3)}};
+      // float tri[3][3]= {{t.get_vertice(0).get_coord().X,t.get_vertice(0).get_coord().Y,t.get_vertice(0).get_coord().Z},
+      // 			{t.get_vertice(1).get_coord().X,t.get_vertice(1).get_coord().Y,t.get_vertice(1).get_coord().Z},
+      // 			{t.get_vertice(2).get_coord().X,t.get_vertice(2).get_coord().Y,t.get_vertice(2).get_coord().Z}};
+			
+
+      if(t.intersect(segment)){//
+	//if(segTriangleIntersection(seg,tri)){
 	// 1: update surface hit counts
 	if(docount){
 	  float v=roimesh[indmesh].get_tvalue(t.get_no());
@@ -100,6 +107,9 @@ bool CSV::has_crossed(const ColumnVector& x1,const ColumnVector& x2,
 	else
 	  return true;
       }
+
+
+
     }
     return hascrossed;
   }
@@ -393,9 +403,18 @@ void CSV::init_surfvol(){
       }            
       
       // mm->vox
-      x1 << roimesh[i].get_triangle(j).get_vertice(0).get_coord().X << roimesh[i].get_triangle(j).get_vertice(0).get_coord().Y << roimesh[i].get_triangle(j).get_vertice(0).get_coord().Z << 1;
-      x2 << roimesh[i].get_triangle(j).get_vertice(1).get_coord().X << roimesh[i].get_triangle(j).get_vertice(1).get_coord().Y << roimesh[i].get_triangle(j).get_vertice(1).get_coord().Z << 1;
-      x3 << roimesh[i].get_triangle(j).get_vertice(2).get_coord().X << roimesh[i].get_triangle(j).get_vertice(2).get_coord().Y << roimesh[i].get_triangle(j).get_vertice(2).get_coord().Z << 1;
+      x1 << roimesh[i].get_triangle(j).get_vertice(0).get_coord().X 
+	 << roimesh[i].get_triangle(j).get_vertice(0).get_coord().Y 
+	 << roimesh[i].get_triangle(j).get_vertice(0).get_coord().Z 
+	 << 1;
+      x2 << roimesh[i].get_triangle(j).get_vertice(1).get_coord().X 
+	 << roimesh[i].get_triangle(j).get_vertice(1).get_coord().Y 
+	 << roimesh[i].get_triangle(j).get_vertice(1).get_coord().Z 
+	 << 1;
+      x3 << roimesh[i].get_triangle(j).get_vertice(2).get_coord().X 
+	 << roimesh[i].get_triangle(j).get_vertice(2).get_coord().Y 
+	 << roimesh[i].get_triangle(j).get_vertice(2).get_coord().Z 
+	 << 1;
 
 
       x1 = mm2vox*x1;
@@ -414,6 +433,19 @@ void CSV::init_surfvol(){
  
 
       update_surfvol(crossed,tid,i);
+
+      // if(tid==363){
+      // 	OUT(crossed.size());
+      // 	for(unsigned int ii=0;ii<crossed.size();ii++)
+      // 	  cout<<crossed[ii](1)<<" "<<crossed[ii](2)<<" "<<crossed[ii](3)<<endl;
+      // 	OUT(xx1.t());
+      // 	OUT(xx2.t());
+      // 	OUT(xx3.t());
+      // 	OUT(roimesh[i].get_triangle(j).get_vertice(0).get_no());
+      // 	OUT(roimesh[i].get_triangle(j).get_vertice(1).get_no());
+      // 	OUT(roimesh[i].get_triangle(j).get_vertice(2).get_no());
+      // 	exit(1);
+      // }
 
     }
   }
@@ -692,8 +724,8 @@ bool lookAtAllMesh(CsvMesh& m){
     if(m.get_pvalue(i)!=0){nnz++;}
     else{nz++;}
   }
-  OUT(nz);
-  OUT(nnz);
+  //OUT(nz);
+  //OUT(nnz);
   return (nz==0 || nnz==0);
 }
 
@@ -1119,7 +1151,7 @@ void CSV::find_crossed_voxels(const ColumnVector& P1,const ColumnVector& P2,vect
 // P1 and P2 must be in voxels
 // looks at ALL intersected voxel sides
 void CSV::line_crossed_voxels(float line[2][3],vector<ColumnVector>& crossed)const{
-  Tracer_Plus tr("CSV::line_crossed_voxels");
+  //Tracer_Plus tr("CSV::line_crossed_voxels");
   crossed.clear();
   int minx=(int)round(line[0][0]);
   int miny=(int)round(line[0][1]);
@@ -1143,10 +1175,10 @@ void CSV::line_crossed_voxels(float line[2][3],vector<ColumnVector>& crossed)con
 		(line[1][1]-line[0][1]),
 		(line[1][2]-line[0][2])};
   float vminmax[2][3];float halfsize=.5;//_sdim/2.0;
-  ColumnVector v(3);
-  for(int x=minx;x<=maxx;x+=1)
-    for(int y=miny;y<=maxy;y+=1)
-      for(int z=minz;z<=maxz;z+=1){
+  ColumnVector v(3);int s=1;
+  for(int x=minx-s;x<=maxx+s;x+=1)
+    for(int y=miny-s;y<=maxy+s;y+=1)
+      for(int z=minz-s;z<=maxz+s;z+=1){
 	vminmax[0][0]=(float)x-halfsize;
 	vminmax[1][0]=(float)x+halfsize;
 	vminmax[0][1]=(float)y-halfsize;
@@ -1185,10 +1217,10 @@ void CSV::tri_crossed_voxels(float tri[3][3],vector<ColumnVector>& crossed){
   //OUT(maxx-minx);OUT(maxy-miny);OUT(maxz-minz);
 
   float boxcentre[3],boxhalfsize[3]={.5,.5,.5};
-  ColumnVector v(3);
-  for(int x=minx;x<=maxx;x+=1)
-    for(int y=miny;y<=maxy;y+=1)
-      for(int z=minz;z<=maxz;z+=1){
+  ColumnVector v(3);int s=1;
+  for(int x=minx-s;x<=maxx+s;x+=1)
+    for(int y=miny-s;y<=maxy+s;y+=1)
+      for(int z=minz-s;z<=maxz+s;z+=1){
 	boxcentre[0]=(float)x;
 	boxcentre[1]=(float)y;
 	boxcentre[2]=(float)z;
@@ -1400,8 +1432,8 @@ bool rayBoxIntersection(float origin[3],float direction[3],float vminmax[2][3])
 
 }
 
-bool segTriangleIntersection(float seg[2][3],float tri[3][3]){
-  Tracer_Plus tr("segTriangleIntersection");
+bool segTriangleIntersection(float seg[2][3],float tri[3][3],bool verb){
+  //Tracer_Plus tr("segTriangleIntersection");
   float n[3],u[3],v[3],dir[3],w0[3],w[3],I[3];
   float r,a,b,uu,uv,vv,wu,wv,D,s,t;
 
@@ -1409,20 +1441,20 @@ bool segTriangleIntersection(float seg[2][3],float tri[3][3]){
   SUB(v,tri[2],tri[0]);
  
   CROSS(n,u,v);
-  if(MAX(MAX(n[0],n[1]),n[2])<0.0000001) return false;
+  if(MAX(MAX(n[0],n[1]),n[2])==0){return false;}
   
   SUB(dir,seg[1],seg[0]);
   SUB(w0,seg[0],tri[0]);
   a=-DOT(n,w0);
   b=DOT(n,dir);
   if(fabs(b)<0.0000001){
-    if(fabs(a)<0000001)return true;
-    else return false;
+    if(fabs(a)<0.0000001){return true;}
+    else{return false;}
   }
   
   r=a/b;
-  if(r<0.0) return false;
-  if(r>1.0) return false;
+  if(r<0.0){return false;}
+  
 
   I[0]=seg[0][0]+r*dir[0];
   I[1]=seg[0][1]+r*dir[1];
@@ -1438,10 +1470,10 @@ bool segTriangleIntersection(float seg[2][3],float tri[3][3]){
   s = (uv * wv - vv * wu) / D;
       
   if (s < 0.0 || s > 1.0)        // I is outside T
-    return false;
+    {return false;}
   t = (uv * wu - uu * wv) / D;
   if (t < 0.0 || (s + t) > 1.0)  // I is outside T
-    return false;
+    {return false;}
   
   return true;                      // I is in T
 }
