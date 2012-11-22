@@ -131,13 +131,8 @@ void nmasks()
 	  cout <<pos(1)<<" "<<pos(2)<<" "<<pos(3)<<endl;
 	}
 
-	if(!opts.onewayonly.value())
-	  keeptotal[roiind[cnt]] += seedmanager.run(pos(1),pos(2),pos(3),
-						    false,-1,opts.sampvox.value());
-	else
-	  keeptotal[roiind[cnt]] += seedmanager.run(pos(1),pos(2),pos(3),
-						    true,-1,opts.sampvox.value(),seeds.get_surfloc(i,p));
-
+	keeptotal[roiind[cnt]] += seedmanager.run(pos(1),pos(2),pos(3),
+						  false,-1,opts.sampvox.value());
       }
     }
   }

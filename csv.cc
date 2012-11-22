@@ -88,14 +88,7 @@ bool CSV::has_crossed(const ColumnVector& x1,const ColumnVector& x2,
       // get the triangle
       t = roimesh[indmesh].get_triangle(indtri);
       
-      // float seg[2][3]={{x1mm(1),x1mm(2),x1mm(3)},{x2mm(1),x2mm(2),x2mm(3)}};
-      // float tri[3][3]= {{t.get_vertice(0).get_coord().X,t.get_vertice(0).get_coord().Y,t.get_vertice(0).get_coord().Z},
-      // 			{t.get_vertice(1).get_coord().X,t.get_vertice(1).get_coord().Y,t.get_vertice(1).get_coord().Z},
-      // 			{t.get_vertice(2).get_coord().X,t.get_vertice(2).get_coord().Y,t.get_vertice(2).get_coord().Z}};
-			
-
-      if(t.intersect(segment)){//
-	//if(segTriangleIntersection(seg,tri)){
+      if(t.intersect(segment)){//      
 	// 1: update surface hit counts
 	if(docount){
 	  float v=roimesh[indmesh].get_tvalue(t.get_no());
@@ -878,6 +871,22 @@ void CSV::save_map(const int& roiind,const int& mapind,const string& fname){
   set_all_values(tmpvals);
 }
 
+// void CSV::save_as_volume(const string& fname){
+//   volume<float> tmpvol;
+//   tmpvol.reinitialize(refvol.xsize(),refvol.ysize(),refvol.zsize());
+//   copybasicproperties(refvol,tmpvol);
+//   tmpvol=0;
+//   for(int j=1;j<nvolumes;j++){
+//     for(int i=1;i<=nvoxels;i++)
+//       tmpvol((int)mat2vol(i,1),(int)mat2vol(i,2),(int)mat2vol(i,3)) += hitvol(i,roiind);
+//   }
+
+//   fill_volume(tmpvol,roisubind[roiind]+1);
+//   tmpvol.setDisplayMaximumMinimum(tmpvol.max(),tmpvol.min());
+//   save_volume(tmpvol,fname);
+  
+  
+// }
 
 void CSV::save_rois(const string& fname){
   if(nrois==1)
@@ -888,6 +897,9 @@ void CSV::save_rois(const string& fname){
     }
   }
 }
+
+
+
 void CSV::cleanup(){
   nvols=0;nsurfs=0;nvoxels=0;nlocs=0;nrois=0;
   roivol=0;

@@ -108,7 +108,7 @@
     int64_t code1, code2;
     int64_t two32=(1LL<<32), mult=1001;    
     //int MAX_LENGTH=1000;
-
+    
     for(unsigned int c=0; c < Ncols(); c++) {
       if(get_ri(c).size()){
 	const std::vector<unsigned int>&    ri = get_ri(c);
@@ -369,8 +369,8 @@ namespace TRACT{
   }
   
   int Streamliner::streamline(const float& x_init,const float& y_init,const float& z_init, 
-			      const ColumnVector& dim_seeds,const int& fibst,const int& seed_ind){ 
-    //Tracer_Plus tr("Streamliner::streamline");
+			      const ColumnVector& dim_seeds,const int& fibst){ 
+    Tracer_Plus tr("Streamliner::streamline");
     //fibst tells tractvolsx which fibre to start with if there are more than one..
     //x_init etc. are in seed space...
     vols.reset(fibst);
@@ -442,8 +442,6 @@ namespace TRACT{
 	  m_loopcheck(lcx,lcy,lcz,2)=m_part.rz();
 	}
 	
-	if(opts.verbose.value()>1)
-	  logger<<m_part;
 	
 	x=m_part.x();y=m_part.y();z=m_part.z();
 	xyz_dti <<x<<y<<z;
@@ -562,7 +560,7 @@ namespace TRACT{
 	// sample a new fibre orientation
 	int newx,newy,newz;	
 	if(opts.skipmask.value() == ""){
-	  //Tracer_Plus tr("sample");
+	  Tracer_Plus tr("sample");
 	  th_ph_f = vols.sample(m_part.x(),m_part.y(),m_part.z(),    // sample at this location
 				m_part.rx(),m_part.ry(),m_part.rz(), // choose closest sample to this
 				pref_x,pref_y,pref_z,                // unless we have this prefered direction 
@@ -1019,6 +1017,8 @@ namespace TRACT{
   }
 
   void Counter::update_pathdist(){
+    Tracer_Plus tr("Counter::update_pathdist");
+    if(m_path.size()<1){return;}
     int x_s,y_s,z_s;
     float pathlength=0;
     vector<int> crossedrois,crossedlocs;
@@ -1029,7 +1029,7 @@ namespace TRACT{
       z_s=(int)round((float)m_path[i](3));
       // check here if back to seed
       if(i>0 && (m_path[i]-m_path[0]).MaximumAbsoluteValue()==0){
-	m_lastpoint(x_s,y_s,z_s)+=1;  
+	//m_lastpoint(x_s,y_s,z_s)+=1;  
 	pathlength=0;
       }
       if(m_beenhere(x_s,y_s,z_s)==0){
@@ -1075,12 +1075,14 @@ namespace TRACT{
       pathlength+=opts.steplength.value();
       
     }
-    // Fill last point
-    int i=m_path.size()-1;
-    x_s=(int)round((float)m_path[i](1));
-    y_s=(int)round((float)m_path[i](2));
-    z_s=(int)round((float)m_path[i](3));
-    m_lastpoint(x_s,y_s,z_s)+=1;  
+
+    // // Fill last point
+    // int i=m_path.size()-1;
+    // x_s=(int)round((float)m_path[i](1));
+    // y_s=(int)round((float)m_path[i](2));
+    // z_s=(int)round((float)m_path[i](3));
+    // m_lastpoint(x_s,y_s,z_s)+=1;  
+
   }
 
   void Counter::reset_beenhere(){
@@ -1373,11 +1375,12 @@ namespace TRACT{
     m_prob.setDisplayMaximumMinimum(m_prob.max(),m_prob.min());
     save_volume(m_prob,logger.appendDir(opts.outfile.value()));
 
-    m_lastpoint.setDisplayMaximumMinimum(m_lastpoint.max(),m_lastpoint.min());
-    save_volume(m_lastpoint,logger.appendDir("lastpoint"));
+    //m_lastpoint.setDisplayMaximumMinimum(m_lastpoint.max(),m_lastpoint.min());
+    //save_volume(m_lastpoint,logger.appendDir("lastpoint"));
 
     if(opts.pathfile.set()){
       m_prob_alt.save_rois(logger.appendDir(opts.outfile.value())+"_alt");
+      //m_prob_alt.save_as_volume(logger.appendDir(opts.outfile.value())+"_alt_vol");
       //m_beenhere_alt.save_rois(logger.appendDir(opts.outfile.value())+"_beenhere");
     }
     if(opts.opathdir.value()){
@@ -1483,16 +1486,9 @@ namespace TRACT{
     m_ConMat4->SaveTrajFile(logger.appendDir("fdt_matrix4_"));    
   }
 
+  // this function returns the total number of pathways that survived streamlining 
   int Seedmanager::run(const float& x,const float& y,const float& z,
 		       bool onewayonly, int fibst,float sampvox){
-    int seed_ind=-1;
-    // run without forcing the tracking direction
-    return run(x,y,z,onewayonly,fibst,sampvox,seed_ind);
-  }
-
-  // this function returns the total number of pathways that survived a streamlining 
-  int Seedmanager::run(const float& x,const float& y,const float& z,
-		       bool onewayonly, int fibst,float sampvox,const int& seed_ind){
     //Tracer_Plus tr("Seedmanager::run");
 
     //onewayonly for mesh things..
@@ -1520,7 +1516,7 @@ namespace TRACT{
 	fibst = (int)round(tmp);
       }
     
-      // random sampling within a seed voxel
+      // random jitter of seed point inside a sphere
       float newx=x,newy=y,newz=z;    
       if(sampvox>0){
 	bool rej=true;float dx,dy,dz;float r2=sampvox*sampvox;
@@ -1547,7 +1543,7 @@ namespace TRACT{
     
       // track in one direction
       if(!onewayonly || opts.matrix3out.value()){//always go both ways in matrix3 mode
-	rejflag1 = m_counter.get_stline().streamline(newx,newy,newz,m_seeddims,fibst,seed_ind);
+	rejflag1 = m_counter.get_stline().streamline(newx,newy,newz,m_seeddims,fibst);
 
 	if(rejflag1==0 || rejflag1==2){ 
 	  forwardflag=true;
@@ -1560,8 +1556,7 @@ namespace TRACT{
       
 
       // track in the other direction
-      // if rotdir!=0 then this tracks again in the same direction (doubles the number of samples...)
-      rejflag2=m_counter.get_stline().streamline(newx,newy,newz,m_seeddims,fibst,seed_ind);
+      rejflag2=m_counter.get_stline().streamline(newx,newy,newz,m_seeddims,fibst);
 
       if(rejflag2==0){	
 	backwardflag=true;

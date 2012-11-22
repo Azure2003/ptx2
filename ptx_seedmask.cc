@@ -108,14 +108,9 @@ void seedmask()
 	  cout <<"run"<<endl;
 	  cout <<pos(1)<<" "<<pos(2)<<" "<<pos(3)<<endl;
 	}
-	if(!opts.onewayonly.value()){
 	  keeptotal += seedmanager.run(pos(1),pos(2),pos(3),
 				       false,-1,opts.sampvox.value());
-	}
-	else{
-	  keeptotal += seedmanager.run(pos(1),pos(2),pos(3),
-				       false,-1,opts.sampvox.value(),seeds.get_surfloc(i,p));
-	}
+	
 
       }
     }

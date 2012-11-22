@@ -73,6 +73,7 @@ using namespace PARTICLE;
       MatCell mc=this->Peek(r,c);     
       mc.add_one(dist,fib);
       Set(r,c,mc);
+      
       //here(r,c).add_one(dist,fib);
       //Set(r,c,this->Peek(r,c).add_one(dist,fib));
     } 
@@ -182,7 +183,7 @@ namespace TRACT{
 		const float& x,const float& y,const float& z);
 
     int streamline(const float& x_init,const float& y_init, const float& z_init,
-		   const ColumnVector& dim_seeds,const int& fibst,const int& loc);
+		   const ColumnVector& dim_seeds,const int& fibst);
 
     
     // separate masks loading from class constructor
@@ -381,11 +382,11 @@ namespace TRACT{
 			  m_stline.get_seeds().zsize());
       copybasicproperties(m_stline.get_seeds().get_refvol(),m_prob);
       m_prob=0;
-      m_lastpoint.reinitialize(m_stline.get_seeds().xsize(),
-			       m_stline.get_seeds().ysize(),
-			       m_stline.get_seeds().zsize());
-      copybasicproperties(m_stline.get_seeds().get_refvol(),m_lastpoint);
-      m_lastpoint=0;
+      // m_lastpoint.reinitialize(m_stline.get_seeds().xsize(),
+      // 			       m_stline.get_seeds().ysize(),
+      // 			       m_stline.get_seeds().zsize());
+      // copybasicproperties(m_stline.get_seeds().get_refvol(),m_lastpoint);
+      // m_lastpoint=0;
       
       if(opts.opathdir.value()){
 	m_localdir.reinitialize(m_stline.get_seeds().xsize(),
@@ -498,8 +499,6 @@ namespace TRACT{
 
     int run(const float& x,const float& y,const float& z,
 	    bool onewayonly, int fibst,float sampvox);
-    int run(const float& x,const float& y,const float& z,
-	    bool onewayonly, int fibst,float sampvox,const int& loc);
 
 
 

@@ -155,6 +155,7 @@ class probtrackxOptions {
   FmribOption<bool>        onewayonly;       // in surface mode, track towards the brain (assumes surface normal points towards the brain)
   FmribOption<bool>        opathdir;         // like fdt_paths but with average local tract orientation
   FmribOption<bool>        save_paths;       // save paths to ascii file
+  FmribOption<string>      locfibchoice;     // inside this mask, define local rules for fibre picking
 
   void parse_command_line(int argc, char** argv,Log& logger);
   void modecheck();
@@ -363,6 +364,9 @@ class probtrackxOptions {
    save_paths(string("--savepaths"),false,
 	      string("Save path coordinates to ascii file"),
 	      false, no_argument),
+   locfibchoice(string("--locfibchoice"),string(""),
+	      string("Local rules for fibre choice - 0=closest direction(default), 1=equal prob (f>thr)"),
+	      false, requires_argument),
 
    options("probtrackx","probtrackx2 -s <basename> -m <maskname> -x <seedfile> -o <output> --targetmasks=<textfile>\n probtrackx2 --help\n")
    {
@@ -436,6 +440,7 @@ class probtrackxOptions {
        options.add(onewayonly);
        options.add(opathdir);
        options.add(save_paths);
+       options.add(locfibchoice);
 
      }
      catch(X_OptionError& e) {
