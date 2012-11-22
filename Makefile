@@ -49,7 +49,7 @@ SM=surfmaths
 SMOBJS=surfmaths.o csv_mesh.o
 
 
-XFILES = probtrackx2 surf2surf surf2volume surf_proj label2surf find_the_biggest proj_thresh
+XFILES = probtrackx2 surfmaths surf2surf surf2volume surf_proj label2surf find_the_biggest proj_thresh
 
 
 all: ${XFILES} 
