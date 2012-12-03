@@ -156,7 +156,7 @@ int inputParser(int argc, char *argv[]){
     /***************************************************************/
     else if (string(argv[i])=="-pow"){
       for(int v=0;v<inputSurface.nvertices();v++)
-	inputSurface.set_pvalue(v,std::pow(inputSurface.get_pvalue(v),atof(argv[++i])));
+	inputSurface.set_pvalue(v,pow(inputSurface.get_pvalue(v),atof(argv[++i])));
       i++;
     }
     /***************************************************************/
