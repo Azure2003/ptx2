@@ -11,7 +11,7 @@
 #include "probtrackxOptions.h"
 #include "particle.h"
 #include "tractvolsx.h"
-#include "/home/fs0/saad/fsl/src/miscmaths/SpMat.h" 
+#include "miscmaths/SpMat.h" 
 #include "csv.h"
 #include "utils/tracer_plus.h"
 
@@ -21,6 +21,7 @@ using namespace Utilities;
 using namespace TRACTVOLSX;
 using namespace mesh;
 using namespace PARTICLE;
+
 
   class MatCell{
     // This class contains information on entries for matrix4 format
@@ -70,11 +71,11 @@ using namespace PARTICLE;
     int SaveTrajFile(const string& basename)const;
     void AddToTraj(unsigned int r,unsigned int c,
 		   float dist,int fib){
-      MatCell mc=this->Peek(r,c);     
-      mc.add_one(dist,fib);
-      Set(r,c,mc);
+      //MatCell mc=this->Peek(r,c);     
+      //mc.add_one(dist,fib);
+      //Set(r,c,mc);
       
-      //here(r,c).add_one(dist,fib);
+      here(r,c).add_one(dist,fib);
       //Set(r,c,this->Peek(r,c).add_one(dist,fib));
     } 
     //  private:
