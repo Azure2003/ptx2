@@ -32,7 +32,7 @@
     }
 
     for(unsigned int c=0; c < Ncols(); c++) {
-      int64_t sz = _ri[c].size();  
+      int64_t sz = get_ri(c).size();  
       fs2.write((char*)&sz,sizeof(sz));
     }
     fs2.close();
@@ -49,9 +49,9 @@
     //int MAX_LENGTH=1000;
     
     for(unsigned int c=0; c < Ncols(); c++) {
-      if(_ri[c].size()){
-	const std::vector<unsigned int>&    ri = _ri[c];
-	const std::vector<MatCell>&         val = _val[c];
+      if(get_ri(c).size()){
+	const std::vector<unsigned int>&    ri = get_ri(c);
+	const std::vector<MatCell>&         val = get_val(c);
 	for (unsigned int r=0; r<ri.size(); r++) { 	
 	  code1 = ri[r];
 	  int64_t fibre_count, fibre_prop1, fibre_prop2, length_val;
@@ -588,7 +588,7 @@ namespace TRACT{
 
     if(opts.network.value()){
       unsigned int numpassed=0;
-      for(int i=1; i<m_net_passed_flags.Nrows();i++){
+      for(int i=1; i<=m_net_passed_flags.Nrows();i++){
 	if(m_net_passed_flags(i))numpassed++;
       }
       if(numpassed==0)rejflag=1;
@@ -598,7 +598,7 @@ namespace TRACT{
 	}
 	else{
 	  rejflag=0;
-	}
+	}	
       }
       else rejflag=0;
     }
