@@ -1358,8 +1358,8 @@ namespace TRACT{
     }
 
     if(opts.s2tastext.value()){
-      //write_ascii_matrix(m_s2tastext,logger.appendDir("matrix_seeds_to_all_targets"));
-      write_matrix_as_volume(m_s2tastext,logger.appendDir("matrix_seeds_to_all_targets"));
+      write_ascii_matrix(m_s2tastext,logger.appendDir("matrix_seeds_to_all_targets"));
+      //write_matrix_as_volume(m_s2tastext,logger.appendDir("matrix_seeds_to_all_targets"));
     }
 
     
