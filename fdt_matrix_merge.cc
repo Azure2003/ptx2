@@ -7,6 +7,7 @@
 
 #include "miscmaths/miscmaths.h"
 #include "miscmaths/SpMat.h"
+#include "streamlines.h"
 
 
 using namespace MISCMATHS;
@@ -30,24 +31,58 @@ void read_file_names(const string& filename,vector<string>& filelist){
 int main(int argc, char** argv){
 
   if(argc<2){
-    cout<<"fdt_matrix_merge <matlist> <outfile>"<<endl;
+    cout<<"fdt_matrix_merge <matlist> <outfile> [-omatrix4]"<<endl;
     exit(1);
   }
 
   vector<string> filelist;
   read_file_names(argv[1],filelist);
+  bool domat4 = false;
 
-  cout<<"merge"<<endl<<0<<endl;
-  SpMat<float> omat(filelist[0]);
-  SpMat<float>* tmpmat;
-  for(unsigned int i=1;i<filelist.size();i++){
-    cout<<i<<endl;
-    tmpmat = new SpMat<float>(filelist[i]);
-    omat += *tmpmat;
-    delete(tmpmat);
+  if( argc>3 ){ if( string(argv[3])=="-omatrix4"){ domat4=true; } }
+
+  cout<<"merge"<<endl<<endl;
+  if( !domat4 ){
+    SpMat<float> omat(filelist[0]);
+    SpMat<float>* tmpmat;
+    for(unsigned int i=1;i<filelist.size();i++){
+      cout<<filelist[i]<<endl;
+      tmpmat = new SpMat<float>(filelist[i]);
+      omat += *tmpmat;
+      delete(tmpmat);
+    }
+    cout<<"save"<<endl;
+    omat.Print(argv[2]);
   }
-  cout<<"save"<<endl;
-  omat.Print(argv[2]);
+  else{
+    cout<<"Matrix4 merge"<<endl;
+    string file1=filelist[0]+"1.mtx";
+    ifstream fs1(file1.c_str());
+    if (!fs1) { 
+      cerr << "Could not open file " << file1 << " for reading" << endl;
+      return -1;
+    }
+    int nrows, ncols;
+    fs1 >> nrows;
+    fs1 >> ncols;
+    fs1.close();
+    SpMat_HCP omat(nrows,ncols);
+    SpMat_HCP* tmpmat;
+
+    //int testrow=33,testcol=22123;
+    for(unsigned int i=0;i<filelist.size();i++){
+      cout<<filelist[i]<<endl;
+      tmpmat = new SpMat_HCP(nrows,ncols);
+      cout<<"...load new file"<<endl;
+      tmpmat->LoadTrajFile(filelist[i]);
+      //tmpmat->Print(testrow,testcol);
+      cout<<"...increment"<<endl;
+      omat += (*tmpmat);
+      delete(tmpmat);
+    }
+    cout<<"save"<<endl;
+    omat.SaveTrajFile(argv[2]);
+  }
   
   return 0;
 }

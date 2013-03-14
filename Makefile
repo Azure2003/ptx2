@@ -33,12 +33,15 @@ FTBOBJS=find_the_biggest.o csv_mesh.o
 PJOBJS=proj_thresh.o csv_mesh.o
 FMOOBJS=fdt_matrix_ops.o
 FMSOBJS=fdt_matrix_split.o
-TESTOBJS=testfile.o csv.o csv_mesh.o
+TESTOBJS=testfile.o streamlines.o csv.o csv_mesh.o probtrackxOptions.o
 
 SURFDATA=surf_proj
 SURFDATAOBJS=surf_proj.o csv.o csv_mesh.o
 MATMERGE=fdt_matrix_merge
-MATMERGEOBJS=fdt_matrix_merge.o
+MATMERGEOBJS=fdt_matrix_merge.o streamlines.o csv.o csv_mesh.o probtrackxOptions.o
+MAT42=fdt_matrix_4_to_2
+MAT42OBJS=fdt_matrix_4_to_2.o 
+
 S2S=surf2surf
 S2SOBJS=surf2surf.o csv.o csv_mesh.o
 S2V=surf2volume
@@ -82,6 +85,9 @@ ${SURFDATA}:    ${SURFDATAOBJS}
 
 ${MATMERGE}:    ${MATMERGEOBJS}
 		${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${MATMERGEOBJS} ${DLIBS}
+
+${MAT42}:    	${MAT42OBJS}
+		${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${MAT42OBJS} ${DLIBS}
 
 
 ${S2S}:         ${S2SOBJS}

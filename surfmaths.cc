@@ -97,7 +97,7 @@ int inputParser(int argc, char *argv[]){
 	  inputSurface.set_pvalue(v, inputSurface.get_pvalue(v)+atof(argv[i]));
       }
       else{  
-	loadSurface(inputSurface,temp_surface,string(argv[++i]));	
+	loadSurface(inputSurface,temp_surface,string(argv[i]));	
 	for(int v=0;v<temp_surface.nvertices();v++)
 	  inputSurface.set_pvalue(v, temp_surface.get_pvalue(v)+inputSurface.get_pvalue(v) );
       }
@@ -110,7 +110,7 @@ int inputParser(int argc, char *argv[]){
 	  inputSurface.set_pvalue(v, inputSurface.get_pvalue(v)-atof(argv[i]));
       }
       else{  
-	loadSurface(inputSurface,temp_surface,string(argv[++i]));	
+	loadSurface(inputSurface,temp_surface,string(argv[i]));	
 	for(int v=0;v<temp_surface.nvertices();v++)
 	  inputSurface.set_pvalue(v, temp_surface.get_pvalue(v)-inputSurface.get_pvalue(v) );
       }
@@ -123,7 +123,7 @@ int inputParser(int argc, char *argv[]){
 	  inputSurface.set_pvalue(v, inputSurface.get_pvalue(v)*atof(argv[i]));
       }
       else{  
-	loadSurface(inputSurface,temp_surface,string(argv[++i]));	
+	loadSurface(inputSurface,temp_surface,string(argv[i]));	
 	for(int v=0;v<temp_surface.nvertices();v++)
 	  inputSurface.set_pvalue(v, temp_surface.get_pvalue(v)*inputSurface.get_pvalue(v) );
       }      
@@ -136,7 +136,7 @@ int inputParser(int argc, char *argv[]){
 	  inputSurface.set_pvalue(v, inputSurface.get_pvalue(v)/atof(argv[i]));
       }
       else {  
-	loadSurface(inputSurface,temp_surface,string(argv[++i]));	
+	loadSurface(inputSurface,temp_surface,string(argv[i]));	
 	for(int v=0;v<temp_surface.nvertices();v++)
 	  inputSurface.set_pvalue(v, temp_surface.get_pvalue(v)/inputSurface.get_pvalue(v) );
       }   

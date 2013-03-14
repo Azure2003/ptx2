@@ -28,7 +28,10 @@ using namespace PARTICLE;
   public:
     MatCell():nsamples(0),length_tot(0.0){fibcnt.clear();fibcnt.resize(3,0);}
     MatCell(double val):nsamples(0),length_tot(0.0){fibcnt.clear();fibcnt.resize(3,0);}
-    float   get_avg_length()const{return (length_tot/(float)nsamples);}
+    float   get_avg_length()const{
+      return (nsamples!=0?length_tot/(float)nsamples:0.0);
+    }
+    float   get_length_tot()const{return length_tot;}
     int     get_nsamples()const{return nsamples;}
     float   get_fibprop(const int& f)const{return float(fibcnt[f-1])/float(nsamples);}
     float   get_fibcnt(const int& f)const{return fibcnt[f-1];}
@@ -37,7 +40,20 @@ using namespace PARTICLE;
       length_tot+=dist;
       nsamples+=1;      
     }
-    void print()const{
+    void    add_n(float dist,vector<float> props,int n){
+      if(fibcnt.size()!=3){
+	cerr<<"MatCell::add_n:Only valid with 3 fibres"<<endl;
+	exit(1);
+      }
+      int n0=(int)round(props[0]*n);
+      int n1=(int)round(props[1]*n);
+      fibcnt[0]+=n0;
+      fibcnt[1]+=n1;
+      fibcnt[2]+=(n-n0-n1);
+      length_tot+=(dist*n);
+      nsamples+=n;      
+    }
+    void Print(){
       cout<<"nsamples   = "<<nsamples<<endl;
       cout<<"fibcnt[0]  = "<<fibcnt[0]<<endl;
       cout<<"fibcnt[1]  = "<<fibcnt[1]<<endl;
@@ -55,11 +71,22 @@ using namespace PARTICLE;
       length_tot=rhs.length_tot;
       return *this;
     }
+    MatCell& operator+=(const MatCell& rhs){      
+      length_tot += rhs.get_length_tot();
+      nsamples   += rhs.get_nsamples();
+      for(unsigned int i=0;i<fibcnt.size();i++)
+	fibcnt[i] += rhs.get_fibcnt(i+1);     
+      return *this;
+    }
   private:
     vector<int> fibcnt;
     int         nsamples;
     float       length_tot;
   };
+inline MatCell operator*(const double& x, const MatCell& rhs){
+      return rhs;
+    }
+
 
   class SpMat_HCP : public SpMat<MatCell>
   {
@@ -69,6 +96,7 @@ using namespace PARTICLE;
     ~SpMat_HCP(){}
     // HCP Trajectory-file writer (MJ+SJ)
     int SaveTrajFile(const string& basename)const;
+    int LoadTrajFile(const string& basename);
     void AddToTraj(unsigned int r,unsigned int c,
 		   float dist,int fib){
       //MatCell mc=this->Peek(r,c);     
@@ -78,6 +106,23 @@ using namespace PARTICLE;
       here(r,c).add_one(dist,fib);
       //Set(r,c,this->Peek(r,c).add_one(dist,fib));
     } 
+    void AddToTraj(unsigned int r,unsigned int c,
+		   float dist, vector<float> props, int n){
+      here(r,c).add_n(dist,props,n);
+    }
+    void Print(){
+      for(unsigned int c=0;c<Ncols();c++){
+	const std::vector<unsigned int>&    ri = get_ri(c);
+	for (unsigned int r=0; r<ri.size(); r++) { 	  
+	  cout<<"Element " << ri[r]+1 <<","<<c+1<<endl;
+	  here(ri[r]+1,c+1).Print();
+	}
+      }
+    }
+    void Print(int r,int c){
+      here(r,c).Print();
+    }
+    
     //  private:
     //MatCell mc;
     
@@ -118,11 +163,14 @@ namespace TRACT{
     ColumnVector                  m_net_passed_flags;
     //vector<int>                   m_net_passed_flags;
 
+    vector< vector<ColumnVector> > m_crossedvox;
+    bool                           m_surfexists;
+
     string                        m_waycond;
     
     volume4D<float>               m_prefdir;
     volume4D<float>               m_loopcheck;
-
+    volume<float>                 m_loccurvthresh;
 
     // transform seed<->diff space
     Matrix                        m_Seeds_to_DTI;
@@ -163,6 +211,11 @@ namespace TRACT{
     vector<ColumnVector>        get_path()     const{return m_path;}
     const vector<ColumnVector>& get_diff_path_ref() const{return m_diff_path;}
     vector<ColumnVector>        get_diff_path()     const{return m_diff_path;}
+
+    vector< vector<ColumnVector> >        get_crossedvox()const{return m_crossedvox;}
+    const vector< vector<ColumnVector> >& get_crossedvox_ref()const{return m_crossedvox;}
+
+    void surfexists(){m_surfexists=true;}
 
     inline void reset(){
       m_part.reset();
@@ -215,7 +268,7 @@ namespace TRACT{
       m_netmasks.reinitialize(m_seeds.get_refvol());
       m_netmasks.set_convention(opts.meshspace.value());
       m_netmasks.load_rois(tmpfilename);    
-
+      if(m_netmasks.nSurfs()>0){surfexists();}
       m_net_passed_flags.ReSize(m_netmasks.nRois());
       m_net_passed_flags=0;
 
@@ -227,7 +280,7 @@ namespace TRACT{
       m_waymasks.reinitialize(m_seeds.get_refvol());
       m_waymasks.set_convention(opts.meshspace.value());
       m_waymasks.load_rois(filename);    
-
+      if(m_waymasks.nSurfs()>0){surfexists();}
       m_way_passed_flags.clear(); 
       for(int i=0;i<m_waymasks.nRois();i++)
 	m_way_passed_flags.push_back(0);
@@ -240,11 +293,13 @@ namespace TRACT{
       m_stop.reinitialize(m_seeds.get_refvol());
       m_stop.set_convention(opts.meshspace.value());
       m_stop.load_rois(filename);     
+      if(m_stop.nSurfs()>0){surfexists();}
     }
     void load_rubbish(const string& filename){      
       m_rubbish.reinitialize(m_seeds.get_refvol());
       m_rubbish.set_convention(opts.meshspace.value());
       m_rubbish.load_rois(filename);     
+      if(m_rubbish.nSurfs()>0){surfexists();}
     }
 
     // //////    matrix3 methods
@@ -252,11 +307,13 @@ namespace TRACT{
       m_mask3.reinitialize(m_seeds.get_refvol());
       m_mask3.set_convention(opts.meshspace.value());
       m_mask3.load_rois(opts.mask3.value());
+      if(m_mask3.nSurfs()>0){surfexists();}
 
       if(opts.lrmask3.value()!=""){
 	m_lrmask3.reinitialize(m_seeds.get_refvol());
 	m_lrmask3.set_convention(opts.meshspace.value());      
 	m_lrmask3.load_rois(opts.lrmask3.value());
+	if(m_lrmask3.nSurfs()>0){surfexists();}
       }
     }
     void                       clear_inmask3()   {m_inmask3.clear();}
@@ -299,6 +356,7 @@ namespace TRACT{
     Matrix                       m_I;
     vector<ColumnVector>         m_path;
     vector<ColumnVector>         m_diff_path;
+    vector< vector<ColumnVector> > m_crossedvox;
     CSV                          m_prob_alt;  // spatial histogram of tracts with alternative user-defined mask
     CSV                          m_beenhere_alt;
 
@@ -341,8 +399,9 @@ namespace TRACT{
     vector<int>                  m_inmask3;
 
     // MATRIX 4 - columns are seed space, rows are diffusion space
-    SpMat_HCP               *m_ConMat4;     
+    SpMat_HCP                   *m_ConMat4;     
     volume<int>                  m_dtimask;
+    CSV                          m_mask4;
     volume<int>                  m_lookup4;
     volume<int>                  m_beenhere4;
     ColumnVector                 m_dtidim;
@@ -392,7 +451,7 @@ namespace TRACT{
       if(opts.opathdir.value()){
 	m_localdir.reinitialize(m_stline.get_seeds().xsize(),
 				m_stline.get_seeds().ysize(),
-				m_stline.get_seeds().zsize(),3);
+				m_stline.get_seeds().zsize(),6);
 	copybasicproperties(m_stline.get_seeds().get_refvol(),m_localdir);
 	m_localdir=0;
       }
@@ -405,6 +464,7 @@ namespace TRACT{
 	m_beenhere_alt.set_convention(opts.meshspace.value());
 	m_beenhere_alt.load_rois(opts.pathfile.value());
 	m_beenhere_alt.set_vol_values(1);
+	if(m_prob_alt.nSurfs()>0){m_stline.surfexists();}
       }
       if(opts.verbose.value()>0)
 	cout<<"....done"<<endl;
@@ -423,6 +483,7 @@ namespace TRACT{
       m_path=m_stline.get_path();
       if(opts.matrix4out.value())
 	m_diff_path=m_stline.get_diff_path();
+      m_crossedvox=m_stline.get_crossedvox();
     }
     void append_path(){      
       for(unsigned int i=0;i<m_stline.get_path_ref().size();i++){
@@ -430,12 +491,22 @@ namespace TRACT{
 	if(opts.matrix4out.value())
 	  m_diff_path.push_back(m_stline.get_diff_path_ref()[i]);
       }
+      for(unsigned int i=0;i<m_stline.get_crossedvox_ref().size();i++){
+	m_crossedvox.push_back(m_stline.get_crossedvox_ref()[i]);
+      }
     }
     float calc_pathlength(const int& redund=0){
       return( float(m_path.size()-redund)*opts.steplength.value() );
     }
 
-    void clear_path(){ m_path.clear(); if(opts.matrix4out.value())m_diff_path.clear(); };
+    void clear_path(){ 
+      m_path.clear(); 
+      if(opts.matrix4out.value()){
+	m_diff_path.clear(); 
+      }      
+      m_crossedvox.clear();
+      
+    };
 
     void count_streamline();
     void count_seed();
