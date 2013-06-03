@@ -41,16 +41,17 @@ int main(int argc, char** argv){
 
   if( argc>3 ){ if( string(argv[3])=="-omatrix4"){ domat4=true; } }
 
-  cout<<"merge"<<endl<<endl;
+  cout<<"merge "<<filelist.size()<<" files"<<endl<<endl;
   if( !domat4 ){
     SpMat<float> omat(filelist[0]);
     SpMat<float>* tmpmat;
     for(unsigned int i=1;i<filelist.size();i++){
       cout<<filelist[i]<<endl;
+      cout<<"...load new file"<<endl;
       tmpmat = new SpMat<float>(filelist[i]);
       omat += *tmpmat;
       delete(tmpmat);
-    }
+   }
     cout<<"save"<<endl;
     omat.Print(argv[2]);
   }
@@ -66,23 +67,22 @@ int main(int argc, char** argv){
     fs1 >> nrows;
     fs1 >> ncols;
     fs1.close();
-    SpMat_HCP omat(nrows,ncols);
+    SpMat_HCP omat(nrows,ncols,filelist[0]);
     SpMat_HCP* tmpmat;
-
-    //int testrow=33,testcol=22123;
-    for(unsigned int i=0;i<filelist.size();i++){
+      
+    //int testcol=15442, testrow=135590;
+    for(unsigned int i=1;i<filelist.size();i++){
       cout<<filelist[i]<<endl;
-      tmpmat = new SpMat_HCP(nrows,ncols);
-      cout<<"...load new file"<<endl;
-      tmpmat->LoadTrajFile(filelist[i]);
-      //tmpmat->Print(testrow,testcol);
+      cout<<"...loading new file"<<endl;
+      tmpmat = new SpMat_HCP(nrows,ncols,filelist[i]);
       cout<<"...increment"<<endl;
+      //tmpmat->Print(testrow,testcol);
       omat += (*tmpmat);
+      //omat.Print(testrow,testcol);
       delete(tmpmat);
     }
     cout<<"save"<<endl;
     omat.SaveTrajFile(argv[2]);
   }
-  
   return 0;
 }
