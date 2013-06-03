@@ -23,6 +23,87 @@ using namespace mesh;
 using namespace PARTICLE;
 
 
+
+  class MatCell_cmpr{
+    // This class contains compressed information on entries for matrix4 format
+  public:
+    MatCell_cmpr():code2(0) {}
+    MatCell_cmpr(double val):code2(0) { }
+    MatCell_cmpr(const MatCell_cmpr& rhs){ *this=rhs; }
+    void add_one(float dist,int fib); 
+    void add_n(float dist,vector<float> props,int n);
+    void add_n(int64_t newcode2);
+    int64_t getcode2() const { return code2; }
+    MatCell_cmpr& operator=(const MatCell_cmpr& rhs){
+      code2=rhs.code2;
+      return *this;
+    }
+    MatCell_cmpr& operator+=(const MatCell_cmpr& rhs){      
+      add_n(rhs.code2);
+      return *this;
+    }
+    void Print(){
+      int nsamples, fibcnt1, fibcnt2; float length_tot;
+      decode(code2,nsamples, fibcnt1, fibcnt2, length_tot);
+      cout<<"code2 = "<<code2<<endl;
+      cout<<"nsamples = "<<nsamples<<endl;
+      cout<<"fibcnt1  = "<<fibcnt1<<endl;
+      cout<<"fibcnt2  = "<<fibcnt2<<endl;
+      cout<<"fibcnt3  = "<<nsamples-fibcnt1-fibcnt2<<endl;
+      cout<<"length_tot = "<<length_tot<<endl;
+      cout<<"avg_length = "<<(nsamples!=0?length_tot/(float)nsamples:0.0)<<endl;
+      cout<<"----------------------"<<endl;
+    }
+ 
+  private:
+    int64_t code2; //Compressed info on fibre_count, fibre1_prop, fibre1_prop, avg_length: code2 = two32*fibre_count + mult*mult*fibre_prop1 + mult*fibre_prop2 + length_val
+    void decode(int64_t incode, int& nsamples, int& fibcnt1, int& fibcnt2, float& length_tot) const;
+    void encode(const int nsamples, const int fibcnt1, const int fibcnt2, const float length_tot);
+  };
+  inline MatCell_cmpr operator*(const double& x, const MatCell_cmpr& rhs){ return rhs;}
+  
+
+
+  class SpMatHCPException: public std::exception{
+  private:
+    std::string m_msg;
+  public:
+    SpMatHCPException(const std::string& msg) throw(): m_msg(msg){ }
+    virtual const char * what() const throw() { return string("SpMat_HCP::" + m_msg).c_str(); }
+    ~SpMatHCPException() throw() {}
+  };
+
+
+
+  class SpMat_HCP : public SpMat<MatCell_cmpr>{
+    public:
+    SpMat_HCP():SpMat<MatCell_cmpr>::SpMat(){}
+    SpMat_HCP(unsigned int m, unsigned int n):SpMat<MatCell_cmpr>::SpMat(m,n){}
+    SpMat_HCP(unsigned int m, unsigned int n,const string& basename);
+    ~SpMat_HCP(){}
+    int SaveTrajFile(const string& basename)const;
+    void AddToTraj(unsigned int r,unsigned int c, float dist,int fib){ here(r,c).add_one(dist,fib); } 
+    void AddToTraj(unsigned int r,unsigned int c, float dist, vector<float> props, int n){ here(r,c).add_n(dist,props,n); }
+    void AddToTraj(unsigned int r,unsigned int c, int64_t Newcode2){ here(r,c).add_n(Newcode2); }
+    
+    void Print(){
+      for(unsigned int c=0;c<Ncols();c++){
+	const std::vector<unsigned int>&    ri = get_ri(c);
+	for (unsigned int r=0; r<ri.size(); r++) { 	  
+	  cout<<"Element " << ri[r]+1 <<","<<c+1<<endl;
+	  Peek(ri[r]+1,c+1).Print();
+	}
+      }
+    }
+    void Print(int r,int c){
+      Peek(r,c).Print();
+    }
+  };
+
+
+/*
+  //Old SpMat_HCP with MattCell (less rounding errors, but takes ~5 times as much memory and ~40% more execution time
+
   class MatCell{
     // This class contains information on entries for matrix4 format
   public:
@@ -83,33 +164,19 @@ using namespace PARTICLE;
     int         nsamples;
     float       length_tot;
   };
-inline MatCell operator*(const double& x, const MatCell& rhs){
-      return rhs;
-    }
+  inline MatCell operator*(const double& x, const MatCell& rhs){return rhs;}
 
-
-  class SpMat_HCP : public SpMat<MatCell>
-  {
+  class SpMat_HCP : public SpMat<MatCell>{
     public:
     SpMat_HCP():SpMat<MatCell>::SpMat(){}
     SpMat_HCP(unsigned int m, unsigned int n):SpMat<MatCell>::SpMat(m,n){}
+    SpMat_HCP(unsigned int m, unsigned int n,const string& basename);
     ~SpMat_HCP(){}
     // HCP Trajectory-file writer (MJ+SJ)
     int SaveTrajFile(const string& basename)const;
-    int LoadTrajFile(const string& basename);
-    void AddToTraj(unsigned int r,unsigned int c,
-		   float dist,int fib){
-      //MatCell mc=this->Peek(r,c);     
-      //mc.add_one(dist,fib);
-      //Set(r,c,mc);
-      
-      here(r,c).add_one(dist,fib);
-      //Set(r,c,this->Peek(r,c).add_one(dist,fib));
-    } 
-    void AddToTraj(unsigned int r,unsigned int c,
-		   float dist, vector<float> props, int n){
-      here(r,c).add_n(dist,props,n);
-    }
+    void AddToTraj(unsigned int r,unsigned int c, float dist,int fib){ here(r,c).add_one(dist,fib); } 
+    void AddToTraj(unsigned int r,unsigned int c, float dist, vector<float> props, int n){ here(r,c).add_n(dist,props,n); }
+    
     void Print(){
       for(unsigned int c=0;c<Ncols();c++){
 	const std::vector<unsigned int>&    ri = get_ri(c);
@@ -122,11 +189,10 @@ inline MatCell operator*(const double& x, const MatCell& rhs){
     void Print(int r,int c){
       here(r,c).Print();
     }
-    
-    //  private:
-    //MatCell mc;
-    
   };
+
+*/
+
 
 namespace TRACT{
 

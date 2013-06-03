@@ -7,8 +7,162 @@
 #include "warpfns/warpfns.h"
 
 
+  //***************************************** 
+  //************* MatCell_cmpr ************** 
+  void MatCell_cmpr::decode(int64_t incode, int& nsamples, int& fibcnt1, int& fibcnt2, float& length_tot) const{
+    //undo the coding for incode
+    //code = two32*fibre_count + mult*mult*fibre_prop1 + mult*fibre_prop2 + length_val;
+    int64_t fibre_count, fibre_prop1, fibre_prop2, length_val, two32=(1LL<<32), mult=1001, multmult=mult*mult;    
+    
+    fibre_count = incode / two32;
+    incode = incode % two32;
+    fibre_prop1 = incode / multmult;
+    incode = incode % multmult;
+    fibre_prop2 = incode / mult;
+    incode = incode % mult;
+    length_val = incode;
 
-// Trajectory file writer
+    fibcnt1=(int)round((float)(fibre_prop1*0.001*fibre_count));
+    fibcnt2=(int)round((float)(fibre_prop2*0.001*fibre_count));
+    length_tot=float(length_val*fibre_count);
+    nsamples=(int)fibre_count;
+  } 
+
+  void MatCell_cmpr::encode(const int nsamples, const int fibcnt1, const int fibcnt2, const float length_tot){
+    //store new coding in code2
+    int64_t  fibre_count, fibre_prop1, fibre_prop2, length_val, two32=(1LL<<32), mult=1001;    
+    // fibre_prop1, fibre_prop2 and length_val ***MUST*** BE WITHIN 0 and 1000 INCLUSIVE
+
+    fibre_count = (int64_t)MIN((int64_t)nsamples,two32-1);
+    //Notice that every time we decode and encode there are rounding errors because of the following functions.
+    //We considered using the absolute values instead of proportions or average distances, but then the dynamic range of the values we can code is reduced. 
+    fibre_prop1 = (int64_t)MIN((int64_t)(MISCMATHS::round(float(fibcnt1)/float(nsamples)*1000)),1000); 
+    fibre_prop2 = (int64_t)MIN((int64_t)(MISCMATHS::round(float(fibcnt2)/float(nsamples)*1000)),1000);
+    length_val  = (int64_t)MIN((int64_t)(MISCMATHS::round((nsamples!=0?length_tot/float(nsamples):0.0))),1000); 
+    code2 = two32*fibre_count + mult*mult*fibre_prop1 + mult*fibre_prop2 + length_val;
+  }
+
+    
+  void MatCell_cmpr::add_one(float dist,int fib){
+    int nsamples, fibcnt1, fibcnt2; float length_tot;
+    
+    //Undo the coding  for current value
+    decode(code2,nsamples, fibcnt1, fibcnt2, length_tot);
+    
+    //Update Values
+    if (fib==1)
+      fibcnt1+=1;
+    if (fib==2)
+      fibcnt2+=1;
+    length_tot+=dist;
+    nsamples+=1;   
+
+    //Code again
+    encode(nsamples, fibcnt1, fibcnt2, length_tot);
+  }
+
+
+  void MatCell_cmpr::add_n(float dist,vector<float> props,int n){
+    int nsamples, fibcnt1, fibcnt2; float length_tot;
+
+    if(props.size()!=2){
+      cerr<<"MatCell_cmpr::add_n:Only valid with 3 fibres for now"<<endl;
+      exit(1);
+    }
+        
+    //Undo the coding  for current value
+    decode(code2, nsamples, fibcnt1, fibcnt2, length_tot);
+    
+    //Update Values
+    fibcnt1+=(int)round(props[0]*n);
+    fibcnt2+=(int)round(props[1]*n);
+    length_tot+=(dist*n);
+    nsamples+=n;   
+
+    //Code again
+    encode(nsamples, fibcnt1, fibcnt2, length_tot);
+  }
+  
+
+  void MatCell_cmpr::add_n(int64_t newcode2){
+    int nsamples, fibcnt1, fibcnt2; float length_tot;
+    int Newnsamples, Newfibcnt1, Newfibcnt2; float Newlength_tot;
+    
+    //Undo the coding  for current value
+    decode(code2, nsamples, fibcnt1, fibcnt2, length_tot);      
+    
+    //Undo the coding  for new value
+    decode(newcode2, Newnsamples, Newfibcnt1, Newfibcnt2, Newlength_tot);      
+    
+    //Update the values by adding the New ones
+    fibcnt1+=Newfibcnt1;
+    fibcnt2+=Newfibcnt2;
+    length_tot+=Newlength_tot;
+    nsamples+=Newnsamples;
+
+    //Perform coding again 
+    encode(nsamples, fibcnt1, fibcnt2, length_tot);
+  }
+
+
+
+  //************************************** 
+  //************* SpMat_HCP ************** 
+  //Constructor from a file
+  SpMat_HCP::SpMat_HCP(unsigned int m, unsigned int n,const string& basename):SpMat<MatCell_cmpr>::SpMat(m,n){
+      string extension="mtx";
+      string file1=basename+"1."+extension;
+      string file2=basename+"2."+extension;
+      string file3=basename+"3."+extension;
+      ifstream fs1,fs2,fs3;
+      // FIRST FILE (text file of matrix dimensions)
+      try{ fs1.open(file1.c_str()); }
+      catch(...) {
+         throw SpMatHCPException("SpMat_HCP::SpMat_HCP(unsigned int m, unsigned int n,const string& basename): cannot open file1 for reading");
+      }
+      int nrows, ncols;
+      fs1 >> nrows;
+      fs1 >> ncols;
+      fs1.close();
+
+      if(nrows!=(int)Nrows() || ncols!=(int)Ncols()){
+      	cerr<<"SpMat_HCP::SpMat_HCP(unsigned int m, unsigned int n,const string& basename): Incompatible matrix dimensions"<<endl;
+	exit(1);
+      }
+
+      // SECOND FILE (binary file of lengths)
+      try{ fs2.open(file2.c_str(), ios::in | ios::binary); }
+      catch(...) {
+         throw SpMatHCPException("SpMat_HCP::SpMat_HCP(unsigned int m, unsigned int n,const string& basename): cannot open file2 for reading");
+      }
+      ColumnVector colsize(ncols);
+      for(int c=1; c <= ncols; c++) {
+	int64_t sz;
+	fs2.read((char*)&sz,sizeof(sz));
+	colsize(c)=sz;    
+      }
+      fs2.close();
+      
+      // THIRD FILE (binary file of contents, integer coded)
+      try{ fs3.open(file3.c_str(), ios::in | ios::binary); }
+      catch(...) {
+         throw SpMatHCPException("SpMat_HCP::SpMat_HCP(unsigned int m, unsigned int n,const string& basename): cannot open file3 for reading");
+      }
+      int64_t code1, code2;
+      
+      for(int c=0; c < ncols; c++) {
+	for (unsigned int s=1; s <= colsize(c+1); s++) {
+	  fs3.read((char*)&code1,sizeof(code1));
+	  fs3.read((char*)&code2,sizeof(code2));
+	  unsigned int r = code1; 
+	  AddToTraj(r+1,c+1,code2);
+	}
+      }
+      fs3.close();
+    }
+ 
+
+  // Trajectory file writer
   int SpMat_HCP::SaveTrajFile(const string& basename)const
   {
     if ( (basename.size()<1) ) return -1;
@@ -16,23 +170,21 @@
     string file1=basename+"1."+extension;
     string file2=basename+"2."+extension;
     string file3=basename+"3."+extension;
+    ofstream fs1, fs2, fs3;
     // FIRST FILE (text file of matrix dimensions)
-    ofstream fs1(file1.c_str());
-    if (!fs1) { 
-      cerr << "Could not open file " << file1 << " for writing" << endl;
-      return -1;
-    }
+    try{ fs1.open(file1.c_str(), ios::out | ios::binary); }
+    catch(...) {
+      throw SpMatHCPException("SpMat_HCP::SaveTrajFile(const string& basename): cannot open file1 for writing");
+    } 
     fs1 << Nrows() << endl;
     fs1 << Ncols() << endl;
     fs1.close();
 
     // SECOND FILE (binary file of lengths)
-    ofstream fs2(file2.c_str(), ios::out | ios::binary);
-    if (!fs2) { 
-      cerr << "Could not open file " << file2 << " for writing" << endl;
-      return -1;
+    try{ fs2.open(file2.c_str(), ios::out | ios::binary); }
+    catch(...) {
+      throw SpMatHCPException("SpMat_HCP::SaveTrajFile(const string& basename): cannot open file2 for writing");
     }
-
     for(unsigned int c=0; c < Ncols(); c++) {
       int64_t sz = get_ri(c).size();  
       fs2.write((char*)&sz,sizeof(sz));
@@ -40,15 +192,140 @@
     fs2.close();
 
     // THIRD FILE (binary file of contents, integer coded)
-    ofstream fs3(file3.c_str(), ios::out | ios::binary);
-    if (!fs3) { 
-      cerr << "Could not open file " << file3 << " for writing" << endl;
-      return -1;
+    try{ fs3.open(file3.c_str(), ios::out | ios::binary); }
+    catch(...) {
+      throw SpMatHCPException("SpMat_HCP::SaveTrajFile(const string& basename): cannot open file3 for writing");
     }
+    int64_t code1, code2;
+    
+    for(unsigned int c=0; c < Ncols(); c++) {
+      if(get_ri(c).size()){
+	const std::vector<unsigned int>&    ri = get_ri(c);
+	const std::vector<MatCell_cmpr>&   val = get_val(c);
+	for (unsigned int r=0; r<ri.size(); r++) { 	
+	  code1 = ri[r];
+	  code2 = val[r].getcode2();
+	  fs3.write((char*)&code1,sizeof(code1));
+	  fs3.write((char*)&code2,sizeof(code2));
+	}
+      }
+    }  
+    fs3.close();
+    return 0;
+  }
 
+
+/*
+  //Old SpMat_HCP with MattCell (less rounding errors, but takes ~5 times as much memory and ~40% more execution time
+  //Constructor from a file
+  SpMat_HCP::SpMat_HCP(unsigned int m, unsigned int n,const string& basename):SpMat<MatCell>::SpMat(m,n){
+      string extension="mtx";
+      string file1=basename+"1."+extension;
+      string file2=basename+"2."+extension;
+      string file3=basename+"3."+extension;
+      ifstream fs1,fs2,fs3;
+      // FIRST FILE (text file of matrix dimensions)
+      try{ fs1.open(file1.c_str()); }
+      catch(...) {
+         throw SpMatHCPException("SpMat_HCP::SpMat_HCP(unsigned int m, unsigned int n,const string& basename): cannot open file1 for reading");
+      }
+      int nrows, ncols;
+      fs1 >> nrows;
+      fs1 >> ncols;
+      fs1.close();
+
+      if(nrows!=(int)Nrows() || ncols!=(int)Ncols()){
+      	cerr<<"SpMat_HCP::SpMat_HCP(unsigned int m, unsigned int n,const string& basename): Incompatible matrix dimensions"<<endl;
+	exit(1);
+      }
+
+      // SECOND FILE (binary file of lengths)
+      try{ fs2.open(file2.c_str(), ios::in | ios::binary); }
+      catch(...) {
+         throw SpMatHCPException("SpMat_HCP::SpMat_HCP(unsigned int m, unsigned int n,const string& basename): cannot open file2 for reading");
+      }
+      ColumnVector colsize(ncols);
+      for(int c=1; c <= ncols; c++) {
+	int64_t sz;
+	fs2.read((char*)&sz,sizeof(sz));
+	colsize(c)=sz;    
+      }
+      fs2.close();
+      
+      // THIRD FILE (binary file of contents, integer coded)
+      try{ fs3.open(file3.c_str(), ios::in | ios::binary); }
+      catch(...) {
+         throw SpMatHCPException("SpMat_HCP::SpMat_HCP(unsigned int m, unsigned int n,const string& basename): cannot open file3 for reading");
+      }
+      int64_t code1, code2;
+      int64_t two32=(1LL<<32), mult=1001;    
+      
+      for(int c=0; c < ncols; c++) {
+	for (unsigned int s=1; s <= colsize(c+1); s++) {
+	  // fibre_prop1, fibre_prop2 and length_val ***MUST*** BE WITHIN 0 and 1000 INCLUSIVE	  
+	  int64_t fibre_count, fibre_prop1, fibre_prop2, length_val;
+	  fs3.read((char*)&code1,sizeof(code1));
+	  fs3.read((char*)&code2,sizeof(code2));
+	  //Undo this coding: code2 = two32*fibre_count + mult*mult*fibre_prop1 + mult*fibre_prop2 + length_val;
+	  fibre_count = code2 / two32;
+	  code2 = code2 % two32;
+	  fibre_prop1 = code2 / (mult*mult);
+	  code2 = code2 % (mult*mult);
+	  fibre_prop2 = code2 / mult;
+	  code2 = code2 % mult;
+	  length_val = code2;
+	  // Now undo the integer coding of fibre proportions
+	  float fprop1=fibre_prop1 / 1000.0;
+	  float fprop2=fibre_prop2 / 1000.0;
+
+	  // Uncode the row 
+	  unsigned int r = code1;
+	  // update matrix
+	  vector<float> props(2);
+	  props[0]=fprop1;props[1]=fprop2;
+	  AddToTraj(r+1,c+1,(float)length_val,props,fibre_count);
+	}
+      }
+      fs3.close();
+    }
+ 
+
+  // Trajectory file writer
+  int SpMat_HCP::SaveTrajFile(const string& basename)const
+  {
+    if ( (basename.size()<1) ) return -1;
+    string extension="mtx";
+    string file1=basename+"1."+extension;
+    string file2=basename+"2."+extension;
+    string file3=basename+"3."+extension;
+    ofstream fs1, fs2, fs3;
+    // FIRST FILE (text file of matrix dimensions)
+    try{ fs1.open(file1.c_str(), ios::out | ios::binary); }
+    catch(...) {
+      throw SpMatHCPException("SpMat_HCP::SaveTrajFile(const string& basename): cannot open file1 for writing");
+    } 
+    fs1 << Nrows() << endl;
+    fs1 << Ncols() << endl;
+    fs1.close();
+
+    // SECOND FILE (binary file of lengths)
+    try{ fs2.open(file2.c_str(), ios::out | ios::binary); }
+    catch(...) {
+      throw SpMatHCPException("SpMat_HCP::SaveTrajFile(const string& basename): cannot open file2 for writing");
+    }
+    for(unsigned int c=0; c < Ncols(); c++) {
+      int64_t sz = get_ri(c).size();  
+      fs2.write((char*)&sz,sizeof(sz));
+    }
+    fs2.close();
+
+    // THIRD FILE (binary file of contents, integer coded)
+    try{ fs3.open(file3.c_str(), ios::out | ios::binary); }
+    catch(...) {
+      throw SpMatHCPException("SpMat_HCP::SaveTrajFile(const string& basename): cannot open file3 for writing");
+    }
     int64_t code1, code2;
     int64_t two32=(1LL<<32), mult=1001;    
-    //int MAX_LENGTH=1000;
     
     for(unsigned int c=0; c < Ncols(); c++) {
       if(get_ri(c).size()){
@@ -74,89 +351,7 @@
     return 0;
     
   }
-
-int SpMat_HCP::LoadTrajFile(const string& basename) {
-  if ( (basename.size()<1) ) return -1;
-  string extension="mtx";
-  string file1=basename+"1."+extension;
-  string file2=basename+"2."+extension;
-  string file3=basename+"3."+extension;
-  // FIRST FILE (text file of matrix dimensions)
-  ifstream fs1(file1.c_str());
-  if (!fs1) { 
-    cerr << "Could not open file " << file1 << " for reading" << endl;
-    return -1;
-  }
-  int nrows, ncols;
-  fs1 >> nrows;
-  fs1 >> ncols;
-  fs1.close();
-
-  if(nrows!=(int)Nrows() || ncols!=(int)Ncols()){
-    cerr<<"SpMat_HCP::LoadTrajFile: Incompatible matrix dimensions"<<endl;
-    exit(1);
-  }
-
-  // SECOND FILE (binary file of lengths)
-  ifstream fs2(file2.c_str(), ios::in | ios::binary);
-  if (!fs2) { 
-    cerr << "Could not open file " << file2 << " for reading" << endl;
-    return -1;
-  }
-  ColumnVector colsize(ncols);
-  for(int c=1; c <= ncols; c++) {
-    int64_t sz;
-    fs2.read((char*)&sz,sizeof(sz));
-    colsize(c)=sz;    
-  }
-  fs2.close();
-
-  //OUT(colsize.t());
-
-  // THIRD FILE (binary file of contents, integer coded)
-  ifstream fs3(file3.c_str(), ios::in | ios::binary);
-  if (!fs3) { 
-    cerr << "Could not open file " << file3 << " for reading" << endl;
-    return -1;
-  }
-  int64_t code1, code2;
-  int64_t two32=(1LL<<32), mult=1001;    
-  //int MAX_LENGTH=1000;
-
-  for(int c=0; c < ncols; c++) {
-    //OUT(c);
-    for (unsigned int s=1; s <= colsize(c+1); s++) {
-	  // fibre_prop1, fibre_prop2 and length_val ***MUST*** BE WITHIN 0 and 1000 INCLUSIVE	  
-	  int64_t fibre_count, fibre_prop1, fibre_prop2, length_val;
-	  fs3.read((char*)&code1,sizeof(code1));
-	  fs3.read((char*)&code2,sizeof(code2));
-	  //Undo this coding:
-	  //  code2 = two32*fibre_count + mult*mult*fibre_prop1 + mult*fibre_prop2 + length_val;
-	  fibre_count = code2 / two32;
-	  code2 = code2 % two32;
-	  fibre_prop1 = code2 / (mult*mult);
-	  code2 = code2 % (mult*mult);
-	  fibre_prop2 = code2 / mult;
-	  code2 = code2 % mult;
-	  length_val = code2;
-	  // Now undo the integer coding of fibre proportions
-	  float fprop1=fibre_prop1 / 1000.0;
-	  float fprop2=fibre_prop2 / 1000.0;
-	  // Uncode the row 
-	  unsigned int r = code1;
-	  // update matrix
-	  vector<float> props(2);
-	  props[0]=fprop1;props[1]=fprop2;
-	  AddToTraj(r+1,c+1,(float)length_val,props,fibre_count);
-    }
-  }
-  fs3.close();
-
-  return 0;
-}
-
-
-
+*/
 
 namespace TRACT{
 
@@ -831,7 +1026,7 @@ namespace TRACT{
 			 << roicind[i];
     
     applycoordchange(CoordMat1, m_stline.get_seeds().get_refvol().niftivox2newimagevox_mat().i());
-      write_ascii_matrix(CoordMat1,logger.appendDir("coords_for_fdt_matrix1"));
+    write_ascii_matrix(CoordMat1,logger.appendDir("coords_for_fdt_matrix1"));
   }
   
   // matrix2 is nseeds X nlrmask
@@ -1305,7 +1500,8 @@ namespace TRACT{
       make_unique(allcrossed,allvals);
     }
     for(unsigned int i=0;i<allcrossed.size();i++){
-      m_ConMat1->AddTo(m_Conrow1,allcrossed[i]+1,allvals[i]);
+      //m_ConMat1->AddTo(m_Conrow1,allcrossed[i]+1,allvals[i]);
+      m_ConMat1->AddTo(m_curloc+1,allcrossed[i]+1,allvals[i]);
     }
   }
   
