@@ -38,6 +38,7 @@
     //We considered using the absolute values instead of proportions or average distances, but then the dynamic range of the values we can code is reduced. 
     fibre_prop1 = (int64_t)MIN((int64_t)(MISCMATHS::round(float(fibcnt1)/float(nsamples)*1000)),1000); 
     fibre_prop2 = (int64_t)MIN((int64_t)(MISCMATHS::round(float(fibcnt2)/float(nsamples)*1000)),1000);
+    fibre_prop2 = (int64_t)MIN(fibre_prop2, (int64_t)(1000-fibre_prop1)); //Avoid sum over 1000 due to rounding errors
     length_val  = (int64_t)MIN((int64_t)(MISCMATHS::round((nsamples!=0?length_tot/float(nsamples):0.0))),1000); 
     code2 = two32*fibre_count + mult*mult*fibre_prop1 + mult*fibre_prop2 + length_val;
   }
@@ -214,8 +215,8 @@
     return 0;
   }
 
-
 /*
+
   //Old SpMat_HCP with MattCell (less rounding errors, but takes ~5 times as much memory and ~40% more execution time
   //Constructor from a file
   SpMat_HCP::SpMat_HCP(unsigned int m, unsigned int n,const string& basename):SpMat<MatCell>::SpMat(m,n){
