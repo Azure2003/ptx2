@@ -98,6 +98,7 @@ class probtrackxOptions {
   FmribOption<bool>        save_paths;       // save paths to ascii file
   FmribOption<string>      locfibchoice;     // inside this mask, define local rules for fibre picking
   FmribOption<string>      loccurvthresh;    // inside this mask, define local curvature threshold
+  FmribOption<bool>        targetpaths;      // output separate fdt_paths for each target
 
   void parse_command_line(int argc, char** argv,Log& logger);
   void modecheck();
@@ -315,6 +316,9 @@ class probtrackxOptions {
    loccurvthresh(string("--loccurvthresh"),string(""),
 	      string("Local curvature threshold"),
 	      false, requires_argument),
+   targetpaths(string("--otargetpaths"),false,
+	      string("Output separate fdt_paths for targets (assumes --os2t is on)"),
+	      false, no_argument),
 
    options("probtrackx","probtrackx2 -s <basename> -m <maskname> -x <seedfile> -o <output> --targetmasks=<textfile>\n probtrackx2 --help\n")
    {
@@ -391,6 +395,7 @@ class probtrackxOptions {
        options.add(save_paths);
        options.add(locfibchoice);
        options.add(loccurvthresh);
+       options.add(targetpaths);
 
      }
      catch(X_OptionError& e) {

@@ -226,8 +226,13 @@ namespace TRACT{
     CSV                           m_netmasks;
 
     vector<int>                   m_way_passed_flags;
+
+    // for network mode
+    int                           m_seed_id;
+    Matrix                        m_network_mat;
     ColumnVector                  m_net_passed_flags;
     //vector<int>                   m_net_passed_flags;
+
 
     vector< vector<ColumnVector> > m_crossedvox;
     bool                           m_surfexists;
@@ -342,6 +347,23 @@ namespace TRACT{
       //m_net_passed_flags.resize(m_netmasks.nRois(),0);
 
     }
+    void set_seed_id(const int i){m_seed_id=i;}
+    void init_network_mat(const int n){
+      m_network_mat.ReSize(n,n);
+      m_network_mat=0;
+    }
+    void update_mat(){
+      for(int i=1;i<=m_net_passed_flags.Nrows();i++){
+	if(m_net_passed_flags(i)==0){continue;}
+	if(m_seed_id+1>i){m_network_mat(m_seed_id+1,i)++;}
+	else{m_network_mat(m_seed_id+1,i+1)++;}    
+      }   
+    }
+    void save_network_mat(){
+      write_ascii_matrix(m_network_mat,logger.appendDir("fdt_network_matrix"));
+    }
+    const ColumnVector& net_passed_flags(){return m_net_passed_flags;}
+
     void load_waymasks(const string& filename){
       m_waymasks.reinitialize(m_seeds.get_refvol());
       m_waymasks.set_convention(opts.meshspace.value());
@@ -426,6 +448,12 @@ namespace TRACT{
     CSV                          m_prob_alt;  // spatial histogram of tracts with alternative user-defined mask
     CSV                          m_beenhere_alt;
 
+    // same as m_prob and m_localdir but split into the different
+    // target masks if the option opts.targetpaths is ON
+    vector< volume<float> >      m_prob_multi;
+    vector< volume4D<float> >    m_localdir_multi;
+    
+
     // temp 
     volume<float>                m_lastpoint; // store last point in trajectory
 
@@ -448,6 +476,7 @@ namespace TRACT{
     CSV                          m_s2t_count;
     Matrix                       m_s2tastext;
     int                          m_s2trow;
+    volume4D<float>              m_targetpaths;
 
     // MATRIX 1
     SpMat<float>                *m_ConMat1; // using sparse
@@ -507,13 +536,7 @@ namespace TRACT{
 			  m_stline.get_seeds().ysize(),
 			  m_stline.get_seeds().zsize());
       copybasicproperties(m_stline.get_seeds().get_refvol(),m_prob);
-      m_prob=0;
-      // m_lastpoint.reinitialize(m_stline.get_seeds().xsize(),
-      // 			       m_stline.get_seeds().ysize(),
-      // 			       m_stline.get_seeds().zsize());
-      // copybasicproperties(m_stline.get_seeds().get_refvol(),m_lastpoint);
-      // m_lastpoint=0;
-      
+      m_prob=0;      
       if(opts.opathdir.value()){
 	m_localdir.reinitialize(m_stline.get_seeds().xsize(),
 				m_stline.get_seeds().ysize(),
@@ -521,6 +544,8 @@ namespace TRACT{
 	copybasicproperties(m_stline.get_seeds().get_refvol(),m_localdir);
 	m_localdir=0;
       }
+      
+
       if(opts.pathfile.set()){
 	m_prob_alt.reinitialize(m_stline.get_seeds().get_refvol());
 	m_prob_alt.set_convention(opts.meshspace.value());
@@ -581,6 +606,7 @@ namespace TRACT{
     
     void update_pathdist();
     void reset_beenhere();
+    void update_pathdist_multi();
     
     void reset_prob(){m_prob=0;}
     void update_seedcounts();
