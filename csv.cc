@@ -436,10 +436,42 @@ void CSV::update_surfvol(const vector<ColumnVector>& v,const int& tid,const int&
 }
 void CSV::save_surfvol(const string& filename,const bool& binarise)const{
   if(!binarise){
-    volume<int> tmpvol(surfvol.xsize(),surfvol.ysize(),surfvol.zsize());
-    copyconvert(surfvol,tmpvol);
+    volume<float> tmpvol(surfvol.xsize(),surfvol.ysize(),surfvol.zsize());
+    volume<int> cnt(surfvol.xsize(),surfvol.ysize(),surfvol.zsize());
+    cnt=0;tmpvol=0;
+    for(int z=0;z<surfvol.zsize();z++){
+      for(int y=0;y<surfvol.ysize();y++){
+	for(int x=0;x<surfvol.xsize();x++){
+	  int val=surfvol(x,y,z)-1;
+	  if(val<0)continue;
+	  CsvTriangle t;ColumnVector vox(4),mm(4);
+	  for(unsigned int i=0;i<triangles[val].size();i++){
+	    t=roimesh[0].get_triangle(triangles[val][i].second-1);
+
+	    tmpvol(x,y,z) += roimesh[0].get_pvalue(t.get_vertice(0).get_no());
+	    cnt(x,y,z)    += 1;
+	    tmpvol(x,y,z) += roimesh[0].get_pvalue(t.get_vertice(1).get_no());
+	    cnt(x,y,z)    += 1;
+	    tmpvol(x,y,z) += roimesh[0].get_pvalue(t.get_vertice(2).get_no());
+	    cnt(x,y,z)    += 1;
+
+
+	  }
+	}
+      }
+    }
+    for(int z=0;z<surfvol.zsize();z++){
+      for(int y=0;y<surfvol.ysize();y++){
+	for(int x=0;x<surfvol.xsize();x++){
+	  if(cnt(x,y,z)==0){continue;}
+	  tmpvol(x,y,z) /= cnt(x,y,z);
+	}
+      }
+    }
+
+    //copyconvert(surfvol,tmpvol);
     copybasicproperties(refvol,tmpvol);
-    save_volume(surfvol,filename);
+    save_volume(tmpvol,filename);
   }
   else{
     volume<int> tmpvol(surfvol.xsize(),surfvol.ysize(),surfvol.zsize());

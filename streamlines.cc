@@ -1307,6 +1307,7 @@ namespace TRACT{
     vector<ColumnVector> crossedvox;
     int nlocs=0;
     int offset=-1;
+    bool restarted=false;
     for(unsigned int i=0;i<m_path.size();i++){
       x_s=(int)round((float)m_path[i](1));
       y_s=(int)round((float)m_path[i](2));
@@ -1316,6 +1317,7 @@ namespace TRACT{
 	//m_lastpoint(x_s,y_s,z_s)+=1;  
 	pathlength=0;
 	offset-=1;
+	restarted=true;
       }
       if(m_beenhere(x_s,y_s,z_s)==0){
 	if(!opts.pathdist.value())
@@ -1348,7 +1350,7 @@ namespace TRACT{
       //  2: location has been visited
 
       if(opts.pathfile.set()){
-	if(pathlength>0){
+	if(pathlength>0 && !restarted){
 	  if(m_beenhere_alt.nSurfs()>0){
 	    crossedvox=m_crossedvox[i+offset];
 	  }
@@ -1369,6 +1371,7 @@ namespace TRACT{
 	}
       }
       pathlength+=opts.steplength.value();
+      restarted=false;
       
     }
 
@@ -1453,7 +1456,7 @@ namespace TRACT{
     vector<int> crossed;
     vector<ColumnVector> crossedvox;
     float       pathlength=0;
-    int         cnt=0,offset=-1;;
+    int         cnt=0,offset=-1;
 
     for(unsigned int i=1;i<m_path.size();i++){
       pathlength+=opts.steplength.value();
@@ -1461,13 +1464,25 @@ namespace TRACT{
       if((m_path[i]-m_path[0]).MaximumAbsoluteValue()==0){
 	offset-=1;
 	pathlength=0;
+	continue;
       }
 
       // this would be more efficient if we only checked 
       // masks that haven't been crossed yet...
       crossed.clear();
       if(m_targetmasks.nSurfs()>0){
-	crossedvox=m_crossedvox[i+offset];
+	if( ((i+offset) < 0 ) || ((i+offset)>=m_crossedvox.size())){
+	  cout<<"-----------------------"<<endl;
+	  OUT(m_path.size());
+	  OUT(m_crossedvox.size());
+	  OUT(i);
+	  OUT(offset);
+	  for(unsigned int ii=0;ii<m_path.size();ii++)
+	    cout<<m_path[ii](1)<<" "<<m_path[ii](2)<<" "<<m_path[ii](3)<<endl;
+	  cout<<"-----------------------"<<endl;
+	  exit(1);
+	}
+	crossedvox=m_crossedvox[i+offset];//stepcnt++;
       }
 
       m_targetmasks.has_crossed_roi(m_path[i-1],m_path[i],crossedvox,crossed);
@@ -1510,6 +1525,7 @@ namespace TRACT{
     int x_s,y_s,z_s;
     float pathlength=0;
     for(unsigned int i=0;i<m_path.size();i++){
+      pathlength+=opts.steplength.value();
       x_s=(int)round((float)m_path[i](1));
       y_s=(int)round((float)m_path[i](2));
       z_s=(int)round((float)m_path[i](3));

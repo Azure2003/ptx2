@@ -140,9 +140,9 @@ int main(int argc,char *argv[]){
     if(meshExists(vals.value())){
       CsvMesh m;
       m.load(vals.value());
-      OUT(m._pvalues.size());
-      OUT(csv.get_mesh(0).nvertices());
-      if(m._pvalues.size()!=csv.get_mesh(0).nvertices()){
+      //OUT(m._pvalues.size());
+      //OUT(csv.get_mesh(0).nvertices());
+      if((int)m._pvalues.size()!=csv.get_mesh(0).nvertices()){
 	cerr<<"values mesh does not have the correct number of vertices"<<endl;
 	exit(1);
       }

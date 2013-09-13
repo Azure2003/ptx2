@@ -16,7 +16,7 @@ endif
 USRINCFLAGS = -I${INC_NEWMAT} -I${INC_NEWRAN} -I${INC_CPROB} -I${INC_PROB} -I${INC_BOOST} -I${INC_ZLIB}
 USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_NEWRAN} -L${LIB_CPROB} -L${LIB_PROB} -L${LIB_ZLIB}
 
-DLIBS = -lwarpfns -lbasisfield -lfslsurface  -lfslvtkio -lmeshclass -lnewimage -lutils -lmiscmaths -lnewmat -lnewran -lfslio -lgiftiio -lexpat -lfirst_lib -lniftiio -lznz -lcprob -lutils -lprob -lm -lz
+DLIBS =  -lwarpfns -lbasisfield -lfslsurface  -lfslvtkio -lmeshclass -lnewimage -lutils -lmiscmaths -lnewmat -lnewran -lfslio -lgiftiio -lexpat -lfirst_lib -lniftiio -lznz -lcprob -lutils -lprob -lm -lz
 
 
 CCOPS=ccops
@@ -49,10 +49,10 @@ S2VOBJS=surf2volume.o csv.o csv_mesh.o
 L2S=label2surf
 L2SOBJS=label2surf.o csv_mesh.o
 SM=surfmaths
-SMOBJS=surfmaths.o csv_mesh.o
+SMOBJS=surfmaths.o 
 
 
-XFILES = probtrackx2 surfmaths surf2surf surf2volume surf_proj label2surf find_the_biggest proj_thresh
+XFILES = probtrackx2 surf2surf surf2volume surf_proj label2surf find_the_biggest proj_thresh
 
 
 all: ${XFILES} 
