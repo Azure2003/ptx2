@@ -518,6 +518,12 @@ namespace TRACT{
     if(opts.stopfile.value()!=""){
       load_stop(opts.stopfile.value());
     }
+
+    // Walk-through stopping mask
+    if(opts.wtstopfiles.value()!=""){
+      load_wtstopmasks(opts.wtstopfiles.value());
+    }
+
      
     // waymasks in CSV format
     if(opts.waypoints.set()){
@@ -578,8 +584,6 @@ namespace TRACT{
     m_inmask3.reserve(opts.nsteps.value());
     m_inlrmask3.reserve(opts.nsteps.value()); 
 
-
-    
     
   }
   
@@ -652,6 +656,18 @@ namespace TRACT{
     bool           rubbish_passed=false;
     bool           wayorder=true;
     vector<int>    waycrossed;
+    
+    int            wtstop_count=0;  
+    //Counter that determines propagation using wtstop masks. It counts how many times a streamline has crossed any wtstop boundary. Propagation stops when counter becomes 2.   
+    //In case of volume wt_stop masks, this means that a streamline can enter the wt volume, propagate within it, but it will stop upon exiting it.
+    //In case of surface wt_stop masks, a streamline can cross the surface, but propagation will stop when it crosses the surface again.
+    //In general counter starts at 0. If any wtstop mask is also a seed:
+    //In case of volume wtstop & seed, counter will automatically start at -1. This will allow exiting the first seed wtstop mask and entering another. 
+    //In case of surface wtstop & seed, need to use --forcefirststep and counter will start at -1. This will allow ignoring the first surface crossing (between the seed point on the surface and the first streamline point).
+
+    vector<int>    wtstop_flags;  //temporary structures for wtstop propagation
+    vector<int>    wtstopcrossed;
+
     vector<int>    crossedlocs3;
     vector<ColumnVector> crossedvox;
 
@@ -672,10 +688,16 @@ namespace TRACT{
     
     if(m_surfexists){m_crossedvox.clear();}
 
+    if (opts.wtstopfiles.value()!=""){ //use wtstop masks
+      for (int i=0; i<m_wtstopmasks.nRois(); i++)
+	wtstop_flags.push_back(0);
+      if (m_wtstopmasks.isInRoi(m_x_s_init, m_y_s_init=y_init, m_z_s_init) || opts.forcefirststep.value()) //If seed is in one of wtstop masks allow propagation and exit out of the respective wtstop mask 
+	wtstop_count=-1;                                                    
+    }
+
     for(int it=1;it<=opts.nsteps.value()/2;it++){
       
       if((m_mask(x_p,y_p,z_p)!=0)){
-
 	///////////////////////////////////
 	//loopchecking
 	///////////////////////////////////
@@ -784,6 +806,7 @@ namespace TRACT{
 	    }	    
 	  }
 	}
+	
 	if(opts.network.value()){
 	  if(cnt>0){
 	    waycrossed.clear();
@@ -849,6 +872,29 @@ namespace TRACT{
 	}
 
 
+	if(opts.wtstopfiles.value()!="" && cnt==1){ //set the wtstop_flags during the first step
+	  wtstopcrossed.clear();
+	  m_wtstopmasks.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,wtstopcrossed);
+	  for(unsigned int wm=0;wm<wtstopcrossed.size();wm++){ wtstop_flags[wtstopcrossed[wm]]=1; }
+	}
+
+	// Test WT-stopping after at least one step. Explore whether a change has occured in the wtstop flags. If any changed, increase counter by 1.
+	if(opts.wtstopfiles.value()!="" && cnt>0){
+	  vector<int> prev_wtstop_flags=wtstop_flags;
+	  wtstopcrossed.clear();
+	  for (unsigned int el=0; el<wtstop_flags.size(); el++) { wtstop_flags[el]=0; }
+	  m_wtstopmasks.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,wtstopcrossed);
+	  for(unsigned int wm=0;wm<wtstopcrossed.size();wm++){ wtstop_flags[wtstopcrossed[wm]]=1; }
+	  if (wtstop_flags != prev_wtstop_flags) {wtstop_count++; }
+	  if (wtstop_count==2){ //stop
+	    // remove last path point? Yes, so that counters don't count 2nd crossings	
+	    m_path.pop_back();cnt--;
+	    if(cnt>0) pathlength -= opts.steplength.value();
+	    break;
+	  }
+	}
+
+
 	// jump
 	tmp2=0;
 	if(opts.usef.value()){tmp2=(float)rand()/(float)RAND_MAX;}
@@ -894,9 +940,9 @@ namespace TRACT{
       else{
 	break; // outside mask
       }
-
       
     } // Close Step Number Loop (done tracking sample)
+
 
     // reset loopcheck box
     if(opts.loopcheck.value()){
@@ -1300,7 +1346,7 @@ namespace TRACT{
 
   void Counter::update_pathdist(){
     //Tracer_Plus tr("Counter::update_pathdist");
-    if(m_path.size()<1){return;}
+    if(m_path.size()<2){return;}
     int x_s,y_s,z_s;
     float pathlength=0;
     vector<int> crossedrois,crossedlocs;
@@ -1312,6 +1358,9 @@ namespace TRACT{
       x_s=(int)round((float)m_path[i](1));
       y_s=(int)round((float)m_path[i](2));
       z_s=(int)round((float)m_path[i](3));
+
+
+
       // check here if back to seed
       if(i>0 && (m_path[i]-m_path[0]).MaximumAbsoluteValue()==0){
 	//m_lastpoint(x_s,y_s,z_s)+=1;  
@@ -1319,6 +1368,8 @@ namespace TRACT{
 	offset-=1;
 	restarted=true;
       }
+
+
       if(m_beenhere(x_s,y_s,z_s)==0){
 	if(!opts.pathdist.value())
 	  m_prob(x_s,y_s,z_s)+=1; 
@@ -1326,9 +1377,12 @@ namespace TRACT{
 	  m_prob(x_s,y_s,z_s)+=pathlength;
 	m_beenhere(x_s,y_s,z_s)=1;
 	
-	if(opts.opathdir.value() && i>0){
+	if(opts.opathdir.value() && !restarted){
 	  ColumnVector v(3);
-	  v=m_path[i]-m_path[i-1];
+	  if(i==0)
+	    v=m_path[i+1]-m_path[i];	  
+	  else
+	    v=m_path[i]-m_path[i-1];	  
 	  v/=std::sqrt(v.SumSquare());
 	  // Add direction (needs to account for the current direction and flip if necessary)
 	  

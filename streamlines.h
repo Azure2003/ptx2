@@ -224,9 +224,10 @@ namespace TRACT{
     CSV                           m_stop; 
     CSV                           m_waymasks;
     CSV                           m_netmasks;
+    CSV                           m_wtstopmasks;
 
     vector<int>                   m_way_passed_flags;
-
+    
     // for network mode
     int                           m_seed_id;
     Matrix                        m_network_mat;
@@ -372,6 +373,13 @@ namespace TRACT{
       m_way_passed_flags.clear(); 
       for(int i=0;i<m_waymasks.nRois();i++)
 	m_way_passed_flags.push_back(0);
+    }
+
+    void load_wtstopmasks(const string& filename){
+      m_wtstopmasks.reinitialize(m_seeds.get_refvol());
+      m_wtstopmasks.set_convention(opts.meshspace.value());
+      m_wtstopmasks.load_rois(filename);    
+      if(m_wtstopmasks.nSurfs()>0){surfexists();} //cerr<<"Surface has been provided as a walk-through stopping mask! Currently unsupported!"; exit(1); }
     }
 
     void    set_waycond(const string& cond){m_waycond=cond;}

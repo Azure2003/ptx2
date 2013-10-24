@@ -53,6 +53,7 @@ class probtrackxOptions {
   Option<bool>             onewaycondition;  // apply waypoint conditions to half the tract
   Option<string>           rubbishfile;
   Option<string>           stopfile;
+  Option<string>           wtstopfiles;
 
   Option<bool>             matrix1out;
   Option<float>            distthresh1;  
@@ -99,6 +100,7 @@ class probtrackxOptions {
   FmribOption<string>      locfibchoice;     // inside this mask, define local rules for fibre picking
   FmribOption<string>      loccurvthresh;    // inside this mask, define local curvature threshold
   FmribOption<bool>        targetpaths;      // output separate fdt_paths for each target
+  FmribOption<bool>        noprobinterpol;   // turn off probabilistic interpolation
 
   void parse_command_line(int argc, char** argv,Log& logger);
   void modecheck();
@@ -175,7 +177,6 @@ class probtrackxOptions {
 	     string("Output seed-to-target counts as a text file (default in simple mode)\n\n"),
 	     false, no_argument), 
 
-
    targetfile(string("--targetmasks"),"",
 	      string("File containing a list of target masks - for seeds_to_targets classification"),
 	      false, requires_argument),
@@ -195,7 +196,10 @@ class probtrackxOptions {
 	       string("\tReject pathways passing through locations given by this mask"),
 	       false, requires_argument),
    stopfile(string("--stop"), string(""),
-	       string("\tStop tracking at locations given by this mask file\n\n"),
+	       string("\tStop tracking at locations given by this mask file"),
+	       false, requires_argument),
+   wtstopfiles(string("--wtstop"), string(""),
+	       string("One mask or text file with mask names. Allow propagation within mask but terminate on exit. \n\n"),
 	       false, requires_argument),
 
    matrix1out(string("--omatrix1"), false,
@@ -296,7 +300,7 @@ class probtrackxOptions {
 	    string("No explanation needed"),
 	    false, requires_argument),
    forcefirststep(string("--forcefirststep"),false,
-		  string("In case seed and stop masks are the same"),
+		  string("In case seed and stop masks are the same. Also needed for surface wt_stop masks that are also seeds."),
 		  false, no_argument),
    osampfib(string("--osampfib"),false,
 	    string("Output sampled fibres"),
@@ -318,6 +322,9 @@ class probtrackxOptions {
 	      false, requires_argument),
    targetpaths(string("--otargetpaths"),false,
 	      string("Output separate fdt_paths for targets (assumes --os2t is on)"),
+	      false, no_argument),
+   noprobinterpol(string("--noprobinterpol"),false,
+	      string("Turn off probabilistic interpolation"),
 	      false, no_argument),
 
    options("probtrackx","probtrackx2 -s <basename> -m <maskname> -x <seedfile> -o <output> --targetmasks=<textfile>\n probtrackx2 --help\n")
@@ -351,6 +358,7 @@ class probtrackxOptions {
        options.add(onewaycondition);
        options.add(rubbishfile);
        options.add(stopfile);
+       options.add(wtstopfiles);
 
        options.add(matrix1out);
        options.add(distthresh1);
@@ -396,6 +404,7 @@ class probtrackxOptions {
        options.add(locfibchoice);
        options.add(loccurvthresh);
        options.add(targetpaths);
+       options.add(noprobinterpol);
 
      }
      catch(X_OptionError& e) {
