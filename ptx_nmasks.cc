@@ -2,8 +2,8 @@
 
 /*  CCOPYRIGHT  */
 
-#include "ptx_nmasks.h"
 #include "streamlines.h"
+#include "ptx_nmasks.h"
 #include <time.h>
 
 using namespace std;

@@ -2,8 +2,8 @@
 
 /*  CCOPYRIGHT  */
 
-#include "ptx_simple.h"
 #include "streamlines.h"
+#include "ptx_simple.h"
 
 using namespace std;
 using namespace NEWIMAGE;

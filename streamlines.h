@@ -470,12 +470,12 @@ namespace TRACT{
     // do we still need these?
     vector<ColumnVector>         m_seedcounts;
     Matrix                       m_SeedCountMat;
-    int                          m_SeedRow;
+    __attribute__((unused)) int                          m_SeedRow;
     int                          m_numseeds;
 
     // know where we are in seed space/counts (because seeds are now CSV)
     string                       m_curtype;
-    int                          m_seedroi;
+    __attribute__((unused)) int                          m_seedroi;
     int                          m_curloc;
 
     // classification targets

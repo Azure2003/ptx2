@@ -2,8 +2,8 @@
 
 /*  CCOPYRIGHT  */
 
-#include "ptx_seedmask.h"
 #include "streamlines.h"
+#include "ptx_seedmask.h"
 #include <time.h>
 
 using namespace std;

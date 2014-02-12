@@ -25,13 +25,13 @@
 #include <string>
 #include <fstream>
 #include <stdio.h>
+#include "warpfns/warpfns.h"
+#include "warpfns/fnirt_file_reader.h"
 #include "newimage/newimageio.h"
 #include "miscmaths/miscmaths.h"
 #include "fslvtkio/fslvtkio.h"
 #include "utils/tracer_plus.h"
 #include "csv_mesh.h"
-#include "warpfns/warpfns.h"
-#include "warpfns/fnirt_file_reader.h"
 
 //#include "fslsurface/fslsurface.h"
 //#include "fslsurface/fslsurfaceio.h"

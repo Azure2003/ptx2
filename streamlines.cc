@@ -22,8 +22,8 @@
     incode = incode % mult;
     length_val = incode;
 
-    fibcnt1=(int)round((float)(fibre_prop1*0.001*fibre_count));
-    fibcnt2=(int)round((float)(fibre_prop2*0.001*fibre_count));
+    fibcnt1=(int)MISCMATHS::round((float)(fibre_prop1*0.001*fibre_count));
+    fibcnt2=(int)MISCMATHS::round((float)(fibre_prop2*0.001*fibre_count));
     length_tot=float(length_val*fibre_count);
     nsamples=(int)fibre_count;
   } 
@@ -75,8 +75,8 @@
     decode(code2, nsamples, fibcnt1, fibcnt2, length_tot);
     
     //Update Values
-    fibcnt1+=(int)round(props[0]*n);
-    fibcnt2+=(int)round(props[1]*n);
+    fibcnt1+=(int)MISCMATHS::round(props[0]*n);
+    fibcnt2+=(int)MISCMATHS::round(props[1]*n);
     length_tot+=(dist*n);
     nsamples+=n;   
 
@@ -601,9 +601,9 @@ namespace TRACT{
 					    false,m_seeds.get_refvol(),m_mask,xyz_seeds);
 
       Matrix F(3,3),Jw(3,3);
-      int x=(int)round((float)xyz_dti(1));
-      int y=(int)round((float)xyz_dti(2));
-      int z=(int)round((float)xyz_dti(3));
+      int x=(int)MISCMATHS::round((float)xyz_dti(1));
+      int y=(int)MISCMATHS::round((float)xyz_dti(2));
+      int z=(int)MISCMATHS::round((float)xyz_dti(3));
       Jw << m_jacx(x,y,z,0) << m_jacx(x,y,z,1) << m_jacx(x,y,z,2)
 	 << m_jacy(x,y,z,0) << m_jacy(x,y,z,1) << m_jacy(x,y,z,2)
 	 << m_jacz(x,y,z,0) << m_jacz(x,y,z,1) << m_jacz(x,y,z,2);
@@ -647,10 +647,10 @@ namespace TRACT{
     m_diff_path.clear();
     x=xst;y=yst;z=zst;
     m_part.change_xyz(x,y,z);
-    x_p=(int)round(m_part.x());
-    y_p=(int)round(m_part.y());
-    z_p=(int)round(m_part.z());
-    //    x_p=(int)round(x);y_p=(int)round(y);z_p=(int)round(z);
+    x_p=(int)MISCMATHS::round(m_part.x());
+    y_p=(int)MISCMATHS::round(m_part.y());
+    z_p=(int)MISCMATHS::round(m_part.z());
+    //    x_p=(int)MISCMATHS::round(x);y_p=(int)MISCMATHS::round(y);z_p=(int)MISCMATHS::round(z);
 
     float          pathlength=0;
     bool           rubbish_passed=false;
@@ -702,9 +702,9 @@ namespace TRACT{
 	//loopchecking
 	///////////////////////////////////
 	if(opts.loopcheck.value()){
-	  lcx=(int)round(m_part.x()/m_lcrat);
-	  lcy=(int)round(m_part.y()/m_lcrat);
-	  lcz=(int)round(m_part.z()/m_lcrat);
+	  lcx=(int)MISCMATHS::round(m_part.x()/m_lcrat);
+	  lcy=(int)MISCMATHS::round(m_part.y()/m_lcrat);
+	  lcz=(int)MISCMATHS::round(m_part.z()/m_lcrat);
 	  oldrx=m_loopcheck(lcx,lcy,lcz,0);
 	  oldry=m_loopcheck(lcx,lcy,lcz,1);
 	  oldrz=m_loopcheck(lcx,lcy,lcz,2);
@@ -717,7 +717,7 @@ namespace TRACT{
 	
 	x=m_part.x();y=m_part.y();z=m_part.z();
 	xyz_dti <<x<<y<<z;
-	x_p=(int)round(x);y_p=(int)round(y);z_p=(int)round(z);
+	x_p=(int)MISCMATHS::round(x);y_p=(int)MISCMATHS::round(y);z_p=(int)MISCMATHS::round(z);
 
 	// now find xyz in seeds space
 	if(cnt>=0){
@@ -728,9 +728,9 @@ namespace TRACT{
 	    }	  
 	}
 	
-	x_s =(int)round((float)xyz_seeds(1));
-	y_s =(int)round((float)xyz_seeds(2));
-	z_s =(int)round((float)xyz_seeds(3));
+	x_s =(int)MISCMATHS::round((float)xyz_seeds(1));
+	y_s =(int)MISCMATHS::round((float)xyz_seeds(2));
+	z_s =(int)MISCMATHS::round((float)xyz_seeds(3));
 	
 
 	// how prefdir works:
@@ -1355,12 +1355,9 @@ namespace TRACT{
     int offset=-1;
     bool restarted=false;
     for(unsigned int i=0;i<m_path.size();i++){
-      x_s=(int)round((float)m_path[i](1));
-      y_s=(int)round((float)m_path[i](2));
-      z_s=(int)round((float)m_path[i](3));
-
-
-
+      x_s=(int)MISCMATHS::round((float)m_path[i](1));
+      y_s=(int)MISCMATHS::round((float)m_path[i](2));
+      z_s=(int)MISCMATHS::round((float)m_path[i](3));
       // check here if back to seed
       if(i>0 && (m_path[i]-m_path[0]).MaximumAbsoluteValue()==0){
 	//m_lastpoint(x_s,y_s,z_s)+=1;  
@@ -1431,9 +1428,9 @@ namespace TRACT{
 
     // // Fill last point
     // int i=m_path.size()-1;
-    // x_s=(int)round((float)m_path[i](1));
-    // y_s=(int)round((float)m_path[i](2));
-    // z_s=(int)round((float)m_path[i](3));
+    // x_s=(int)MISCMATHS::round((float)m_path[i](1));
+    // y_s=(int)MISCMATHS::round((float)m_path[i](2));
+    // z_s=(int)MISCMATHS::round((float)m_path[i](3));
     // m_lastpoint(x_s,y_s,z_s)+=1;  
 
     // In network mode, update network matrix
@@ -1449,9 +1446,9 @@ namespace TRACT{
     vector<ColumnVector> crossedvox;
     bool hascrossed=false;
     for(unsigned int i=0;i<m_path.size();i++){
-      x_s=(int)round((float)m_path[i](1));
-      y_s=(int)round((float)m_path[i](2));
-      z_s=(int)round((float)m_path[i](3));
+      x_s=(int)MISCMATHS::round((float)m_path[i](1));
+      y_s=(int)MISCMATHS::round((float)m_path[i](2));
+      z_s=(int)MISCMATHS::round((float)m_path[i](3));
       m_beenhere(x_s,y_s,z_s)=0;
 
       // back to first point? keep going
@@ -1525,7 +1522,8 @@ namespace TRACT{
       // masks that haven't been crossed yet...
       crossed.clear();
       if(m_targetmasks.nSurfs()>0){
-	if( ((i+offset) < 0 ) || ((i+offset)>=m_crossedvox.size())){
+	// below gives a warning because addition of an unsigned int and a signed int is always an unsigned quantity
+	if( (( i+offset ) < 0 ) || ((i+offset)>=m_crossedvox.size())){
 	  cout<<"-----------------------"<<endl;
 	  OUT(m_path.size());
 	  OUT(m_crossedvox.size());
@@ -1580,9 +1578,9 @@ namespace TRACT{
     float pathlength=0;
     for(unsigned int i=0;i<m_path.size();i++){
       pathlength+=opts.steplength.value();
-      x_s=(int)round((float)m_path[i](1));
-      y_s=(int)round((float)m_path[i](2));
-      z_s=(int)round((float)m_path[i](3));
+      x_s=(int)MISCMATHS::round((float)m_path[i](1));
+      y_s=(int)MISCMATHS::round((float)m_path[i](2));
+      z_s=(int)MISCMATHS::round((float)m_path[i](3));
       // check here if back to seed
       if(i>0 && (m_path[i]-m_path[0]).MaximumAbsoluteValue()==0){
 	pathlength=0;     
@@ -1668,9 +1666,9 @@ namespace TRACT{
 	d=opts.steplength.value();
 
       xyz_lr=vox_to_vox(m_path[i],m_seedsdim,m_lrdim,m_I);	
-      x_lr=(int)round((float)xyz_lr(1));
-      y_lr=(int)round((float)xyz_lr(2));
-      z_lr=(int)round((float)xyz_lr(3));
+      x_lr=(int)MISCMATHS::round((float)xyz_lr(1));
+      y_lr=(int)MISCMATHS::round((float)xyz_lr(2));
+      z_lr=(int)MISCMATHS::round((float)xyz_lr(3));
       Concol2=m_lookup2(x_lr,y_lr,z_lr);
 
       if(Concol2>0){
@@ -1737,9 +1735,9 @@ namespace TRACT{
     ColumnVector xyz_lr(3);
     for(unsigned int i=0;i<m_path.size();i++){
       xyz_lr=vox_to_vox(m_path[i],m_seedsdim,m_lrdim,m_I);
-      m_beenhere2((int)round((float)xyz_lr(1)),
-		  (int)round((float)xyz_lr(2)),
-		  (int)round((float)xyz_lr(3)))=0;
+      m_beenhere2((int)MISCMATHS::round((float)xyz_lr(1)),
+		  (int)MISCMATHS::round((float)xyz_lr(2)),
+		  (int)MISCMATHS::round((float)xyz_lr(3)))=0;
     }    
   }
 
@@ -1747,9 +1745,9 @@ namespace TRACT{
     ColumnVector xyz(3);
     for(unsigned int i=0;i<m_diff_path.size();i++){
       xyz<<m_diff_path[i](1)<<m_diff_path[i](2)<<m_diff_path[i](3);
-      m_beenhere4((int)round((float)xyz(1)),
-		  (int)round((float)xyz(2)),
-		  (int)round((float)xyz(3)))=0;
+      m_beenhere4((int)MISCMATHS::round((float)xyz(1)),
+		  (int)MISCMATHS::round((float)xyz(2)),
+		  (int)MISCMATHS::round((float)xyz(3)))=0;
     }    
   }
 
@@ -1766,9 +1764,9 @@ namespace TRACT{
 	  d=opts.steplength.value();
 	
 	xyz<<m_diff_path[i](1)<<m_diff_path[i](2)<<m_diff_path[i](3);
-	x=(int)round((float)xyz(1));
-	y=(int)round((float)xyz(2));
-	z=(int)round((float)xyz(3));
+	x=(int)MISCMATHS::round((float)xyz(1));
+	y=(int)MISCMATHS::round((float)xyz(2));
+	z=(int)MISCMATHS::round((float)xyz(3));
 	Conrow4=m_lookup4(x,y,z);
 	
 	if(Conrow4>0){
@@ -1791,9 +1789,9 @@ namespace TRACT{
 	  d=opts.steplength.value();restarted=true;
 	  offset-=1;
 	}	
-	x=(int)round(float(m_diff_path[i](1)));
-	y=(int)round(float(m_diff_path[i](2)));
-	z=(int)round(float(m_diff_path[i](3)));
+	x=(int)MISCMATHS::round(float(m_diff_path[i](1)));
+	y=(int)MISCMATHS::round(float(m_diff_path[i](2)));
+	z=(int)MISCMATHS::round(float(m_diff_path[i](3)));
 
 	if(m_beenhere4(x,y,z)==0){
 	  rows.push_back(m_lookup4(x,y,z));
@@ -2061,7 +2059,7 @@ namespace TRACT{
 	// randfib==1 - random sampling of fibres bigger than fthresh
 	// randfib==2 random sampling of fibres bigger than fthresh in proporthion to their f-values. 
 	float tmp=rand()/float(RAND_MAX) * float(m_counter.get_stline().nfibres()-1);
-	fibst = (int)round(tmp);
+	fibst = (int)MISCMATHS::round(tmp);
       }
     
       // random jitter of seed point inside a sphere
