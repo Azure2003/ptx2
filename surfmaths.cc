@@ -1,9 +1,9 @@
 /*   surfmaths.cc 
      uniary and binary operations from fslmaths applied to surfaces
 
-     Saad Jbabdi, FMRIB Image Analysis Group
+     Saad Jbabdi and Matthew Webster, FMRIB Image Analysis Group
 
-     Copyright (C) 2012 University of Oxford  */
+     Copyright (C) 2012-2014 University of Oxford  */
      
 
 /* CCOPYRIGHT */
@@ -12,7 +12,7 @@
 #include "newmeshclass/newmesh.h"
 #include "miscmaths/miscmaths.h"
 #include "utils/fsl_isfinite.h"
-#include "libprob/libprob.h"
+#include "libprob.h"
 
 using namespace MISCMATHS;
 using namespace NEWMESH;
