@@ -9,7 +9,7 @@
 /* CCOPYRIGHT */
 
      
-#include "newmeshclass/newmesh.h"
+#include "newmesh/newmesh.h"
 #include "miscmaths/miscmaths.h"
 #include "utils/fsl_isfinite.h"
 #include "libprob.h"
