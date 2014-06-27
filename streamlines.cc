@@ -814,6 +814,7 @@ namespace TRACT{
 
 	    for(unsigned int wm=0;wm<waycrossed.size();wm++){
 	      m_net_passed_flags(waycrossed[wm]+1)=1;
+	      m_net_passed(waycrossed[wm]+1)=1;
 	    }
 	  }	  
 	}

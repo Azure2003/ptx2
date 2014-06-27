@@ -232,8 +232,7 @@ namespace TRACT{
     int                           m_seed_id;
     Matrix                        m_network_mat;
     ColumnVector                  m_net_passed_flags;
-    //vector<int>                   m_net_passed_flags;
-
+    ColumnVector                  m_net_passed;
 
     vector< vector<ColumnVector> > m_crossedvox;
     bool                           m_surfexists;
@@ -296,8 +295,7 @@ namespace TRACT{
 	m_way_passed_flags[i]=0;
       if(opts.network.value()){
 	m_net_passed_flags=0;
-	//for(unsigned int i=0;i<m_net_passed_flags.size();i++)
-	//m_net_passed_flags[i]=0;
+	m_net_passed=0;
       }
       m_tracksign=1;
     }
@@ -343,9 +341,8 @@ namespace TRACT{
       if(m_netmasks.nSurfs()>0){surfexists();}
       m_net_passed_flags.ReSize(m_netmasks.nRois());
       m_net_passed_flags=0;
-
-      //m_net_passed_flags.clear();
-      //m_net_passed_flags.resize(m_netmasks.nRois(),0);
+      m_net_passed.ReSize(m_netmasks.nRois());
+      m_net_passed=0;
 
     }
     void set_seed_id(const int i){m_seed_id=i;}
@@ -354,8 +351,8 @@ namespace TRACT{
       m_network_mat=0;
     }
     void update_mat(){
-      for(int i=1;i<=m_net_passed_flags.Nrows();i++){
-	if(m_net_passed_flags(i)==0){continue;}
+      for(int i=1;i<=m_net_passed.Nrows();i++){
+	if(m_net_passed(i)==0){continue;}
 	if(m_seed_id+1>i){m_network_mat(m_seed_id+1,i)++;}
 	else{m_network_mat(m_seed_id+1,i+1)++;}    
       }   
@@ -363,7 +360,6 @@ namespace TRACT{
     void save_network_mat(){
       write_ascii_matrix(m_network_mat,logger.appendDir("fdt_network_matrix"));
     }
-    const ColumnVector& net_passed_flags(){return m_net_passed_flags;}
 
     void load_waymasks(const string& filename){
       m_waymasks.reinitialize(m_seeds.get_refvol());
