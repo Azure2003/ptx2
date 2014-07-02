@@ -2059,8 +2059,8 @@ namespace TRACT{
 	//3 other possibilities - randfib==0 -> use fibst (default first fibre but can be set)
 	// randfib==1 - random sampling of fibres bigger than fthresh
 	// randfib==2 random sampling of fibres bigger than fthresh in proporthion to their f-values. 
-	float tmp=rand()/float(RAND_MAX) * float(m_counter.get_stline().nfibres()-1);
-	fibst = (int)MISCMATHS::round(tmp);
+	float tmp=rand()/float(RAND_MAX) * float(m_counter.get_stline().nfibres());
+	fibst = (int)floor(tmp);
       }
     
       // random jitter of seed point inside a sphere

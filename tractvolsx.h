@@ -87,7 +87,7 @@ namespace TRACTVOLSX{
 	  return 0;
 	}
 	if(mode==3){//sample all
-	  return int(MISCMATHS::round((float)(nfibres-1)*(float)rand()/float(RAND_MAX)));
+	  return int(floor((float)(nfibres)*(float)rand()/float(RAND_MAX)));
 	}
 	else{
 	  if(mode==1){//sample all>thresh
