@@ -77,8 +77,8 @@ namespace TRACTVOLSX{
 	  return 0;
 	}
 	else{
-	  float rtmp=(float)rand()/float(RAND_MAX) * float(fibvec.size()-1);
-	  return (fibvec[ (int)MISCMATHS::round(rtmp) ]);
+	  float rtmp=(float)rand()/float(RAND_MAX) * float(fibvec.size());
+	  return (fibvec[ (int)floor(rtmp) ]);
 	}
       }
 
