@@ -905,7 +905,44 @@ void CSV::save_rois(const string& fname){
   }
 }
 
-
+void CSV::divide_rois(CSV csv2){
+  bool divVOL=false;
+  for(int i=0;i<nrois;i++){
+    if(roitype[i]==VOLUME){//divide volumes
+      if(!divVOL){
+        for (int x=1; x<=hitvol.Nrows(); x++) {
+          for (int y=1; y<=hitvol.Ncols(); y++) {
+	    if(csv2.hitvol(x,y)){
+	        hitvol(x,y)=hitvol(x,y)/csv2.hitvol(x,y);
+            }else{
+	      hitvol(x,y)=0;
+	    }
+	  }
+        }
+        divVOL=true;
+      }
+    }else{ 
+      for(unsigned int j=0;j<roimesh[roisubind[i]]._pvalues.size();j++){
+	if(csv2.roimesh[roisubind[i]]._pvalues[j]){
+	  roimesh[roisubind[i]]._pvalues[j]=roimesh[roisubind[i]]._pvalues[j]/csv2.roimesh[roisubind[i]]._pvalues[j];
+	}else{
+	  roimesh[roisubind[i]]._pvalues[j]=0;
+	}
+      }
+    }
+  }
+}
+void CSV::divide_maps(CSV csv2){
+  for(int i=0;i<maps.size();i++){
+    for (int j=1; j<=maps[i].Nrows(); j++){
+      if(csv2.maps[i](j)){
+        maps[i](j)=maps[i](j)/csv2.maps[i](j);
+      }else{
+	maps[i](j)=0;
+      }
+    }
+  }
+}
 
 void CSV::cleanup(){
   nvols=0;nsurfs=0;nvoxels=0;nlocs=0;nrois=0;

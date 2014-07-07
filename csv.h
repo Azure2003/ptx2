@@ -313,6 +313,8 @@ public:
   void reload_rois  (const string& filename);
   void save_roi     (const int& roiind,const string& prefix);
   void save_rois    (const string& prefix);
+  void divide_rois  (CSV csv2);
+  void divide_maps  (CSV csv2);
   //void save_as_volume (const string& prefix);
   void fill_volume  (volume<float>& vol,const int& ind);
   void cleanup();
