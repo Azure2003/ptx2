@@ -42,6 +42,7 @@ class probtrackxOptions {
   Option<bool>             network;
   Option<bool>             simpleout;
   Option<bool>             pathdist;
+  Option<bool>             omeanpathlength; 
   Option<string>           pathfile;
   Option<bool>             s2tout;
   Option<bool>             s2tastext;
@@ -167,6 +168,9 @@ class probtrackxOptions {
    pathdist(string("--pd"), false,
 	    string("\tCorrect path distribution for the length of the pathways"),
 	    false, no_argument), 
+   omeanpathlength(string("--ompl"), false,
+	    string("\tOutput mean path length from seed"),
+	    false, no_argument),
    pathfile(string("--fopd"), "",
 	    string("\tOther mask for binning tract distribution"),
 	    false, requires_argument), 
@@ -347,6 +351,7 @@ class probtrackxOptions {
        options.add(network);
        options.add(simpleout);
        options.add(pathdist);
+       options.add(omeanpathlength);
        options.add(pathfile);
        options.add(s2tout);
        options.add(s2tastext);

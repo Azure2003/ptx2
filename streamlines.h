@@ -443,6 +443,7 @@ namespace TRACT{
     Log&                         logger;
 
     volume<float>                m_prob;      // spatial histogram of tract location within brain mask (in seed space)
+    volume<float>                m_prob2;     // for mean path length	
     volume4D<float>              m_localdir;
     volume<int>                  m_beenhere;
     Matrix                       m_I;
@@ -450,11 +451,13 @@ namespace TRACT{
     vector<ColumnVector>         m_diff_path;
     vector< vector<ColumnVector> > m_crossedvox;
     CSV                          m_prob_alt;  // spatial histogram of tracts with alternative user-defined mask
+    CSV                          m_prob_alt2; // for mean path length
     CSV                          m_beenhere_alt;
 
     // same as m_prob and m_localdir but split into the different
     // target masks if the option opts.targetpaths is ON
     vector< volume<float> >      m_prob_multi;
+    vector< volume<float> >      m_prob_multi2; // for mean path length
     vector< volume4D<float> >    m_localdir_multi;
     
 
@@ -478,16 +481,20 @@ namespace TRACT{
     CSV                          m_targetmasks;
     vector<bool>                 m_targflags;
     CSV                          m_s2t_count;
+    CSV                          m_s2t_count2;  // for mean path length
     Matrix                       m_s2tastext;
+    Matrix                       m_s2tastext2;  // for mean path length
     int                          m_s2trow;
     volume4D<float>              m_targetpaths;
 
     // MATRIX 1
     SpMat<float>                *m_ConMat1; // using sparse
+    SpMat<float>                *m_ConMat1b; // for mean path length
     int                          m_Conrow1;
 
     // MATRIX 2
     SpMat<float>                 *m_ConMat2; // using sparse
+    SpMat<float>                 *m_ConMat2b; // for mean path length
     volume<int>                  m_lrmask;
     volume<int>                  m_lookup2;
     volume<int>                  m_beenhere2;
@@ -495,6 +502,7 @@ namespace TRACT{
 
     // MATRIX 3
     SpMat<float>                 *m_ConMat3; // using sparse
+    SpMat<float>                 *m_ConMat3b; // for mean path length
     vector<int>                  m_inmask3;
 
     // MATRIX 4 - columns are seed space, rows are diffusion space
@@ -540,7 +548,14 @@ namespace TRACT{
 			  m_stline.get_seeds().ysize(),
 			  m_stline.get_seeds().zsize());
       copybasicproperties(m_stline.get_seeds().get_refvol(),m_prob);
-      m_prob=0;      
+      m_prob=0;   
+      if(opts.omeanpathlength.value()){    
+        m_prob2.reinitialize(m_stline.get_seeds().xsize(),
+			     m_stline.get_seeds().ysize(),
+			     m_stline.get_seeds().zsize());
+        copybasicproperties(m_stline.get_seeds().get_refvol(),m_prob2);
+        m_prob2=0;
+      }      
       if(opts.opathdir.value()){
 	m_localdir.reinitialize(m_stline.get_seeds().xsize(),
 				m_stline.get_seeds().ysize(),
@@ -555,6 +570,12 @@ namespace TRACT{
 	m_prob_alt.set_convention(opts.meshspace.value());
 	m_prob_alt.load_rois(opts.pathfile.value());
 	m_prob_alt.reset_values();
+        if(opts.omeanpathlength.value()){
+          m_prob_alt2.reinitialize(m_stline.get_seeds().get_refvol());
+	  m_prob_alt2.set_convention(opts.meshspace.value());
+	  m_prob_alt2.load_rois(opts.pathfile.value());
+	  m_prob_alt2.reset_values();
+	}
 	m_beenhere_alt.reinitialize(m_stline.get_seeds().get_refvol());
 	m_beenhere_alt.set_convention(opts.meshspace.value());
 	m_beenhere_alt.load_rois(opts.pathfile.value());

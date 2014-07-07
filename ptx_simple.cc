@@ -65,7 +65,7 @@ void track(){
     keeptot += seedmanager.run(xst,yst,zst,false,-1,opts.sampvox.value());
     string add="_"+num2str(Seeds(SN,1))+"_"+num2str(Seeds(SN,2))+"_"+num2str(Seeds(SN,3));
     
-    if(opts.simpleout.value())
+    if(opts.simpleout.value()||opts.omeanpathlength.value())
       counter.save_pathdist(add);
 
     counter.reset_prob();

@@ -1007,7 +1007,7 @@ namespace TRACT{
   
   void Counter::initialise(){
    
-    if(opts.simpleout.value()){
+    if(opts.simpleout.value()||opts.omeanpathlength.value()){
       initialise_path_dist();
     }
     if(opts.s2tout.value()){
@@ -1044,11 +1044,22 @@ namespace TRACT{
       for(int m=0;m<m_targetmasks.nRois();m++){
 	m_s2t_count.add_map();
       }
+      if(opts.omeanpathlength.value()){
+	m_s2t_count2=m_stline.get_seeds();
+        m_s2t_count2.reset_values();
+        for(int m=0;m<m_targetmasks.nRois();m++){
+	  m_s2t_count2.add_map();
+        }
+      }
     }
     // seeds are text
-    if(opts.simple.value() || opts.s2tastext.value()){
+    if(opts.simple.value() || opts.s2tastext.value() || opts.omeanpathlength.value()){
       m_s2tastext.ReSize(m_numseeds,m_targetmasks.nRois());
       m_s2tastext=0;
+      if(opts.omeanpathlength.value()){
+	m_s2tastext2.ReSize(m_numseeds,m_targetmasks.nRois());
+        m_s2tastext2=0;
+      }
     }
 
     m_s2trow=1;
@@ -1069,6 +1080,16 @@ namespace TRACT{
 	copybasicproperties(m_stline.get_seeds().get_refvol(),m_prob_multi[t]);
 	m_prob_multi[t]=0;  
       }
+      if(opts.omeanpathlength.value()){
+        m_prob_multi2.resize(m_targetmasks.nRois());
+        for(int t=0;t<m_targetmasks.nRois();t++){
+	  m_prob_multi2[t].reinitialize(m_stline.get_seeds().xsize(),
+				       m_stline.get_seeds().ysize(),
+				       m_stline.get_seeds().zsize());
+	  copybasicproperties(m_stline.get_seeds().get_refvol(),m_prob_multi2[t]);
+	  m_prob_multi2[t]=0;  
+        }
+      }
       if(opts.opathdir.set()){
 	m_localdir_multi.resize(m_targetmasks.nRois());
 	for(int t=0;t<m_targetmasks.nRois();t++){
@@ -1086,6 +1107,7 @@ namespace TRACT{
   // matrix1 is nseeds X nseeds
   void Counter::initialise_matrix1(){
     m_ConMat1 = new SpMat<float> (m_numseeds,m_numseeds);
+    if(opts.omeanpathlength.value()) m_ConMat1b = new SpMat<float> (m_numseeds,m_numseeds);
     m_Conrow1 = 1;
 
     vector<ColumnVector> coords = m_stline.get_seeds().get_locs_coords();
@@ -1145,6 +1167,7 @@ namespace TRACT{
     
     // init matrix2-related
     m_ConMat2 = new SpMat<float> (m_numseeds,numnz);
+    if(opts.omeanpathlength.value()) m_ConMat2b = new SpMat<float> (m_numseeds,numnz);
 
     if( !opts.simple.value()){
       vector<ColumnVector> coords = m_stline.get_seeds().get_locs_coords();
@@ -1183,6 +1206,7 @@ namespace TRACT{
 
     // recalculate nmask3 if lowres surface provided
     m_ConMat3  = new SpMat<float> (nmask3,nlrmask3); 
+    if(opts.omeanpathlength.value()) m_ConMat3b = new SpMat<float> (nmask3,nlrmask3); 
     //OUT(m_ConMat3->Nrows());
     //OUT(m_ConMat3->Ncols());
     //exit(1);
@@ -1304,7 +1328,7 @@ namespace TRACT{
     if(opts.save_paths.value()){
       add_path();
     }
-    if(opts.simpleout.value()||opts.matrix1out.value()){
+    if(opts.simpleout.value()||opts.matrix1out.value()||opts.omeanpathlength.value()){
       update_pathdist();
     }
     if(opts.s2tout.value()){
@@ -1328,7 +1352,7 @@ namespace TRACT{
   }
 
   void Counter::clear_streamline(){
-    if(opts.simpleout.value()||opts.matrix1out.value()){
+    if(opts.simpleout.value()||opts.matrix1out.value()||opts.omeanpathlength.value()){
       reset_beenhere();
     }
     if(opts.s2tout.value()){
@@ -1373,6 +1397,12 @@ namespace TRACT{
 	  m_prob(x_s,y_s,z_s)+=1; 
 	else
 	  m_prob(x_s,y_s,z_s)+=pathlength;
+        if(opts.omeanpathlength.value()){
+	  if(!opts.pathdist.value())
+	    m_prob2(x_s,y_s,z_s)+=pathlength; 
+	  else
+	    m_prob2(x_s,y_s,z_s)+=1;
+        }
 	m_beenhere(x_s,y_s,z_s)=1;
 	
 	if(opts.opathdir.value() && !restarted){
@@ -1416,6 +1446,12 @@ namespace TRACT{
 		  m_prob_alt.add_value(crossedlocs[i],1); 
 		else
 		  m_prob_alt.add_value(crossedlocs[i],pathlength);
+                if(opts.omeanpathlength.value()){
+		  if(!opts.pathdist.value())
+		    m_prob_alt2.add_value(crossedlocs[i],pathlength); 
+		  else
+	            m_prob_alt2.add_value(crossedlocs[i],1);
+                }
 		m_beenhere_alt.set_value(crossedlocs[i],2);
 	      }
 	    }
@@ -1543,17 +1579,28 @@ namespace TRACT{
 	if(m_targflags[crossed[t]])continue;
 
 	if(!opts.simple.value()){
-	  if(!opts.pathdist.value()){
+	  if(!opts.pathdist.value())
 	    m_s2t_count.add_map_value(m_curloc,1,crossed[t]);
-	  }
 	  else
 	    m_s2t_count.add_map_value(m_curloc,pathlength,crossed[t]);
+	  if(opts.omeanpathlength.value()){
+	    if(!opts.pathdist.value())
+	      m_s2t_count2.add_map_value(m_curloc,pathlength,crossed[t]);
+	    else
+	      m_s2t_count2.add_map_value(m_curloc,1,crossed[t]);
+	  }
 	}
 	if(opts.simple.value() || opts.s2tastext.value()){
 	  if(!opts.pathdist.value())
 	    m_s2tastext(m_s2trow,crossed[t]+1)+=1;
 	  else
 	    m_s2tastext(m_s2trow,crossed[t]+1)+=pathlength;
+          if(opts.omeanpathlength.value()){
+	    if(!opts.pathdist.value())
+	      m_s2tastext2(m_s2trow,crossed[t]+1)+=pathlength;
+	    else
+	      m_s2tastext2(m_s2trow,crossed[t]+1)+=1;
+          }
 	}
 	m_targflags[crossed[t]]=true;cnt++;
 
@@ -1593,7 +1640,12 @@ namespace TRACT{
 	    m_prob_multi[t](x_s,y_s,z_s)+=1; 
 	  else
 	    m_prob_multi[t](x_s,y_s,z_s)+=pathlength;
-
+	  if(opts.omeanpathlength.value()){
+	    if(!opts.pathdist.value())
+	      m_prob_multi2[t](x_s,y_s,z_s)+=pathlength; 
+	    else
+	      m_prob_multi2[t](x_s,y_s,z_s)+=1;
+ 	  }
 	  if(opts.opathdir.value() && i>0){
 	    ColumnVector v(3);
 	    v=m_path[i]-m_path[i-1];
@@ -1626,6 +1678,7 @@ namespace TRACT{
       if((m_path[i]-m_path[0]).MaximumAbsoluteValue()==0){
 	pathlength=opts.steplength.value();
 	val = opts.pathdist.value()?pathlength:1;
+	if(opts.omeanpathlength.value()) val = pathlength;
 	offset-=1;
 	continue;
       }
@@ -1642,6 +1695,7 @@ namespace TRACT{
       }
       
       val = opts.pathdist.value()?pathlength:1;      
+      if(opts.omeanpathlength.value()) val = pathlength;  
       pathlength+=opts.steplength.value();
     }
     // fill matrix1
@@ -1652,6 +1706,7 @@ namespace TRACT{
     for(unsigned int i=0;i<allcrossed.size();i++){
       //m_ConMat1->AddTo(m_Conrow1,allcrossed[i]+1,allvals[i]);
       m_ConMat1->AddTo(m_curloc+1,allcrossed[i]+1,allvals[i]);
+      if(opts.omeanpathlength.value()) m_ConMat1b->AddTo(m_curloc+1,allcrossed[i]+1,1);
     }
   }
   
@@ -1673,11 +1728,16 @@ namespace TRACT{
       Concol2=m_lookup2(x_lr,y_lr,z_lr);
 
       if(Concol2>0){
-	if(m_beenhere2(x_lr,y_lr,z_lr)==0){	  
-	  if(!opts.pathdist.value())
-	    m_ConMat2->AddTo(m_curloc+1,Concol2,1);
-	  else
-	    m_ConMat2->AddTo(m_curloc+1,Concol2,d);
+	if(m_beenhere2(x_lr,y_lr,z_lr)==0){
+	  if(opts.omeanpathlength.value()){
+            m_ConMat2->AddTo(m_curloc+1,Concol2,d);
+	    m_ConMat2b->AddTo(m_curloc+1,Concol2,1);
+          }else{  
+	    if(!opts.pathdist.value())
+	      m_ConMat2->AddTo(m_curloc+1,Concol2,1);
+	    else
+	      m_ConMat2->AddTo(m_curloc+1,Concol2,d);
+          }
 	  m_beenhere2(x_lr,y_lr,z_lr)=1;
 	  d+=opts.steplength.value();
 	}
@@ -1703,11 +1763,17 @@ namespace TRACT{
     if(!uselr){// where we update NxN matrix
       for(unsigned int i=0;i<inmask3.size();i++){
 	for(unsigned int j=i+1;j<inmask3.size();j++){
-	  if(!opts.pathdist.value())
-	    m_ConMat3->AddTo(inmask3[i].first+1,inmask3[j].first+1,1);
-	  else{
+	  if(opts.omeanpathlength.value()){
 	    float val = fabs(inmask3[i].second-inmask3[j].second);
 	    m_ConMat3->AddTo(inmask3[i].first+1,inmask3[j].first+1,val);
+            m_ConMat3b->AddTo(inmask3[i].first+1,inmask3[j].first+1,1); 
+	  }else{
+	    if(!opts.pathdist.value())
+	      m_ConMat3->AddTo(inmask3[i].first+1,inmask3[j].first+1,1);
+	    else{
+	      float val = fabs(inmask3[i].second-inmask3[j].second);
+	      m_ConMat3->AddTo(inmask3[i].first+1,inmask3[j].first+1,val);
+	    }
 	  }
 	}
       }
@@ -1716,11 +1782,17 @@ namespace TRACT{
       make_unique(inlrmask3);
       for(unsigned int i=0;i<inmask3.size();i++){
 	for(unsigned int j=0;j<inlrmask3.size();j++){
-	  if(!opts.pathdist.value())
-	    m_ConMat3->AddTo(inmask3[i].first+1,inlrmask3[j].first+1,1);
-	  else{
+          if(opts.omeanpathlength.value()){
 	    float val = fabs(inmask3[i].second-inlrmask3[j].second);
 	    m_ConMat3->AddTo(inmask3[i].first+1,inlrmask3[j].first+1,val);
+	    m_ConMat3b->AddTo(inmask3[i].first+1,inlrmask3[j].first+1,1);
+	  }else{
+	    if(!opts.pathdist.value())
+	      m_ConMat3->AddTo(inmask3[i].first+1,inlrmask3[j].first+1,1);
+	    else{
+	      float val = fabs(inmask3[i].second-inlrmask3[j].second);
+	      m_ConMat3->AddTo(inmask3[i].first+1,inlrmask3[j].first+1,val);
+	    }
 	  }
 	}
       }
@@ -1846,7 +1918,7 @@ namespace TRACT{
   }
 
   void Counter::save(){
-    if(opts.simpleout.value() && !opts.simple.value()){
+    if((opts.simpleout.value()||opts.omeanpathlength.value()) && !opts.simple.value()){
       save_pathdist();
     }
     if(opts.network.value()){
@@ -1909,6 +1981,44 @@ namespace TRACT{
       tmplocdir.setDisplayMaximumMinimum(1,-1);
       save_volume4D(tmplocdir,logger.appendDir(opts.outfile.value()+"_localdir"));
     }
+    if(opts.omeanpathlength.value()){
+      if(!opts.pathdist.value()){
+	for (int z=0; z<m_prob.zsize(); z++) {
+          for (int y=0; y<m_prob.ysize(); y++) {
+	    for (int x=0; x<m_prob.xsize(); x++) {
+	      if(m_prob(x,y,z)){
+	        m_prob(x,y,z)=m_prob2(x,y,z)/m_prob(x,y,z);
+              }else{
+	        m_prob(x,y,z)=0;
+	      }
+	    }
+	  }
+        }
+      }else{
+	for (int z=0; z<m_prob.zsize(); z++) {
+          for (int y=0; y<m_prob.ysize(); y++) {
+	    for (int x=0; x<m_prob.xsize(); x++) {
+	      if(m_prob2(x,y,z)){
+	        m_prob(x,y,z)=m_prob(x,y,z)/m_prob2(x,y,z);
+              }else{
+	        m_prob(x,y,z)=0;
+	      }
+	    }
+	  }
+        }
+      }
+      m_prob.setDisplayMaximumMinimum(m_prob.max(),m_prob.min());
+      save_volume(m_prob,logger.appendDir(opts.outfile.value())+"_lengths");
+      if(opts.pathfile.set()){
+        if(!opts.pathdist.value()){
+	  m_prob_alt2.divide_rois(m_prob_alt);
+	  m_prob_alt2.save_rois(logger.appendDir(opts.outfile.value())+"_alt_lengths");
+	}else{
+	  m_prob_alt.divide_rois(m_prob_alt2);
+          m_prob_alt.save_rois(logger.appendDir(opts.outfile.value())+"_alt_lengths");
+	}
+      }
+    }
   }
   
   void Counter::save_pathdist(string add){  //for simple mode
@@ -1919,6 +2029,44 @@ namespace TRACT{
     save_volume(m_prob,logger.appendDir(thisout));
     if(opts.pathfile.set()){
       m_prob_alt.save_rois(logger.appendDir(thisout)+"_alt");
+    }
+    if(opts.omeanpathlength.value()){
+      if(!opts.pathdist.value()){
+        for (int z=0; z<m_prob.zsize(); z++) {
+          for (int y=0; y<m_prob.ysize(); y++) {
+	    for (int x=0; x<m_prob.xsize(); x++) {
+	      if(m_prob(x,y,z)){
+	        m_prob(x,y,z)=m_prob2(x,y,z)/m_prob(x,y,z);
+              }else{
+	        m_prob(x,y,z)=0;
+	      }
+	    }
+	  }
+        }
+      }else{
+    	for (int z=0; z<m_prob.zsize(); z++) {
+          for (int y=0; y<m_prob.ysize(); y++) {
+	    for (int x=0; x<m_prob.xsize(); x++) {
+	      if(m_prob2(x,y,z)){
+	        m_prob(x,y,z)=m_prob(x,y,z)/m_prob2(x,y,z);
+              }else{
+	        m_prob(x,y,z)=0;
+	      }
+	    }
+	  }
+        }
+      } 
+      m_prob.setDisplayMaximumMinimum(m_prob.max(),m_prob.min());
+      save_volume(m_prob,logger.appendDir(thisout)+"_lengths");
+      if(opts.pathfile.set()){
+	if(!opts.pathdist.value()){
+	  m_prob_alt2.divide_rois(m_prob_alt);
+	  m_prob_alt2.save_rois(logger.appendDir(thisout)+"_alt_lengths");
+	}else{
+	  m_prob_alt.divide_rois(m_prob_alt2);
+          m_prob_alt.save_rois(logger.appendDir(thisout)+"_alt_lengths");
+	}
+      }
     }
   }
 
@@ -1989,8 +2137,86 @@ namespace TRACT{
 	}
       }
     }
-
-    
+    if(opts.omeanpathlength.value()){
+      if(!opts.pathdist.value()){
+        m_s2t_count2.divide_maps(m_s2t_count);
+        for(int m=0;m<m_targetmasks.nRois();m++){
+          if(m_s2t_count2.nRois()>1){
+	    for(int i=0;i<m_s2t_count2.nRois();i++)
+	      m_s2t_count2.save_map(i,m,logger.appendDir("seeds_"+num2str(i)+"_to_"+targetnames[m]+"_lengths"));
+          }else{// keep this nomenclature for backward compatibility
+	    m_s2t_count2.save_map(0,m,logger.appendDir("seeds_to_"+targetnames[m]+"_lengths"));
+          }	
+        }
+      }else{
+	m_s2t_count.divide_maps(m_s2t_count2);
+        for(int m=0;m<m_targetmasks.nRois();m++){
+          if(m_s2t_count.nRois()>1){
+	    for(int i=0;i<m_s2t_count.nRois();i++)
+	      m_s2t_count.save_map(i,m,logger.appendDir("seeds_"+num2str(i)+"_to_"+targetnames[m]+"_lengths"));
+          }else{// keep this nomenclature for backward compatibility
+	    m_s2t_count.save_map(0,m,logger.appendDir("seeds_to_"+targetnames[m]+"_lengths"));
+          }	
+        }
+      }
+      if(opts.s2tastext.value()){
+	if(!opts.pathdist.value()){
+          for(int i=1;i<=m_s2tastext.Nrows();i++){
+	    for(int j=1;j<=m_s2tastext.Ncols();j++){
+	      if(m_s2tastext(i,j))
+              	m_s2tastext(i,j)=m_s2tastext2(i,j)/m_s2tastext(i,j);
+	      else
+		m_s2tastext(i,j)=0;
+            }
+          }
+	}else{
+	  for(int i=1;i<=m_s2tastext.Nrows();i++){
+	    for(int j=1;j<=m_s2tastext.Ncols();j++){
+	      if(m_s2tastext2(i,j))
+                m_s2tastext(i,j)=m_s2tastext(i,j)/m_s2tastext2(i,j);
+	      else
+		m_s2tastext(i,j)=0;
+            }
+          }
+	}
+	write_ascii_matrix(m_s2tastext,logger.appendDir("matrix_seeds_to_all_targets_lengths"));
+      }
+      if(opts.targetpaths.value()){
+	if(!opts.pathdist.value()){
+          for(unsigned int t=0;t<m_prob_multi.size();t++){
+            for (int z=0; z<m_prob_multi[t].zsize(); z++) {
+              for (int y=0; y<m_prob_multi[t].ysize(); y++) {
+	        for (int x=0; x<m_prob_multi[t].xsize(); x++) {
+	          if(m_prob_multi[t](x,y,z)){
+	            m_prob_multi[t](x,y,z)=m_prob_multi2[t](x,y,z)/m_prob_multi[t](x,y,z);
+                  }else{
+	            m_prob_multi[t](x,y,z)=0;
+	          }
+	        }
+	      }
+            }
+	    m_prob_multi[t].setDisplayMaximumMinimum(m_prob_multi[t].max(),m_prob_multi[t].min());
+	    save_volume(m_prob_multi[t],logger.appendDir("target_paths_"+targetnames[t]+"_lengths"));
+          }
+	}else{
+	  for(unsigned int t=0;t<m_prob_multi.size();t++){
+            for (int z=0; z<m_prob_multi[t].zsize(); z++) {
+              for (int y=0; y<m_prob_multi[t].ysize(); y++) {
+	        for (int x=0; x<m_prob_multi[t].xsize(); x++) {
+	          if(m_prob_multi2[t](x,y,z)){
+	            m_prob_multi[t](x,y,z)=m_prob_multi[t](x,y,z)/m_prob_multi2[t](x,y,z);
+                  }else{
+	            m_prob_multi[t](x,y,z)=0;
+	          }
+	        }
+	      }
+            }
+	    m_prob_multi[t].setDisplayMaximumMinimum(m_prob_multi[t].max(),m_prob_multi[t].min());
+	    save_volume(m_prob_multi[t],logger.appendDir("target_paths_"+targetnames[t]+"_lengths"));
+          }
+	}
+      }
+    }
   }
     
   // the following is a helper function for save_matrix*
@@ -2019,15 +2245,65 @@ namespace TRACT{
   }
 
   void Counter::save_matrix1(){
-    m_ConMat1->Print(logger.appendDir("fdt_matrix1.dot"));
+    if(!opts.omeanpathlength.value()){
+      m_ConMat1->Print(logger.appendDir("fdt_matrix1.dot"));
+    }else{
+      if(!opts.pathdist.value()){
+	m_ConMat1b->Print(logger.appendDir("fdt_matrix1.dot"));
+      }else{
+	m_ConMat1->Print(logger.appendDir("fdt_matrix1.dot"));
+      }
+      for(unsigned int i=1;i<=m_ConMat1->Nrows();i++){
+	for(unsigned int j=1;j<=m_ConMat1->Ncols();j++){
+	  if(m_ConMat1b->Peek(i,j)){
+	    m_ConMat1->Set(i,j,m_ConMat1->Peek(i,j)/m_ConMat1b->Peek(i,j));
+          }
+        }
+      }
+      m_ConMat1->Print(logger.appendDir("fdt_matrix1_lengths.dot"));
+    }
   }
 
   void Counter::save_matrix2(){
-    m_ConMat2->Print(logger.appendDir("fdt_matrix2.dot")); 
+    if(!opts.omeanpathlength.value()){
+      m_ConMat2->Print(logger.appendDir("fdt_matrix2.dot"));
+    }else{
+      if(!opts.pathdist.value()){
+	m_ConMat2b->Print(logger.appendDir("fdt_matrix2.dot")); 
+      }else{
+	m_ConMat2->Print(logger.appendDir("fdt_matrix2.dot")); 
+      }
+      for(unsigned int i=1;i<=m_ConMat2->Nrows();i++){
+	for(unsigned int j=1;j<=m_ConMat2->Ncols();j++){
+	  if(m_ConMat2b->Peek(i,j)){
+	    m_ConMat2->Set(i,j,m_ConMat2->Peek(i,j)/m_ConMat2b->Peek(i,j));
+          }
+        }
+      }
+      m_ConMat2->Print(logger.appendDir("fdt_matrix2_lengths.dot"));
+    }
   }
 
   void Counter::save_matrix3(){
-    m_ConMat3->Print(logger.appendDir("fdt_matrix3.dot"));
+    if(!opts.omeanpathlength.value()){
+      m_ConMat3->Print(logger.appendDir("fdt_matrix3.dot"));
+    }else{
+      if(!opts.pathdist.value()){
+	m_ConMat3b->Print(logger.appendDir("fdt_matrix3.dot"));
+      }else{
+	m_ConMat3->Print(logger.appendDir("fdt_matrix3.dot"));
+      }
+      if(opts.omeanpathlength.value()){
+        for(unsigned int i=1;i<=m_ConMat3->Nrows();i++){
+	  for(unsigned int j=1;j<=m_ConMat3->Ncols();j++){
+	    if(m_ConMat3b->Peek(i,j)){
+	      m_ConMat3->Set(i,j,m_ConMat3->Peek(i,j)/m_ConMat3b->Peek(i,j));
+            }
+          }
+        }
+      }
+      m_ConMat3->Print(logger.appendDir("fdt_matrix3_lengths.dot"));
+    }
   }
   void Counter::save_matrix4(){
     m_ConMat4->SaveTrajFile(logger.appendDir("fdt_matrix4_"));    
