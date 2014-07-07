@@ -691,7 +691,7 @@ namespace TRACT{
     if (opts.wtstopfiles.value()!=""){ //use wtstop masks
       for (int i=0; i<m_wtstopmasks.nRois(); i++)
 	wtstop_flags.push_back(0);
-      if (m_wtstopmasks.isInRoi(m_x_s_init, m_y_s_init=y_init, m_z_s_init) || opts.forcefirststep.value()) //If seed is in one of wtstop masks allow propagation and exit out of the respective wtstop mask 
+      if (m_wtstopmasks.isInRoi(m_x_s_init, m_y_s_init, m_z_s_init) || opts.forcefirststep.value()) //If seed is in one of wtstop masks allow propagation and exit out of the respective wtstop mask 
 	wtstop_count=-1;                                                    
     }
 
@@ -886,7 +886,12 @@ namespace TRACT{
 	  for (unsigned int el=0; el<wtstop_flags.size(); el++) { wtstop_flags[el]=0; }
 	  m_wtstopmasks.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,wtstopcrossed);
 	  for(unsigned int wm=0;wm<wtstopcrossed.size();wm++){ wtstop_flags[wtstopcrossed[wm]]=1; }
-	  if (wtstop_flags != prev_wtstop_flags) {wtstop_count++; }
+	  if (wtstop_flags != prev_wtstop_flags) {
+            wtstop_count++;
+	    for (unsigned int el=0; el<wtstop_flags.size(); el++){ 
+	       if (m_wtstopmasks.get_roitype(el)==SURFACE) wtstop_flags[el]=0; 
+            }
+          }
 	  if (wtstop_count==2){ //stop
 	    // remove last path point? Yes, so that counters don't count 2nd crossings	
 	    m_path.pop_back();cnt--;
