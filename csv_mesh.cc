@@ -502,8 +502,8 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
 
     dir = p[1]-p[0];             // ray direction vector
     w0 = p[0]-_vertice[0];
-    a = -(n|w0);
-    b = (n|dir);
+    a = -(n|w0)/n.norm()/w0.norm();
+    b = (n|dir)/n.norm()/dir.norm();
     if (fabs(b) < 0.001) { // ray is parallel to triangle plane
       if (fabs(a) < 0.001)                 // ray lies in triangle plane
 	{ind=0;return true;}
