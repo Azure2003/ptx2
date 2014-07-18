@@ -77,7 +77,7 @@ namespace TRACTVOLSX{
 	  return 0;
 	}
 	else{
-	  float rtmp=(float)rand()/float(RAND_MAX) * float(fibvec.size());
+	  float rtmp=(float)rand()/(float(RAND_MAX)+1) * float(fibvec.size());
 	  return (fibvec[ (int)floor(rtmp) ]);
 	}
       }
@@ -87,7 +87,7 @@ namespace TRACTVOLSX{
 	  return 0;
 	}
 	if(mode==3){//sample all
-	  return int(floor((float)(nfibres)*(float)rand()/float(RAND_MAX)));
+	  return int(floor((float)(nfibres)*(float)rand()/(float(RAND_MAX)+1)));
 	}
 	else{
 	  if(mode==1){//sample all>thresh
@@ -102,7 +102,7 @@ namespace TRACTVOLSX{
 	      return 0;
 	    }
 	    else{
-	      float rtmp=(float)rand()/float(RAND_MAX) * float(fibvec.size());
+	      float rtmp=(float)rand()/(float(RAND_MAX)+1) * float(fibvec.size());
 	      return (fibvec[ (int)floor(rtmp) ]);
 	    }
 	  }

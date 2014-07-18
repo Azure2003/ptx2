@@ -2340,7 +2340,7 @@ namespace TRACT{
 	//3 other possibilities - randfib==0 -> use fibst (default first fibre but can be set)
 	// randfib==1 - random sampling of fibres bigger than fthresh
 	// randfib==2 random sampling of fibres bigger than fthresh in proporthion to their f-values. 
-	float tmp=rand()/float(RAND_MAX) * float(m_counter.get_stline().nfibres());
+	float tmp=rand()/(float(RAND_MAX)+1) * float(m_counter.get_stline().nfibres());
 	fibst = (int)floor(tmp);
       }
     
