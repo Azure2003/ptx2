@@ -186,7 +186,11 @@ bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
 // this one fills a vector of which rois are crossed
 // and also fills in which locations are crossed (e.g. for matrix{1,3})
 bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
-			  const vector<ColumnVector>& crossed,vector<int>& crossedrois,vector<int>& crossedlocs)const{
+			  const vector<ColumnVector>& crossed,
+			  vector<int>& crossedrois,
+			  vector<int>& crossedlocs,
+			  vector< pair<int,int> >& surf_Triangle,
+			  bool closestvertex)const{
   //Tracer_Plus tr("CSV::hascrossed3");
   // x1 and x2 in voxel space
   int ix,iy,iz;
@@ -204,6 +208,10 @@ bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
 	  ret=true;
 	  crossedrois.push_back(volind[i-1]);	  	  
 	  crossedlocs.push_back(vol2loc(ix,iy,iz,i-1)); 
+	  pair<int,int> mypair;			//only needed for surfaces,
+	  mypair.first=-1;			//but vectors surf_Triangle and crossedlocs need to have same size
+	  mypair.second=-1;			//it will check later if value is -1, and then it will assume that it is from a volume
+	  surf_Triangle.push_back(mypair);
 	}
       }
     }
@@ -244,26 +252,63 @@ bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
   for(unsigned int i=0;i<localtriangles.size();i++){
     indmesh=localtriangles[i].first;
     indtri=localtriangles[i].second-1;
-
-    if(roimesh[indmesh].triangle_intersect(segment,indtri)){
-      ret=true;
-      crossedrois.push_back( surfind[indmesh] );
-      // consider all active vertices as being crossed
-      ind = roimesh[indmesh].get_triangle(indtri).get_vertice(0).get_no();	  
-      ind = mesh2loc[indmesh][ind];
-      if(ind>=0)
-	crossedlocs.push_back(ind);
-      ind = roimesh[indmesh].get_triangle(indtri).get_vertice(1).get_no();	  
-      ind = mesh2loc[indmesh][ind];
-      if(ind>=0)
-	crossedlocs.push_back(ind);
-      ind = roimesh[indmesh].get_triangle(indtri).get_vertice(2).get_no();	  
-      ind = mesh2loc[indmesh][ind];
-      if(ind>=0)
-	crossedlocs.push_back(ind);	  			
+ 
+    // by default consider all active vertices as being crossed
+    if(!closestvertex){
+      if(roimesh[indmesh].triangle_intersect(segment,indtri)){
+        ret=true;
+        crossedrois.push_back( surfind[indmesh] );
+      
+        ind = roimesh[indmesh].get_triangle(indtri).get_vertice(0).get_no();	  
+        ind = mesh2loc[indmesh][ind];
+	//printf("VERTEX %i IND %i\n",0,ind);
+        if(ind>=0){		
+	  crossedlocs.push_back(ind);
+	  pair<int,int> mypair;
+	  mypair.first=indmesh;
+	  mypair.second=indtri;
+	  surf_Triangle.push_back(mypair);	//to avoid connections between vertices of the same triangle
+	}
+        ind = roimesh[indmesh].get_triangle(indtri).get_vertice(1).get_no();	  
+        ind = mesh2loc[indmesh][ind];
+	//printf("VERTEX %i IND %i\n",1,ind);
+        if(ind>=0){		
+	  crossedlocs.push_back(ind);
+	  pair<int,int> mypair;
+	  mypair.first=indmesh;
+	  mypair.second=indtri;
+	  surf_Triangle.push_back(mypair);	//to avoid connections between vertices of the same triangle
+	}
+        ind = roimesh[indmesh].get_triangle(indtri).get_vertice(2).get_no();	  
+        ind = mesh2loc[indmesh][ind];
+	//printf("VERTEX %i IND %i\n",2,ind);
+        if(ind>=0){
+	  crossedlocs.push_back(ind);
+	  pair<int,int> mypair;
+	  mypair.first=indmesh;
+	  mypair.second=indtri;
+	  surf_Triangle.push_back(mypair);	//to avoid connections between vertices of the same triangle
+	}
+      }       
+    // if closestvertex option, consider only the closest vertex crossed
+    }else{
+      int closest;
+      if(roimesh[indmesh].triangle_intersect(segment,indtri,closest)){
+        ret=true;
+        crossedrois.push_back( surfind[indmesh] );
+      
+        ind = roimesh[indmesh].get_triangle(indtri).get_vertice(closest).get_no();	  
+        ind = mesh2loc[indmesh][ind];
+	//printf("VERTEX %i IND %i\n",closest,ind);
+        if(ind>=0){
+	  crossedlocs.push_back(ind);
+	  pair<int,int> mypair;
+	  mypair.first=indmesh;
+	  mypair.second=indtri;
+	  surf_Triangle.push_back(mypair);	//to avoid connections between vertices of the same triangle
+	}
+      }		
     }
-  
-    
   }
   return ret;
 }

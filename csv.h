@@ -50,10 +50,6 @@ bool rayBoxIntersection(float origin[3],float direction[3],float vminmax[2][3]);
 bool segTriangleIntersection(float seg[2][3],float tri[3][3]);
 float triDistPoint(const Triangle& t,const ColumnVector pos);
 
-
-
-
-
 // This is the main class that can handle an ROI made of a bunch of voxels and surface vertices
 // Its main role is to tell you whether a point is in the ROI (voxels) or whether a line segment
 // crossed its surface
@@ -374,7 +370,8 @@ public:
   bool has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
 		       const vector<ColumnVector>& crossedvox,vector<int>& crossedrois)const;
   bool has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
-		       const vector<ColumnVector>& crossedvox,vector<int>& crossedrois,vector<int>& crossedlocs)const;
+		       const vector<ColumnVector>& crossedvox,vector<int>& crossedrois,vector<int>& crossedlocs,
+		       vector< pair<int,int> >& surf_Triangle,bool closestvertex)const;
 
 
   int step_sign(const int& loc,const Vec& step)const;

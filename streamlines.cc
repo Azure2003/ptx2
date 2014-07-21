@@ -423,7 +423,15 @@ namespace TRACT{
     }
     
   }
-  
+  bool compare_Vertices(const pair<int,infoVertex> &x, const pair<int,infoVertex> &y){
+    if(x.first<y.first) return true;
+    if(x.first>y.first) return false;
+    if(x.second.mesh<y.second.mesh) return true;
+    if(x.second.mesh>y.second.mesh) return false;
+    if(x.second.triangle<y.second.triangle) return true;
+    if(x.second.triangle>y.second.triangle) return false;
+    return (x.second.value<y.second.value);
+  }
   void make_unique(vector<int>& x,vector<float>& y){
     // sort
     vector< pair<int,int> > p;
@@ -470,6 +478,18 @@ namespace TRACT{
     for(unsigned int i=0;i<x.size();i++){
       if(i>0){
 	if( x[i].first==x[i-1].first )continue;
+      }
+      xx.push_back(x[i]);
+    }
+    x=xx;
+  }
+ 
+  void make_unique(vector< pair<int,infoVertex> >&x){
+    sort(x.begin(),x.end(),compare_Vertices);
+    vector< pair<int,infoVertex> > xx;
+    for(unsigned int i=0;i<x.size();i++){
+      if(i>0){
+	if( x[i].first==x[i-1].first && x[i].second.mesh==x[i-1].second.mesh && x[i].second.triangle==x[i-1].second.triangle )continue;
       }
       xx.push_back(x[i]);
     }
@@ -583,8 +603,6 @@ namespace TRACT{
 
     m_inmask3.reserve(opts.nsteps.value());
     m_inlrmask3.reserve(opts.nsteps.value()); 
-
-    
   }
   
   void Streamliner::rotdir(const ColumnVector& dir,ColumnVector& rotdir,
@@ -669,6 +687,7 @@ namespace TRACT{
     vector<int>    wtstopcrossed;
 
     vector<int>    crossedlocs3;
+    vector< pair<int,int> > surf_Triangle3;
     vector<ColumnVector> crossedvox;
 
     int            cnt=-1;
@@ -822,15 +841,15 @@ namespace TRACT{
 	// //////////////////////////////
 	// update locations for matrix3
 	if(opts.matrix3out.value() && cnt>0){
-	  waycrossed.clear();crossedlocs3.clear();
-	  if(m_mask3.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,waycrossed,crossedlocs3)){	    
-	    fill_inmask3(crossedlocs3,pathlength);
+	  waycrossed.clear();crossedlocs3.clear();surf_Triangle3.clear();
+	  if(m_mask3.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,waycrossed,crossedlocs3,surf_Triangle3,opts.closestvertex.value())){	    
+	    fill_inmask3(crossedlocs3,surf_Triangle3,pathlength);
 	  }
 	  if(opts.lrmask3.value()!=""){
-	    waycrossed.clear();crossedlocs3.clear();
-	    if(m_lrmask3.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,waycrossed,crossedlocs3)){	    
-	      fill_inlrmask3(crossedlocs3,pathlength);
-	    }	  
+	    waycrossed.clear();crossedlocs3.clear();surf_Triangle3.clear();
+	    if(m_lrmask3.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,waycrossed,crossedlocs3,surf_Triangle3,opts.closestvertex.value())){	    
+	      fill_inlrmask3(crossedlocs3,surf_Triangle3,pathlength);
+	    }	 
 	  }
 	}
 
@@ -889,7 +908,7 @@ namespace TRACT{
 	  if (wtstop_flags != prev_wtstop_flags) {
             wtstop_count++;
 	    for (unsigned int el=0; el<wtstop_flags.size(); el++){ 
-	       if (m_wtstopmasks.get_roitype(el)==SURFACE) wtstop_flags[el]=0; 
+	      if (m_wtstopmasks.get_roitype(el)==SURFACE) wtstop_flags[el]=0; 
             }
           }
 	  if (wtstop_count==2){ //stop
@@ -1380,6 +1399,7 @@ namespace TRACT{
     int x_s,y_s,z_s;
     float pathlength=0;
     vector<int> crossedrois,crossedlocs;
+    vector< pair<int,int> > surf_Triangle;
     vector<ColumnVector> crossedvox;
     int nlocs=0;
     int offset=-1;
@@ -1395,8 +1415,6 @@ namespace TRACT{
 	offset-=1;
 	restarted=true;
       }
-
-
       if(m_beenhere(x_s,y_s,z_s)==0){
 	if(!opts.pathdist.value())
 	  m_prob(x_s,y_s,z_s)+=1; 
@@ -1443,7 +1461,7 @@ namespace TRACT{
 	  }
 
 	  crossedrois.clear();crossedlocs.clear();
-	  if(m_beenhere_alt.has_crossed_roi(m_path[i-1],m_path[i],crossedvox,crossedrois,crossedlocs)){
+	  if(m_beenhere_alt.has_crossed_roi(m_path[i-1],m_path[i],crossedvox,crossedrois,crossedlocs,surf_Triangle,opts.closestvertex.value())){
 	    nlocs+=crossedlocs.size();
 	    for(unsigned int i=0;i<crossedlocs.size();i++){
 	      if(m_beenhere_alt.get_value(crossedlocs[i])==1){	      
@@ -1485,6 +1503,7 @@ namespace TRACT{
   void Counter::reset_beenhere(){
     int x_s,y_s,z_s,offset=-1;
     vector<int> crossedlocs,crossedrois;
+    vector< pair<int,int> > surf_Triangle;
     vector<ColumnVector> crossedvox;
     bool hascrossed=false;
     for(unsigned int i=0;i<m_path.size();i++){
@@ -1505,7 +1524,7 @@ namespace TRACT{
 	  if(m_beenhere_alt.nSurfs()>0){
 	    crossedvox=m_crossedvox[i+offset];
 	  }
-	  if(m_beenhere_alt.has_crossed_roi(m_path[i-1],m_path[i],crossedvox,crossedrois,crossedlocs))
+	  if(m_beenhere_alt.has_crossed_roi(m_path[i-1],m_path[i],crossedvox,crossedrois,crossedlocs,surf_Triangle,opts.closestvertex.value()))
 	    hascrossed=true;
 	}
       }
@@ -1585,14 +1604,14 @@ namespace TRACT{
 
 	if(!opts.simple.value()){
 	  if(!opts.pathdist.value())
-	    m_s2t_count.add_map_value(m_curloc,1,crossed[t]);
+	    m_s2t_count.add_map_value(m_curloc.loc,1,crossed[t]);
 	  else
-	    m_s2t_count.add_map_value(m_curloc,pathlength,crossed[t]);
+	    m_s2t_count.add_map_value(m_curloc.loc,pathlength,crossed[t]);
 	  if(opts.omeanpathlength.value()){
 	    if(!opts.pathdist.value())
-	      m_s2t_count2.add_map_value(m_curloc,pathlength,crossed[t]);
+	      m_s2t_count2.add_map_value(m_curloc.loc,pathlength,crossed[t]);
 	    else
-	      m_s2t_count2.add_map_value(m_curloc,1,crossed[t]);
+	      m_s2t_count2.add_map_value(m_curloc.loc,1,crossed[t]);
 	  }
 	}
 	if(opts.simple.value() || opts.s2tastext.value()){
@@ -1675,7 +1694,8 @@ namespace TRACT{
     // use path and has_crossed
     float pathlength=opts.steplength.value(),val=1;
     vector<int> crossedseeds,crossedlocs;
-    vector<int> allcrossed;vector<float> allvals;
+    vector< pair<int,int> > surf_Triangle;
+    vector< pair<int,infoVertex> > locs; //locs,values,rois and triangles
     vector<ColumnVector> crossedvox;
     int offset=-1;
     for(unsigned int i=1;i<m_path.size();i++){
@@ -1687,16 +1707,20 @@ namespace TRACT{
 	offset-=1;
 	continue;
       }
-      crossedseeds.clear();crossedlocs.clear();
+      crossedseeds.clear();crossedlocs.clear();surf_Triangle.clear();
       if(m_stline.get_seeds().nSurfs()>0){
 	crossedvox=m_crossedvox[i+offset];       
       }
 
-
-      if(m_stline.get_seeds().has_crossed_roi(m_path[i-1],m_path[i],crossedvox,crossedseeds,crossedlocs)){
-	allcrossed.insert(allcrossed.end(),crossedlocs.begin(),crossedlocs.end());
-	vector<float> vals(crossedlocs.size(),val);
-	allvals.insert(allvals.end(),vals.begin(),vals.end());
+      if(m_stline.get_seeds().has_crossed_roi(m_path[i-1],m_path[i],crossedvox,crossedseeds,crossedlocs,surf_Triangle,opts.closestvertex.value())){
+	for(int j=0;j<crossedlocs.size();j++){
+	  pair<int,infoVertex> mypair;
+	  mypair.first=crossedlocs[j];
+	  mypair.second.value=val;
+	  mypair.second.mesh=surf_Triangle[j].first;
+	  mypair.second.triangle=surf_Triangle[j].second;
+	  locs.push_back(mypair);
+	}
       }
       
       val = opts.pathdist.value()?pathlength:1;      
@@ -1706,12 +1730,38 @@ namespace TRACT{
     // fill matrix1
     {
       //Tracer_Plus tr("make_unique");
-      make_unique(allcrossed,allvals);
+      make_unique(locs);
     }
-    for(unsigned int i=0;i<allcrossed.size();i++){
-      //m_ConMat1->AddTo(m_Conrow1,allcrossed[i]+1,allvals[i]);
-      m_ConMat1->AddTo(m_curloc+1,allcrossed[i]+1,allvals[i]);
-      if(opts.omeanpathlength.value()) m_ConMat1b->AddTo(m_curloc+1,allcrossed[i]+1,1);
+
+    vector< pair<int,int> > mytrianglesj; //list with the roi and triangles of an individual vertex
+    for(unsigned int j=0;j<locs.size();j++){
+      mytrianglesj.clear();
+      pair<int,int> mypair;
+      int index=locs[j].first;
+      mypair.first=locs[j].second.mesh;
+      mypair.second=locs[j].second.triangle;
+      mytrianglesj.push_back(mypair);
+      for(;(j+1)<locs.size() && locs[j+1].first==index;j++){  //same vertix - different roi-triangle
+        pair<int,int> mypair2;
+	mypair2.first=locs[j+1].second.mesh;
+	mypair2.second=locs[j+1].second.triangle;
+	mytrianglesj.push_back(mypair2); 
+      }
+      bool connect=false;
+      if(m_curloc.loc!=locs[j].first){
+        for(int ii=0;ii<m_curloc.triangles.size()&&!connect;ii++){
+          for(int jj=0;jj<mytrianglesj.size()&&!connect;jj++){
+            if(m_curloc.mesh!=mytrianglesj[jj].first || m_curloc.triangles[ii]!=mytrianglesj[jj].second ||
+              m_curloc.mesh==-1 || mytrianglesj[jj].first==-1){
+	      connect=true;
+	    }
+	  }
+        }
+      }
+      if(connect){  
+        m_ConMat1->AddTo(m_curloc.loc+1,locs[j].first+1,locs[j].second.value);
+        if(opts.omeanpathlength.value()) m_ConMat1b->AddTo(m_curloc.loc+1,locs[j].first+1,1);
+      }
     }
   }
   
@@ -1735,13 +1785,13 @@ namespace TRACT{
       if(Concol2>0){
 	if(m_beenhere2(x_lr,y_lr,z_lr)==0){
 	  if(opts.omeanpathlength.value()){
-            m_ConMat2->AddTo(m_curloc+1,Concol2,d);
-	    m_ConMat2b->AddTo(m_curloc+1,Concol2,1);
+            m_ConMat2->AddTo(m_curloc.loc+1,Concol2,d);
+	    m_ConMat2b->AddTo(m_curloc.loc+1,Concol2,1);
           }else{  
 	    if(!opts.pathdist.value())
-	      m_ConMat2->AddTo(m_curloc+1,Concol2,1);
+	      m_ConMat2->AddTo(m_curloc.loc+1,Concol2,1);
 	    else
-	      m_ConMat2->AddTo(m_curloc+1,Concol2,d);
+	      m_ConMat2->AddTo(m_curloc.loc+1,Concol2,d);
           }
 	  m_beenhere2(x_lr,y_lr,z_lr)=1;
 	  d+=opts.steplength.value();
@@ -1752,8 +1802,8 @@ namespace TRACT{
 
   void Counter::update_matrix3(){
     //Tracer_Plus tr("Counter::update_matrix3");
-    vector< pair<int,float> >& inmask3 = m_stline.get_inmask3();
-    vector< pair<int,float> >& inlrmask3 = m_stline.get_inlrmask3();
+    vector< pair<int,infoVertex> >& inmask3 = m_stline.get_inmask3();
+    vector< pair<int,infoVertex> >& inlrmask3 = m_stline.get_inlrmask3();
     bool uselr = (opts.lrmask3.value()!="");
     if(!uselr){
       if(inmask3.size()<2)return;
@@ -1765,38 +1815,114 @@ namespace TRACT{
     // remove duplicates
     make_unique(inmask3);
 
-    if(!uselr){// where we update NxN matrix
+    vector< pair<int,int> > mytrianglesi; //list with the roi and triangles of an individual vertex
+    vector< pair<int,int> > mytrianglesj; //list with the roi and triangles of an individual vertex
+    if(!uselr){
+      // where we update NxN matrix
       for(unsigned int i=0;i<inmask3.size();i++){
-	for(unsigned int j=i+1;j<inmask3.size();j++){
-	  if(opts.omeanpathlength.value()){
-	    float val = fabs(inmask3[i].second-inmask3[j].second);
-	    m_ConMat3->AddTo(inmask3[i].first+1,inmask3[j].first+1,val);
-            m_ConMat3b->AddTo(inmask3[i].first+1,inmask3[j].first+1,1); 
-	  }else{
-	    if(!opts.pathdist.value())
-	      m_ConMat3->AddTo(inmask3[i].first+1,inmask3[j].first+1,1);
-	    else{
-	      float val = fabs(inmask3[i].second-inmask3[j].second);
-	      m_ConMat3->AddTo(inmask3[i].first+1,inmask3[j].first+1,val);
+	mytrianglesi.clear();
+	pair<int,int> mypair;
+	int index=inmask3[i].first;
+	mypair.first=inmask3[i].second.mesh;
+	mypair.second=inmask3[i].second.triangle;
+	mytrianglesi.push_back(mypair);
+	for(;(i+1)<inmask3.size() && inmask3[i+1].first==index;i++){  //same vertix - different roi-triangle
+	    pair<int,int> mypair;
+	    mypair.first=inmask3[i+1].second.mesh;
+	    mypair.second=inmask3[i+1].second.triangle;
+	    mytrianglesi.push_back(mypair);
+	}
+	int j=i+1;
+	for(;j<inmask3.size();j++){
+	  mytrianglesj.clear();
+	  pair<int,int> mypair;
+          index=inmask3[j].first;
+	  mypair.first=inmask3[j].second.mesh;
+	  mypair.second=inmask3[j].second.triangle;
+	  mytrianglesj.push_back(mypair);
+	  for(;(j+1)<inmask3.size() && inmask3[j+1].first==index;j++){  //same vertix - different roi-triangle
+	    pair<int,int> mypair;
+	    mypair.first=inmask3[j+1].second.mesh;
+	    mypair.second=inmask3[j+1].second.triangle;
+	    mytrianglesj.push_back(mypair); 
+	  }
+
+	  bool connect=false;
+	  for(int ii=0;ii<mytrianglesi.size()&&!connect;ii++){
+	    for(int jj=0;jj<mytrianglesj.size()&&!connect;jj++){
+              if(mytrianglesi[ii].first!=mytrianglesj[jj].first || mytrianglesi[ii].second!=mytrianglesj[jj].second ||
+		mytrianglesi[ii].first==-1 || mytrianglesj[jj].first==-1){
+		//if first is -1 is because is not a vertex, it is a voxel 
+	        connect=true;
+	      }
 	    }
 	  }
+	  if(connect){
+	    if(opts.omeanpathlength.value()){
+	      float val = fabs(inmask3[i].second.value-inmask3[j].second.value);
+	      m_ConMat3->AddTo(inmask3[i].first+1,inmask3[j].first+1,val);
+              m_ConMat3b->AddTo(inmask3[i].first+1,inmask3[j].first+1,1); 
+	    }else{
+	      if(!opts.pathdist.value()){
+	        m_ConMat3->AddTo(inmask3[i].first+1,inmask3[j].first+1,1);
+	      }else{
+	        float val = fabs(inmask3[i].second.value-inmask3[j].second.value);
+	        m_ConMat3->AddTo(inmask3[i].first+1,inmask3[j].first+1,val);
+	      }
+	    }
+          }
 	}
       }
     }
     else{ // where we update Nxn matrix
       make_unique(inlrmask3);
       for(unsigned int i=0;i<inmask3.size();i++){
+        mytrianglesi.clear();
+	pair<int,int> mypair;
+	int index=inmask3[i].first;
+	mypair.first=inmask3[i].second.mesh;
+	mypair.second=inmask3[i].second.triangle;
+	mytrianglesi.push_back(mypair);
+	for(;(i+1)<inmask3.size() && inmask3[i+1].first==index;i++){  //same vertix - different roi-triangle
+	    pair<int,int> mypair;
+	    mypair.first=inmask3[i+1].second.mesh;
+	    mypair.second=inmask3[i+1].second.triangle;
+	    mytrianglesi.push_back(mypair);
+	}
 	for(unsigned int j=0;j<inlrmask3.size();j++){
-          if(opts.omeanpathlength.value()){
-	    float val = fabs(inmask3[i].second-inlrmask3[j].second);
-	    m_ConMat3->AddTo(inmask3[i].first+1,inlrmask3[j].first+1,val);
-	    m_ConMat3b->AddTo(inmask3[i].first+1,inlrmask3[j].first+1,1);
-	  }else{
-	    if(!opts.pathdist.value())
-	      m_ConMat3->AddTo(inmask3[i].first+1,inlrmask3[j].first+1,1);
-	    else{
-	      float val = fabs(inmask3[i].second-inlrmask3[j].second);
+	  mytrianglesj.clear();
+	  pair<int,int> mypair;
+          index=inlrmask3[j].first;
+	  mypair.first=inlrmask3[j].second.mesh;
+	  mypair.second=inlrmask3[j].second.triangle;
+	  mytrianglesj.push_back(mypair);
+ 	  for(;(j+1)<inlrmask3.size() && inlrmask3[j+1].first==index;j++){  //same vertix - different roi-triangle
+	    pair<int,int> mypair;
+	    mypair.first=inlrmask3[j+1].second.mesh;
+	    mypair.second=inlrmask3[j+1].second.triangle;
+	    mytrianglesj.push_back(mypair); 
+	  }
+	  bool connect=false;
+	  for(int ii=0;ii<mytrianglesi.size()&&!connect;ii++){
+	    for(int jj=0;jj<mytrianglesj.size()&&!connect;jj++){
+              if(mytrianglesi[ii].first!=mytrianglesj[jj].first || mytrianglesi[ii].second!=mytrianglesj[jj].second ||
+		mytrianglesi[ii].first==-1 || mytrianglesj[jj].first==-1){
+	        connect=true;
+	      }
+	    }
+	  }
+	  if(connect){
+	    if(opts.omeanpathlength.value()){
+	      float val = fabs(inmask3[i].second.value-inlrmask3[j].second.value);
 	      m_ConMat3->AddTo(inmask3[i].first+1,inlrmask3[j].first+1,val);
+	      m_ConMat3b->AddTo(inmask3[i].first+1,inlrmask3[j].first+1,1);
+	    }else{
+	      if(!opts.pathdist.value())
+	        m_ConMat3->AddTo(inmask3[i].first+1,inlrmask3[j].first+1,1);
+	      else{
+	        float val = fabs(inmask3[i].second.value-inlrmask3[j].second.value);
+	        m_ConMat3->AddTo(inmask3[i].first+1,inlrmask3[j].first+1,val);
+	      }
 	    }
 	  }
 	}
@@ -1849,7 +1975,7 @@ namespace TRACT{
 	
 	if(Conrow4>0){
 	  if(m_beenhere4(x,y,z)==0){
-	    m_ConMat4->AddToTraj(Conrow4,m_curloc+1,d,(int)m_diff_path[i](4));  
+	    m_ConMat4->AddToTraj(Conrow4,m_curloc.loc+1,d,(int)m_diff_path[i](4));  
 	    m_beenhere4(x,y,z)=1;
 	    d+=opts.steplength.value();
 	  }
@@ -1861,6 +1987,7 @@ namespace TRACT{
       vector<float> ds;
       bool restarted=false;int offset=-1;
       vector<ColumnVector> crossedvox;
+      vector< pair<int,int> > surf_Triangle;
       for(unsigned int i=0;i<m_diff_path.size();i++){
 	// check here if back to seed
 	if(i>0 && (m_path[i]-m_path[0]).MaximumAbsoluteValue()==0){
@@ -1884,7 +2011,7 @@ namespace TRACT{
 	  if(m_mask4.nSurfs()>0){
 	    crossedvox=m_crossedvox[i+offset];
 	  }
-	  if(m_mask4.has_crossed_roi(m_path[i-1],m_path[i],crossedvox,crossedrois,crossedlocs)){
+	  if(m_mask4.has_crossed_roi(m_path[i-1],m_path[i],crossedvox,crossedrois,crossedlocs,surf_Triangle,opts.closestvertex.value())){
 	    for(unsigned int j=0;j<crossedlocs.size();j++)
 	      cols.push_back(crossedlocs[j]+1);
 	  }
@@ -1919,7 +2046,6 @@ namespace TRACT{
     for (int i=1;i<=(int)keeptotal.size();i++)
       keeptotvec(i)=keeptotal[i-1];
     write_ascii_matrix(keeptotvec,logger.appendDir("waytotal"));
-
   }
 
   void Counter::save(){
