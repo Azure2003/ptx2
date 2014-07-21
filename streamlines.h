@@ -608,7 +608,7 @@ namespace TRACT{
       m_curloc.triangles.clear();
       m_curloc.loc=loc;
       m_curloc.mesh=roi;
-      for(int i=0;i<triangles.size();i++){
+      for(unsigned int i=0;i<triangles.size();i++){
         m_curloc.triangles.push_back(triangles[i]);
       }
     }

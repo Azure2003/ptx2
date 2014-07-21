@@ -1713,7 +1713,7 @@ namespace TRACT{
       }
 
       if(m_stline.get_seeds().has_crossed_roi(m_path[i-1],m_path[i],crossedvox,crossedseeds,crossedlocs,surf_Triangle,opts.closestvertex.value())){
-	for(int j=0;j<crossedlocs.size();j++){
+	for(unsigned int j=0;j<crossedlocs.size();j++){
 	  pair<int,infoVertex> mypair;
 	  mypair.first=crossedlocs[j];
 	  mypair.second.value=val;
@@ -1749,8 +1749,8 @@ namespace TRACT{
       }
       bool connect=false;
       if(m_curloc.loc!=locs[j].first){
-        for(int ii=0;ii<m_curloc.triangles.size()&&!connect;ii++){
-          for(int jj=0;jj<mytrianglesj.size()&&!connect;jj++){
+        for(unsigned int ii=0;ii<m_curloc.triangles.size()&&!connect;ii++){
+          for(unsigned int jj=0;jj<mytrianglesj.size()&&!connect;jj++){
             if(m_curloc.mesh!=mytrianglesj[jj].first || m_curloc.triangles[ii]!=mytrianglesj[jj].second ||
               m_curloc.mesh==-1 || mytrianglesj[jj].first==-1){
 	      connect=true;
@@ -1832,7 +1832,7 @@ namespace TRACT{
 	    mypair.second=inmask3[i+1].second.triangle;
 	    mytrianglesi.push_back(mypair);
 	}
-	int j=i+1;
+	unsigned int j=i+1;
 	for(;j<inmask3.size();j++){
 	  mytrianglesj.clear();
 	  pair<int,int> mypair;
@@ -1848,8 +1848,8 @@ namespace TRACT{
 	  }
 
 	  bool connect=false;
-	  for(int ii=0;ii<mytrianglesi.size()&&!connect;ii++){
-	    for(int jj=0;jj<mytrianglesj.size()&&!connect;jj++){
+	  for(unsigned int ii=0;ii<mytrianglesi.size()&&!connect;ii++){
+	    for(unsigned int jj=0;jj<mytrianglesj.size()&&!connect;jj++){
               if(mytrianglesi[ii].first!=mytrianglesj[jj].first || mytrianglesi[ii].second!=mytrianglesj[jj].second ||
 		mytrianglesi[ii].first==-1 || mytrianglesj[jj].first==-1){
 		//if first is -1 is because is not a vertex, it is a voxel 
@@ -1903,8 +1903,8 @@ namespace TRACT{
 	    mytrianglesj.push_back(mypair); 
 	  }
 	  bool connect=false;
-	  for(int ii=0;ii<mytrianglesi.size()&&!connect;ii++){
-	    for(int jj=0;jj<mytrianglesj.size()&&!connect;jj++){
+	  for(unsigned int ii=0;ii<mytrianglesi.size()&&!connect;ii++){
+	    for(unsigned int jj=0;jj<mytrianglesj.size()&&!connect;jj++){
               if(mytrianglesi[ii].first!=mytrianglesj[jj].first || mytrianglesi[ii].second!=mytrianglesj[jj].second ||
 		mytrianglesi[ii].first==-1 || mytrianglesj[jj].first==-1){
 	        connect=true;
