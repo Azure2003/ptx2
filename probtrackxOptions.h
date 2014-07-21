@@ -46,6 +46,7 @@ class probtrackxOptions {
   Option<string>           pathfile;
   Option<bool>             s2tout;
   Option<bool>             s2tastext;
+  Option<bool>		   closestvertex;
 
   Option<string>           targetfile;
   Option<string>           waypoints;
@@ -157,7 +158,7 @@ class probtrackxOptions {
 	    true, requires_argument),
 
    simple(string("--simple"),false,
-	string("\tTrack from a list of voxels (seed must be a ASCII list of coordinates)"),
+	string("Track from a list of voxels (seed must be a ASCII list of coordinates)"),
 	false, no_argument),
    network(string("--network"), false,
 	   string("Activate network mode - only keep paths going through at least one of the other seed masks"),
@@ -179,6 +180,9 @@ class probtrackxOptions {
 	  false, no_argument),
    s2tastext(string("--s2tastext"), false,
 	     string("Output seed-to-target counts as a text file (default in simple mode)\n\n"),
+	     false, no_argument), 
+   closestvertex(string("--closestvertex"), false,
+	     string("Count only nearest neighbour vertex when the face of a surface is crossed."),
 	     false, no_argument), 
 
    targetfile(string("--targetmasks"),"",
@@ -355,6 +359,7 @@ class probtrackxOptions {
        options.add(pathfile);
        options.add(s2tout);
        options.add(s2tastext);
+       options.add(closestvertex);
 
        options.add(targetfile);
        options.add(waypoints);
