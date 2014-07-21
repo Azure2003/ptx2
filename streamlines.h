@@ -22,7 +22,16 @@ using namespace TRACTVOLSX;
 using namespace mesh;
 using namespace PARTICLE;
 
-
+struct infoVertex{ // to avoid connections between vertices of the same triangle
+  float value;
+  int mesh;
+  int triangle;
+};
+struct infoVertexSeed{ // to avoid connections between vertices of the same triangle ... for seeds
+  int loc;
+  int mesh;
+  vector<int> triangles;
+};
 
   class MatCell_cmpr{
     // This class contains compressed information on entries for matrix4 format
@@ -262,8 +271,8 @@ namespace TRACT{
     // Streamliner needs to know about matrix3 
     CSV                           m_mask3;
     CSV                           m_lrmask3;
-    vector< pair<int,float> >     m_inmask3; // knows which node in mask3 and how far from seed (signed distance)
-    vector< pair<int,float> >     m_inlrmask3;
+    vector< pair<int,infoVertex> > m_inmask3; // knows which node in mask3 and how far from seed (signed distance)
+    vector< pair<int,infoVertex> > m_inlrmask3;
 
     // we need this class to know about seed space
     const CSV&                    m_seeds;
@@ -410,26 +419,30 @@ namespace TRACT{
     }
     void                       clear_inmask3()   {m_inmask3.clear();}
     void                       clear_inlrmask3() {m_inlrmask3.clear();}
-    vector< pair<int,float> >& get_inmask3()     {return m_inmask3;}
-    vector< pair<int,float> >& get_inlrmask3()   {return m_inlrmask3;}
+    vector< pair<int,infoVertex> >& get_inmask3()     {return m_inmask3;}
+    vector< pair<int,infoVertex> >& get_inlrmask3()   {return m_inlrmask3;}
     CSV                        get_mask3()       {return m_mask3;}
     CSV                        get_lrmask3()     {return m_lrmask3;}
-    void fill_inmask3(const vector<int>& crossedlocs3,const float& pathlength){
-      vector< pair<int,float> > inmask3;
+    void fill_inmask3(const vector<int>& crossedlocs3,vector< pair<int,int> >& surf_Triangle,const float& pathlength){
+      vector< pair<int,infoVertex> > inmask3;
       for(unsigned int iter=0;iter<crossedlocs3.size();iter++){
-	pair<int,float> mypair;
+	pair<int,infoVertex> mypair;
 	mypair.first=crossedlocs3[iter];
-	mypair.second=m_tracksign*pathlength;
+	mypair.second.value=m_tracksign*pathlength;
+	mypair.second.mesh=surf_Triangle[iter].first;
+	mypair.second.triangle=surf_Triangle[iter].second;
 	inmask3.push_back(mypair);
       }
       m_inmask3.insert(m_inmask3.end(),inmask3.begin(),inmask3.end());
     }
-    void fill_inlrmask3(const vector<int>& crossedlocs3,const float& pathlength){
-      vector< pair<int,float> > inmask3;
+    void fill_inlrmask3(const vector<int>& crossedlocs3,vector< pair<int,int> >& surf_Triangle,const float& pathlength){
+      vector< pair<int,infoVertex> > inmask3;
       for(unsigned int iter=0;iter<crossedlocs3.size();iter++){
-	pair<int,float> mypair;
+	pair<int,infoVertex> mypair;
 	mypair.first=crossedlocs3[iter];
-	mypair.second=m_tracksign*pathlength;
+	mypair.second.value=m_tracksign*pathlength;
+	mypair.second.mesh=surf_Triangle[iter].first;
+	mypair.second.triangle=surf_Triangle[iter].second;
 	inmask3.push_back(mypair);
       }
       m_inlrmask3.insert(m_inlrmask3.end(),inmask3.begin(),inmask3.end());
@@ -473,7 +486,7 @@ namespace TRACT{
 
     // know where we are in seed space/counts (because seeds are now CSV)
     string                       m_curtype;
-    int                          m_curloc;
+    infoVertexSeed	         m_curloc;
 
     // classification targets
     CSV                          m_targetmasks;
@@ -591,7 +604,14 @@ namespace TRACT{
     void initialise_matrix4();
     
     void forceNumSeeds(const int& n) {m_numseeds=n;}
-    void updateSeedLocation(int loc) {m_curloc=loc;}
+    void updateSeedLocation(int loc, int roi, vector<int>& triangles) {
+      m_curloc.triangles.clear();
+      m_curloc.loc=loc;
+      m_curloc.mesh=roi;
+      for(int i=0;i<triangles.size();i++){
+        m_curloc.triangles.push_back(triangles[i]);
+      }
+    }
 
     void store_path(){ 
       m_path=m_stline.get_path();
@@ -631,7 +651,7 @@ namespace TRACT{
     void reset_beenhere();
     void update_pathdist_multi();
     
-    void reset_prob(){m_prob=0;}
+    void reset_prob(){m_prob=0;m_prob2=0;}
     void update_seedcounts();
     void reset_targetflags(){
       for(unsigned int i=0;i<m_targflags.size();i++) m_targflags[i]=false;

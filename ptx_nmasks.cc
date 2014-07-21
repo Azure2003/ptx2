@@ -71,6 +71,7 @@ void nmasks()
   // seed from volume-like ROIs
   if(seeds.nVols()>0){
     cout << "Volume seeds" << endl;
+    vector<int> triangles; //to avoid connections between vertices of the same traingle...but not used for volumes
     for(int roi=1;roi<=seeds.nVols();roi++){
       cout<<"volume "<<roi-1<<endl;
       cnt++;
@@ -83,7 +84,7 @@ void nmasks()
 	for(int y=0;y<seeds.ysize();y++){
 	  for(int x=0;x<seeds.xsize();x++){
 	    if(seeds.isInRoi(x,y,z,roi)){
-	      counter.updateSeedLocation(seeds.get_volloc(roi-1,x,y,z));
+	      counter.updateSeedLocation(seeds.get_volloc(roi-1,x,y,z),-1,triangles);
 	      if(opts.verbose.value()>=1){
 		cout <<"run"<<endl;
 		cout <<x<<" "<<y<<" "<<z<<endl;
@@ -121,7 +122,14 @@ void nmasks()
 	if(seeds.get_mesh(i).get_pvalue(p)==0.0)
 	  continue;
 
-	counter.updateSeedLocation(seeds.get_surfloc(i,p));
+	//to avoid connections between vertices of the same traingle
+	CsvMpoint vertex=seeds.get_mesh(i).get_point(p);
+	vector<int> triangles;
+	for(int t=0;t<vertex.ntriangles();t++){
+	  triangles.push_back(vertex.get_trID(t));
+	}
+
+	counter.updateSeedLocation(seeds.get_surfloc(i,p),i,triangles);
 	pos=seeds.get_vertex_as_vox(i,p);
 	ColumnVector dir(3);
 	dir=seeds.get_normal_as_vox(i,p);
