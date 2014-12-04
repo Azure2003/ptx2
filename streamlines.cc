@@ -1434,7 +1434,11 @@ namespace TRACT{
 	    v=m_path[i+1]-m_path[i];	  
 	  else
 	    v=m_path[i]-m_path[i-1];	  
-	  v/=std::sqrt(v.SumSquare());
+	  float ss=v.SumSquare();
+	  if(ss>0){
+	    v/=std::sqrt(ss);
+	  }
+	
 	  // Add direction (needs to account for the current direction and flip if necessary)
 	  
 	  // lower diagonal rows (because of the way SymmetricMatrix works)
