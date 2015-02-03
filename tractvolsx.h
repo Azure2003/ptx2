@@ -292,6 +292,11 @@ namespace TRACTVOLSX{
 		theta=thsamples[fibind](samp,col);
 		phi=phsamples[fibind](samp,col);
 	      }
+	      else if (locrule==3) { 
+		fibind=sample_fibre(col,samp,2);
+		theta=thsamples[fibind](samp,col);
+		phi=phsamples[fibind](samp,col);
+	      }
 	      else{ // pick closest direction
 		for(int fib=0;fib<nfibres;fib++){
 		  if(fsamples[fib](samp,col)>opts.fibthresh.value()){

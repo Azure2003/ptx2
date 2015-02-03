@@ -323,7 +323,7 @@ class probtrackxOptions {
 	      string("Save path coordinates to ascii file"),
 	      false, no_argument),
    locfibchoice(string("--locfibchoice"),string(""),
-	      string("Local rules for fibre choice - 0=closest direction(default), 1=equal prob (f>thr), 2=equal prob with angle threshold (=40 deg)"),
+	      string("Local rules for fibre choice - 0=closest direction(default), 1=equal prob (f>thr), 2=equal prob with angle threshold (=40 deg), 3=sample in proportion to f"),
 	      false, requires_argument),
    loccurvthresh(string("--loccurvthresh"),string(""),
 	      string("Local curvature threshold"),
