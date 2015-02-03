@@ -697,6 +697,9 @@ namespace TRACT{
     bool forcedir=false;
     //NB - this only goes in one direction!!
 
+    vector<int> m_way_passed_flags_updated;	// it keeps a record to know what positions of m_way_passed_flags have been updated
+    for(unsigned int i=0; i<m_way_passed_flags.size();i++) // to undo them in case rubbish_passed=1
+	m_way_passed_flags_updated.push_back(0);	
     if(opts.onewaycondition.value()){
       for(unsigned int i=0; i<m_way_passed_flags.size();i++)
 	m_way_passed_flags[i]=0;
@@ -801,6 +804,10 @@ namespace TRACT{
 	if(opts.rubbishfile.value()!="" && cnt>0){
 	  if(m_rubbish.has_crossed(m_path[cnt-1],m_path[cnt],crossedvox)){
 	    rubbish_passed=1;
+	    for(unsigned int i=0; i<m_way_passed_flags_updated.size();i++){ // undo updated in this part
+		if(m_way_passed_flags_updated[i])
+			m_way_passed_flags[i]=0;
+	    } 
 	    break;
 	  }
 	}
@@ -812,7 +819,10 @@ namespace TRACT{
 	    m_waymasks.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,waycrossed);
 
 	    for(unsigned int wm=0;wm<waycrossed.size();wm++){
-	      m_way_passed_flags[waycrossed[wm]]=1;
+              if(m_way_passed_flags[waycrossed[wm]]==0){ 	// not crossed yet
+		 m_way_passed_flags_updated[waycrossed[wm]]=1;
+		 m_way_passed_flags[waycrossed[wm]]=1;
+	      }
 	    }
 	    // check if order is respected
 	    if(opts.wayorder.value() && wayorder){
