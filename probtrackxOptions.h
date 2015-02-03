@@ -207,7 +207,7 @@ class probtrackxOptions {
 	       string("\tStop tracking at locations given by this mask file"),
 	       false, requires_argument),
    wtstopfiles(string("--wtstop"), string(""),
-	       string("One mask or text file with mask names. Allow propagation within mask but terminate on exit. \n\n"),
+	       string("One mask or text file with mask names. Allow propagation within mask but terminate on exit. If multiple masks, non-overlapping volumes expected\n\n"),
 	       false, requires_argument),
 
    matrix1out(string("--omatrix1"), false,
@@ -288,7 +288,7 @@ class probtrackxOptions {
 
 
    sampvox(string("--sampvox"), 0, 
-	   string("Sample random points within x mm sphere seed voxels (e.g. --sampvox=5). Default=0"), 
+	   string("Sample random points within a sphere with radius x mm from the center of the seed voxels (e.g. --sampvox=0.5, 0.5 mm radius sphere). Default=0"), 
 	   false, requires_argument),
    randfib(string("--randfib"), 0, 
 	   string("Default 0. Set to 1 to randomly sample initial fibres (with f > fibthresh). \n                        Set to 2 to sample in proportion fibres (with f>fibthresh) to f. \n                        Set to 3 to sample ALL populations at random (even if f<fibthresh)"), 
