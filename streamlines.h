@@ -273,6 +273,8 @@ namespace TRACT{
     CSV                           m_lrmask3;
     vector< pair<int,infoVertex> > m_inmask3; // knows which node in mask3 and how far from seed (signed distance)
     vector< pair<int,infoVertex> > m_inlrmask3;
+    vector< pair<int,infoVertex> > m_inmask3_aux; // write here and update m_inmask3 only if a part is accepted
+    vector< pair<int,infoVertex> > m_inlrmask3_aux;	
 
     // we need this class to know about seed space
     const CSV&                    m_seeds;
@@ -417,8 +419,9 @@ namespace TRACT{
 	if(m_lrmask3.nSurfs()>0){surfexists();}
       }
     }
-    void                       clear_inmask3()   {m_inmask3.clear();}
-    void                       clear_inlrmask3() {m_inlrmask3.clear();}
+    void                       clear_inmask3()   {m_inmask3.clear();m_inmask3_aux.clear();}
+    void                       clear_inlrmask3() {m_inlrmask3.clear();m_inlrmask3_aux.clear();}
+    void		       reset_m_inmask3_aux() {m_inmask3_aux.clear();m_inlrmask3_aux.clear();}
     vector< pair<int,infoVertex> >& get_inmask3()     {return m_inmask3;}
     vector< pair<int,infoVertex> >& get_inlrmask3()   {return m_inlrmask3;}
     CSV                        get_mask3()       {return m_mask3;}
@@ -433,7 +436,7 @@ namespace TRACT{
 	mypair.second.triangle=surf_Triangle[iter].second;
 	inmask3.push_back(mypair);
       }
-      m_inmask3.insert(m_inmask3.end(),inmask3.begin(),inmask3.end());
+      m_inmask3_aux.insert(m_inmask3_aux.end(),inmask3.begin(),inmask3.end());
     }
     void fill_inlrmask3(const vector<int>& crossedlocs3,vector< pair<int,int> >& surf_Triangle,const float& pathlength){
       vector< pair<int,infoVertex> > inmask3;
@@ -445,8 +448,12 @@ namespace TRACT{
 	mypair.second.triangle=surf_Triangle[iter].second;
 	inmask3.push_back(mypair);
       }
-      m_inlrmask3.insert(m_inlrmask3.end(),inmask3.begin(),inmask3.end());
+      m_inlrmask3_aux.insert(m_inlrmask3_aux.end(),inmask3.begin(),inmask3.end());
     }
+    void copy_inmask3(){
+	m_inmask3.insert(m_inmask3.end(),m_inmask3_aux.begin(),m_inmask3_aux.end());
+	m_inlrmask3.insert(m_inlrmask3.end(),m_inlrmask3_aux.begin(),m_inlrmask3_aux.end());
+    }	
     // /////////////////////////////////////////////////////////////////
   };
 
@@ -514,7 +521,6 @@ namespace TRACT{
     // MATRIX 3
     SpMat<float>                 *m_ConMat3; // using sparse
     SpMat<float>                 *m_ConMat3b; // for mean path length
-    vector<int>                  m_inmask3;
 
     // MATRIX 4 - columns are seed space, rows are diffusion space
     SpMat_HCP                   *m_ConMat4;     

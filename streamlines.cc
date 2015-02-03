@@ -602,7 +602,9 @@ namespace TRACT{
     m_z_s_init=0;
 
     m_inmask3.reserve(opts.nsteps.value());
-    m_inlrmask3.reserve(opts.nsteps.value()); 
+    m_inlrmask3.reserve(opts.nsteps.value());
+    m_inmask3_aux.reserve(opts.nsteps.value());
+    m_inlrmask3_aux.reserve(opts.nsteps.value()); 	
   }
   
   void Streamliner::rotdir(const ColumnVector& dir,ColumnVector& rotdir,
@@ -2519,6 +2521,12 @@ namespace TRACT{
 	  if(opts.save_paths.value())
 	    m_counter.add_path();
 	}
+        if(rejflag1==0 && opts.matrix3out.value()){ 
+	  m_counter.get_stline().copy_inmask3();
+	  m_counter.get_stline().reset_m_inmask3_aux();
+	}else if(rejflag1==1 && opts.matrix3out.value()){
+	  m_counter.get_stline().reset_m_inmask3_aux();
+	}
 	m_counter.get_stline().reverse();
       }
       
@@ -2528,6 +2536,8 @@ namespace TRACT{
 
       if(rejflag2==0){	
 	backwardflag=true;
+        if(opts.matrix3out.value())
+	  m_counter.get_stline().copy_inmask3();
       }
       if(rejflag2>0){
 	backwardflag=false;
