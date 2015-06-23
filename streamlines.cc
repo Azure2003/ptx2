@@ -701,7 +701,7 @@ namespace TRACT{
 
     vector<int> m_way_passed_flags_updated;	// it keeps a record to know what positions of m_way_passed_flags have been updated
     for(unsigned int i=0; i<m_way_passed_flags.size();i++) // to undo them in case rubbish_passed=1
-	m_way_passed_flags_updated.push_back(0);	
+	m_way_passed_flags_updated.push_back(0);
     if(opts.onewaycondition.value()){
       for(unsigned int i=0; i<m_way_passed_flags.size();i++)
 	m_way_passed_flags[i]=0;
@@ -1450,7 +1450,7 @@ namespace TRACT{
 	  if(ss>0){
 	    v/=std::sqrt(ss);
 	  }
-	
+
 	  // Add direction (needs to account for the current direction and flip if necessary)
 	  
 	  // lower diagonal rows (because of the way SymmetricMatrix works)
@@ -1768,7 +1768,7 @@ namespace TRACT{
         for(unsigned int ii=0;ii<m_curloc.triangles.size()&&!connect;ii++){
           for(unsigned int jj=0;jj<mytrianglesj.size()&&!connect;jj++){
             if(m_curloc.mesh!=mytrianglesj[jj].first || m_curloc.triangles[ii]!=mytrianglesj[jj].second ||
-              m_curloc.mesh==-1 || mytrianglesj[jj].first==-1){
+              m_curloc.triangles[ii]==-1 || mytrianglesj[jj].first==-1){
 	      connect=true;
 	    }
 	  }
