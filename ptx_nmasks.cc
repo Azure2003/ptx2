@@ -71,7 +71,8 @@ void nmasks()
   // seed from volume-like ROIs
   if(seeds.nVols()>0){
     cout << "Volume seeds" << endl;
-    vector<int> triangles; //to avoid connections between vertices of the same traingle...but not used for volumes
+    vector<int> triangles; //to avoid connections between vertices of the same triangle...but not used for volumes
+    triangles.push_back(-1);
     for(int roi=1;roi<=seeds.nVols();roi++){
       cout<<"volume "<<roi-1<<endl;
       cnt++;
@@ -122,7 +123,7 @@ void nmasks()
 	if(seeds.get_mesh(i).get_pvalue(p)==0.0)
 	  continue;
 
-	//to avoid connections between vertices of the same traingle
+	//to avoid connections between vertices of the same triangle
 	CsvMpoint vertex=seeds.get_mesh(i).get_point(p);
 	vector<int> triangles;
 	for(int t=0;t<vertex.ntriangles();t++){
