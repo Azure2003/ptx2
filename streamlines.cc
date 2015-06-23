@@ -677,13 +677,16 @@ namespace TRACT{
     bool           wayorder=true;
     vector<int>    waycrossed;
     
-    int            wtstop_count=0;  
-    //Counter that determines propagation using wtstop masks. It counts how many times a streamline has crossed any wtstop boundary. Propagation stops when counter becomes 2.   
+    bool            wtstop=false;
+    //Counter that determines propagation using wtstop masks. 
     //In case of volume wt_stop masks, this means that a streamline can enter the wt volume, propagate within it, but it will stop upon exiting it.
     //In case of surface wt_stop masks, a streamline can cross the surface, but propagation will stop when it crosses the surface again.
-    //In general counter starts at 0. If any wtstop mask is also a seed:
-    //In case of volume wtstop & seed, counter will automatically start at -1. This will allow exiting the first seed wtstop mask and entering another. 
-    //In case of surface wtstop & seed, need to use --forcefirststep and counter will start at -1. This will allow ignoring the first surface crossing (between the seed point on the surface and the first streamline point).
+    //It treats each volume and each surface independently
+    // wtstop_flags: 
+    // 0-> seed is inside the roi, let it go out
+    // 1-> not inside roi yet
+    // 2-> inside the roi
+    // 3-> going outside the roi ... STOP
 
     vector<int>    wtstop_flags;  //temporary structures for wtstop propagation
     vector<int>    wtstopcrossed;
@@ -714,9 +717,13 @@ namespace TRACT{
 
     if (opts.wtstopfiles.value()!=""){ //use wtstop masks
       for (int i=0; i<m_wtstopmasks.nRois(); i++)
-	wtstop_flags.push_back(0);
-      if (m_wtstopmasks.isInRoi(m_x_s_init, m_y_s_init, m_z_s_init) || opts.forcefirststep.value()) //If seed is in one of wtstop masks allow propagation and exit out of the respective wtstop mask 
-	wtstop_count=-1;                                                    
+	wtstop_flags.push_back(1);	// not inside roi yet
+
+      wtstopcrossed.clear();
+      // if seed is inside roi, then set to 0 (only for volumes, not for surfaces)
+      m_wtstopmasks.has_crossed_roi_vols(xyz_seeds,wtstopcrossed);
+      for(unsigned int wm=0;wm<wtstopcrossed.size();wm++) 
+          wtstop_flags[wtstopcrossed[wm]]=0;  // seed is inside the roi, let it go out                              
     }
 
     for(int it=1;it<=opts.nsteps.value()/2;it++){
@@ -809,7 +816,7 @@ namespace TRACT{
 	    for(unsigned int i=0; i<m_way_passed_flags_updated.size();i++){ // undo updated in this part
 		if(m_way_passed_flags_updated[i])
 			m_way_passed_flags[i]=0;
-	    } 
+	    }
 	    break;
 	  }
 	}
@@ -848,6 +855,34 @@ namespace TRACT{
 	      m_net_passed(waycrossed[wm]+1)=1;
 	    }
 	  }	  
+	}
+
+	// Test WT-stopping after at least one step
+	if(opts.wtstopfiles.value()!="" && cnt>0){
+	  wtstopcrossed.clear();
+	  m_wtstopmasks.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,wtstopcrossed);
+
+	  for (unsigned int r=0; r<wtstop_flags.size(); r++){
+ 	    bool crossed=false;
+	    for(unsigned int wm=0;wm<wtstopcrossed.size();wm++){
+              if(r==(unsigned int)wtstopcrossed[wm]) crossed=true;
+	    }
+
+	    if ((wtstop_flags[r]==0) && (!crossed)) wtstop_flags[r]=1;		// going outside the roi, but we started inside
+	    else if ((wtstop_flags[r]==1) && (crossed)) wtstop_flags[r]=2; 	// going into the roi
+	    else if ((wtstop_flags[r]==2) && (!crossed) & (m_wtstopmasks.get_roitype(r)==VOLUME)){ 	// going outside the roi, stop, works for volumes
+		wtstop=true;	
+	    }
+	    else if ((wtstop_flags[r]==2) && (crossed) & (m_wtstopmasks.get_roitype(r)==SURFACE)){ 	// second time that a surface is crossed, stop
+		wtstop=true;	
+	    }
+          }
+	  if (wtstop){ //stop
+	    // remove last path point? Yes, so that counters don't count 2nd crossings	
+	    m_path.pop_back();cnt--;
+	    if(cnt>0) pathlength -= opts.steplength.value();
+	    break;
+	  }
 	}
 
 	// //////////////////////////////
@@ -902,35 +937,6 @@ namespace TRACT{
 	    break;	    
 	  }	  
 	}
-
-
-	if(opts.wtstopfiles.value()!="" && cnt==1){ //set the wtstop_flags during the first step
-	  wtstopcrossed.clear();
-	  m_wtstopmasks.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,wtstopcrossed);
-	  for(unsigned int wm=0;wm<wtstopcrossed.size();wm++){ wtstop_flags[wtstopcrossed[wm]]=1; }
-	}
-
-	// Test WT-stopping after at least one step. Explore whether a change has occured in the wtstop flags. If any changed, increase counter by 1.
-	if(opts.wtstopfiles.value()!="" && cnt>0){
-	  vector<int> prev_wtstop_flags=wtstop_flags;
-	  wtstopcrossed.clear();
-	  for (unsigned int el=0; el<wtstop_flags.size(); el++) { wtstop_flags[el]=0; }
-	  m_wtstopmasks.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,wtstopcrossed);
-	  for(unsigned int wm=0;wm<wtstopcrossed.size();wm++){ wtstop_flags[wtstopcrossed[wm]]=1; }
-	  if (wtstop_flags != prev_wtstop_flags) {
-            wtstop_count++;
-	    for (unsigned int el=0; el<wtstop_flags.size(); el++){ 
-	      if (m_wtstopmasks.get_roitype(el)==SURFACE) wtstop_flags[el]=0; 
-            }
-          }
-	  if (wtstop_count==2){ //stop
-	    // remove last path point? Yes, so that counters don't count 2nd crossings	
-	    m_path.pop_back();cnt--;
-	    if(cnt>0) pathlength -= opts.steplength.value();
-	    break;
-	  }
-	}
-
 
 	// jump
 	tmp2=0;
