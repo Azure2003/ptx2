@@ -168,8 +168,7 @@ bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
       int indtri=localtriangles[i].second-1;
       t = roimesh[indmesh].get_triangle(indtri);
 
-      int ind;
-      if(t.intersect(segment,ind)){// ind is 0,1 or2
+      if(t.intersect(segment)){
 	ret=true;
 	crossedrois.push_back( surfind[indmesh] );
 	
@@ -261,7 +260,7 @@ bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
       
         ind = roimesh[indmesh].get_triangle(indtri).get_vertice(0).get_no();	  
         ind = mesh2loc[indmesh][ind];
-	//printf("VERTEX %i IND %i\n",0,ind);
+
         if(ind>=0){		
 	  crossedlocs.push_back(ind);
 	  pair<int,int> mypair;
@@ -271,7 +270,7 @@ bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
 	}
         ind = roimesh[indmesh].get_triangle(indtri).get_vertice(1).get_no();	  
         ind = mesh2loc[indmesh][ind];
-	//printf("VERTEX %i IND %i\n",1,ind);
+
         if(ind>=0){		
 	  crossedlocs.push_back(ind);
 	  pair<int,int> mypair;
@@ -281,7 +280,7 @@ bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
 	}
         ind = roimesh[indmesh].get_triangle(indtri).get_vertice(2).get_no();	  
         ind = mesh2loc[indmesh][ind];
-	//printf("VERTEX %i IND %i\n",2,ind);
+
         if(ind>=0){
 	  crossedlocs.push_back(ind);
 	  pair<int,int> mypair;
@@ -299,7 +298,7 @@ bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
       
         ind = roimesh[indmesh].get_triangle(indtri).get_vertice(closest).get_no();	  
         ind = mesh2loc[indmesh][ind];
-	//printf("VERTEX %i IND %i\n",closest,ind);
+
         if(ind>=0){
 	  crossedlocs.push_back(ind);
 	  pair<int,int> mypair;
