@@ -52,7 +52,8 @@ void seedmask()
   // seed from volume-like ROIs
   if(seeds.nVols()>0){
     cout << "Volume seeds" << endl;
-    vector<int> triangles; //to avoid connections between vertices of the same traingle...but not used for volumes
+    vector<int> triangles; //to avoid connections between vertices of the same triangle...but not used for volumes
+    triangles.push_back(-1);
 
     for(int roi=1;roi<=seeds.nVols();roi++){
       cout<<"volume "<<roi<<endl;

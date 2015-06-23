@@ -57,7 +57,8 @@ void track(){
   _time=time(NULL);
 
   int keeptot=0;
-  vector<int> triangles;  //to avoid connections between vertices of the same traingle...but not used for volumes
+  vector<int> triangles;  //to avoid connections between vertices of the same triangle...but not used for volumes
+  triangles.push_back(-1);
   for(int SN=1; SN<=newSeeds.Nrows();SN++){
     counter.updateSeedLocation(SN,-1,triangles);
     float xst=newSeeds(SN,1);
