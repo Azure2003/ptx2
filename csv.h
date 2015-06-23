@@ -369,6 +369,7 @@ public:
 		   const vector<ColumnVector>& crossedvox,bool docount=false,bool docontinue=false,const float& val=1.0);
   bool has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
 		       const vector<ColumnVector>& crossedvox,vector<int>& crossedrois)const;
+  bool has_crossed_roi_vols(const ColumnVector& x1,vector<int>& crossedrois)const;
   bool has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
 		       const vector<ColumnVector>& crossedvox,vector<int>& crossedrois,vector<int>& crossedlocs,
 		       vector< pair<int,int> >& surf_Triangle,bool closestvertex)const;

@@ -182,6 +182,32 @@ bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
   return ret;
 }
 
+// this one fills a vector of which rois are crossed, but only checking volumes (ignoring surfaces)
+bool CSV::has_crossed_roi_vols(const ColumnVector& x1,
+			  vector<int>& crossedrois)const{
+  // x1 in voxel space
+  int ix,iy,iz;
+  bool ret=false;
+
+  // start by looking at volume roi
+  if(nvols>0){
+
+    ix=(int)MISCMATHS::round((float)x1(1));
+    iy=(int)MISCMATHS::round((float)x1(2));
+    iz=(int)MISCMATHS::round((float)x1(3));
+    
+    if(roivol(ix,iy,iz)!=0){
+      for(int i=1;i<=nvols;i++){
+	if(isinroi(vol2mat(ix,iy,iz),i)!=0){
+	  ret=true;
+	  crossedrois.push_back(volind[i-1]);	  
+	}
+      }
+    }
+  }
+  return ret;
+}
+
 // this one fills a vector of which rois are crossed
 // and also fills in which locations are crossed (e.g. for matrix{1,3})
 bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
