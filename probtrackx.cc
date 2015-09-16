@@ -40,6 +40,10 @@ int main ( int argc, char **argv ){
     cerr<<"Error: --target4 (or --target4 and --colmask4) must be specified when --omatrix4 is requested"<<endl;
     exit(1);
   }
+  if(opts.s2tout.value() && opts.targetfile.value()==""){
+    cerr<<"Error: --targetmasks must be specified when --os2t is requested"<<endl;
+    exit(1);
+  }
   if(opts.simple.value()){
     if( opts.matrix1out.value() || opts.matrix3out.value()){
       cerr<<"Error: cannot use matrix1 and matrix3 in simple mode"<<endl;
