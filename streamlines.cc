@@ -708,10 +708,8 @@ namespace TRACT{
     if(opts.onewaycondition.value()){
       for(unsigned int i=0; i<m_way_passed_flags.size();i++)
 	m_way_passed_flags[i]=0;
-      if(opts.network.value()){
-	m_net_passed_flags=0;
-      }
     }
+    m_net_passed_flags=0;
     
     if(m_surfexists){m_crossedvox.clear();}
 
@@ -844,18 +842,6 @@ namespace TRACT{
 	    }	    
 	  }
 	}
-	
-	if(opts.network.value()){
-	  if(cnt>0){
-	    waycrossed.clear();
-	    m_netmasks.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,waycrossed);
-
-	    for(unsigned int wm=0;wm<waycrossed.size();wm++){
-	      m_net_passed_flags(waycrossed[wm]+1)=1;
-	      m_net_passed(waycrossed[wm]+1)=1;
-	    }
-	  }	  
-	}
 
 	// Test WT-stopping after at least one step
 	if(opts.wtstopfiles.value()!="" && cnt>0){
@@ -883,6 +869,19 @@ namespace TRACT{
 	    if(cnt>0) pathlength -= opts.steplength.value();
 	    break;
 	  }
+	}
+
+	if(opts.network.value()){
+	  if(cnt>0){
+	    waycrossed.clear();
+	    m_netmasks.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,waycrossed);
+
+	    for(unsigned int wm=0;wm<waycrossed.size();wm++){
+	      if(!m_net_passed_flags(waycrossed[wm]+1)){
+	        m_net_passed_flags(waycrossed[wm]+1)=pathlength;
+	      }
+	    }
+	  }	  
 	}
 
 	// //////////////////////////////
@@ -1004,14 +1003,6 @@ namespace TRACT{
 	if(m_net_passed_flags(i))numpassed++;
       }
       if(numpassed==0)rejflag=1;
-      else if((int)numpassed<m_net_passed_flags.Nrows()){
-	if(m_waycond=="AND"){
-	  rejflag=opts.onewaycondition.value()?1:2;
-	}
-	else{
-	  rejflag=0;
-	}	
-      }
       else rejflag=0;
     }
     if(rejflag==1) return(rejflag);
@@ -1041,6 +1032,25 @@ namespace TRACT{
 	  rejflag=0;
 	else
 	  rejflag=wayorder?0:1;
+      }
+    }
+
+    if(opts.network.value()&&rejflag!=1){
+      if(!opts.pathdist.value() && !opts.omeanpathlength.value()){
+	// store 0 or 1. Does not matter if first or second streamline direction
+        for(int i=1; i<=m_net_passed_flags.Nrows();i++){
+	  if(m_net_passed_flags(i)) m_net_passed(i)=1;
+        }
+      }else{
+	// store the mean of lengths (could happen that both directions hit the mask) 
+        for(int i=1; i<=m_net_passed_flags.Nrows();i++){
+	  if(m_net_passed_flags(i)){
+	    int nhits=1;
+	    if(m_net_passed(i)) nhits++; // if previously hit
+	    m_net_passed(i)+=m_net_passed_flags(i); // add length
+	    m_net_passed(i)/=nhits; // calculate mean
+	  }
+        }
       }
     }
 

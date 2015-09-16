@@ -240,6 +240,7 @@ namespace TRACT{
     // for network mode
     int                           m_seed_id;
     Matrix                        m_network_mat;
+    Matrix                        m_network_matb; // for mean path length
     ColumnVector                  m_net_passed_flags;
     ColumnVector                  m_net_passed;
 
@@ -360,16 +361,52 @@ namespace TRACT{
     void init_network_mat(const int n){
       m_network_mat.ReSize(n,n);
       m_network_mat=0;
+      if(opts.omeanpathlength.value()){
+	m_network_matb.ReSize(n,n);
+        m_network_matb=0;
+      }
     }
     void update_mat(){
       for(int i=1;i<=m_net_passed.Nrows();i++){
 	if(m_net_passed(i)==0){continue;}
-	if(m_seed_id+1>i){m_network_mat(m_seed_id+1,i)++;}
-	else{m_network_mat(m_seed_id+1,i+1)++;}    
+	if(!opts.pathdist.value()){
+	  if(m_seed_id+1>i){m_network_mat(m_seed_id+1,i)++;}
+	  else{m_network_mat(m_seed_id+1,i+1)++;}
+	}else{
+	  if(m_seed_id+1>i){m_network_mat(m_seed_id+1,i)+=m_net_passed(i);}
+	  else{m_network_mat(m_seed_id+1,i+1)+=m_net_passed(i);}
+	}
+	if(opts.omeanpathlength.value()){
+	  if(!opts.pathdist.value()){
+	    if(m_seed_id+1>i){m_network_matb(m_seed_id+1,i)+=m_net_passed(i);}
+	    else{m_network_matb(m_seed_id+1,i+1)+=m_net_passed(i);}
+	  }else{
+	    if(m_seed_id+1>i){m_network_matb(m_seed_id+1,i)++;}
+	    else{m_network_matb(m_seed_id+1,i+1)++;}
+	  }
+	}
       }   
     }
     void save_network_mat(){
       write_ascii_matrix(m_network_mat,logger.appendDir("fdt_network_matrix"));
+      if(opts.omeanpathlength.value()){
+	if(!opts.pathdist.value()){
+	  for(int i=1;i<=m_network_mat.Nrows();i++){
+	    for(int j=1;j<=m_network_mat.Ncols();j++){
+	      if(m_network_mat(i,j)!=0)
+	        m_network_mat(i,j)=m_network_matb(i,j)/m_network_mat(i,j);
+	    }
+	  }
+	}else{
+	  for(int i=1;i<=m_network_mat.Nrows();i++){
+	    for(int j=1;j<=m_network_mat.Ncols();j++){
+	      if(m_network_matb(i,j)!=0)
+	        m_network_mat(i,j)=m_network_mat(i,j)/m_network_matb(i,j);
+	    }
+	  }
+	}
+	write_ascii_matrix(m_network_mat,logger.appendDir("fdt_network_matrix_lengths"));
+      }
     }
 
     void load_waymasks(const string& filename){
