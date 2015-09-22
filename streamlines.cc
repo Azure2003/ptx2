@@ -1059,7 +1059,7 @@ namespace TRACT{
   
   void Counter::initialise(){
    
-    if(opts.simpleout.value()||opts.omeanpathlength.value()){
+    if(opts.simpleout.value()){
       initialise_path_dist();
     }
     if(opts.s2tout.value()){
@@ -1380,7 +1380,7 @@ namespace TRACT{
     if(opts.save_paths.value()){
       add_path();
     }
-    if(opts.simpleout.value()||opts.matrix1out.value()||opts.omeanpathlength.value()){
+    if(opts.simpleout.value()||opts.matrix1out.value()){
       update_pathdist();
     }
     if(opts.s2tout.value()){
@@ -1404,7 +1404,7 @@ namespace TRACT{
   }
 
   void Counter::clear_streamline(){
-    if(opts.simpleout.value()||opts.matrix1out.value()||opts.omeanpathlength.value()){
+    if(opts.simpleout.value()||opts.matrix1out.value()){
       reset_beenhere();
     }
     if(opts.s2tout.value()){
@@ -2081,7 +2081,7 @@ namespace TRACT{
   }
 
   void Counter::save(){
-    if((opts.simpleout.value()||opts.omeanpathlength.value()) && !opts.simple.value()){
+    if(opts.simpleout.value() && !opts.simple.value()){
       save_pathdist();
     }
     if(opts.network.value()){
