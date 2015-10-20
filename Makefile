@@ -52,7 +52,7 @@ SM=surfmaths
 SMOBJS=surfmaths.o 
 
 
-XFILES = probtrackx2 surfmaths surf2surf surf2volume surf_proj label2surf find_the_biggest proj_thresh
+XFILES = probtrackx2 surfmaths surf2surf surf2volume surf_proj label2surf find_the_biggest proj_thresh fdt_matrix_merge
 
 
 all: ${XFILES} 
