@@ -807,15 +807,25 @@ namespace TRACT{
 	  m_crossedvox.push_back(crossedvox);	      
 	}
 		
-	// only test exclusion after at least one step
-	if(opts.rubbishfile.value()!="" && cnt>0){
-	  if(m_rubbish.has_crossed(m_path[cnt-1],m_path[cnt],crossedvox)){
-	    rubbish_passed=1;
-	    for(unsigned int i=0; i<m_way_passed_flags_updated.size();i++){ // undo updated in this part
+	if(opts.rubbishfile.value()!=""){
+	  if(cnt>0){
+	    if(m_rubbish.has_crossed(m_path[cnt-1],m_path[cnt],crossedvox)){
+	      rubbish_passed=1;
+	      for(unsigned int i=0; i<m_way_passed_flags_updated.size();i++){ // undo updated in this part
 		if(m_way_passed_flags_updated[i])
-			m_way_passed_flags[i]=0;
+		  m_way_passed_flags[i]=0;
+	      }
+	      break;
 	    }
-	    break;
+   	  }else if (!opts.forcefirststep.value()){
+	    if(m_rubbish.has_crossed(m_path[cnt],m_path[cnt],crossedvox)){
+	      rubbish_passed=1;
+	      for(unsigned int i=0; i<m_way_passed_flags_updated.size();i++){ // undo updated in this part
+		if(m_way_passed_flags_updated[i])
+		  m_way_passed_flags[i]=0;
+	      }
+	      break;
+	    }
 	  }
 	}
 

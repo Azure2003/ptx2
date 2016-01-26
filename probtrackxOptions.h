@@ -308,7 +308,7 @@ class probtrackxOptions {
 	    string("No explanation needed"),
 	    false, requires_argument),
    forcefirststep(string("--forcefirststep"),false,
-		  string("In case seed and stop masks are the same. Also needed for surface wt_stop masks that are also seeds."),
+		  string("In case seed and (stop or exclusion) masks are the same"),
 		  false, no_argument),
    osampfib(string("--osampfib"),false,
 	    string("Output sampled fibres"),
