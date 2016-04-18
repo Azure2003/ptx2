@@ -1393,6 +1393,10 @@ namespace TRACT{
     if(opts.simpleout.value()||opts.matrix1out.value()){
       update_pathdist();
     }
+    // In network mode, update network matrix
+    if(opts.network.value()){
+      m_stline.update_mat();      
+    }	
     if(opts.s2tout.value()){
       update_seedcounts();
     }
@@ -1534,11 +1538,6 @@ namespace TRACT{
     // y_s=(int)MISCMATHS::round((float)m_path[i](2));
     // z_s=(int)MISCMATHS::round((float)m_path[i](3));
     // m_lastpoint(x_s,y_s,z_s)+=1;  
-
-    // In network mode, update network matrix
-    if(opts.network.value()){
-      m_stline.update_mat();      
-    }
 
   }
 
