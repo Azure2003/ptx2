@@ -2287,9 +2287,9 @@ namespace TRACT{
 	  tmplocdir=0;
 	  SymmetricMatrix Tens(3);
 	  DiagonalMatrix D;Matrix V;
-	  for(int z=0;z<m_prob.zsize();z++){
-	    for(int y=0;y<m_prob.ysize();y++){
-	      for(int x=0;x<m_prob.xsize();x++){
+	  for(int z=0;z<m_prob_multi[t].zsize();z++){
+	    for(int y=0;y<m_prob_multi[t].ysize();y++){
+	      for(int x=0;x<m_prob_multi[t].xsize();x++){
 		if(m_prob_multi[t](x,y,z)==0)continue;
 		Tens<<m_localdir(x,y,z,0)
 		    <<m_localdir(x,y,z,1)
@@ -2297,7 +2297,7 @@ namespace TRACT{
 		    <<m_localdir(x,y,z,3)
 		    <<m_localdir(x,y,z,4)
 		    <<m_localdir(x,y,z,5);
-		if(m_prob_multi[t](x,y,z)!=0)Tens=Tens/m_prob(x,y,z);
+		if(m_prob_multi[t](x,y,z)!=0)Tens=Tens/m_prob_multi[t](x,y,z);
 		EigenValues(Tens,D,V);
 		for(int tt=0;tt<3;tt++)
 		  tmplocdir(x,y,z,tt)=V(tt+1,3);
