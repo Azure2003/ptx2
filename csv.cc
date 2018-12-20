@@ -1026,9 +1026,9 @@ void CSV::set_convention(const string& conv){
   mm2vox.ReSize(4,4);
   vox2mm.ReSize(4,4);
   if(conv=="freesurfer"){
-     mm2vox << -1/refvol.xdim() << 0               << 0                << (refvol.xsize())/2
- 	   <<  0                << 0               << -1/refvol.ydim() << (refvol.zsize())/2
- 	   <<  0                << 1/refvol.zdim() << 0                << (refvol.ysize())/2
+    mm2vox << -1/refvol.xdim() << 0               << 0                << (int)refvol.xsize()/2
+ 	   <<  0                << 0               << -1/refvol.ydim() << (int)refvol.zsize()/2
+ 	   <<  0                << 1/refvol.zdim() << 0                << (int)refvol.ysize()/2
  	   <<  0                << 0               << 0                << 1;
 //     mm2vox << -1 << 0 << 0  << 128
 // 	   <<  0 << 0 << -1 << 128
@@ -1050,7 +1050,7 @@ void CSV::set_convention(const string& conv){
     Matrix Q=refvol.qform_mat();
     if(Q.Determinant()>0){//neuro
       Matrix mat(4,4);
-      mat<<-1<<0<<0<<refvol.xsize()-1
+      mat<<-1<<0<<0<<(int)refvol.xsize()-1
 	 <<0<<1<<0<<0
 	 <<0<<0<<1<<0
 	 <<0<<0<<0<<1;

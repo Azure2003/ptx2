@@ -12,11 +12,14 @@ ifeq ($(FSLMACHTYPE),apple-darwin8-gcc4.0)
         ARCHLDFLAGS = -Wl,-search_paths_first -arch i386 -isysroot /Developer/SDKs/MacOSX10.4u.sdk -L/Developer/SDKs/MacOSX10.4u.sdk/usr/X11R6/lib/ 
 endif 
 
+ifeq ($(COMPILE_GPU), 1)
+	COMPILE_WITH_GPU=probtrackx2_gpu
+endif
 
 USRINCFLAGS = -I${INC_NEWMAT} -I${INC_NEWRAN} -I${INC_CPROB} -I${INC_PROB} -I${INC_BOOST} -I${INC_ZLIB}
 USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_NEWRAN} -L${LIB_CPROB} -L${LIB_PROB} -L${LIB_ZLIB}
 
-DLIBS =  -lnewmeshclass -lwarpfns -lbasisfield -lfslsurface  -lfslvtkio -lmeshclass -lnewimage -lutils -lmiscmaths -lnewmat -lnewran -lfslio -lgiftiio -lexpat -lfirst_lib -lniftiio -lznz -lcprob -lutils -lprob -lm -lz
+DLIBS =  -lnewmeshclass -lwarpfns -lbasisfield -lfslsurface  -lfslvtkio -lmeshclass -lnewimage -lutils -lmiscmaths -lnewmat -lnewran -lNewNifti -lgiftiio -lexpat -lfirst_lib -lznz -lcprob -lutils -lprob -lm -lz
 
 
 CCOPS=ccops
@@ -51,8 +54,9 @@ L2SOBJS=label2surf.o csv_mesh.o
 SM=surfmaths
 SMOBJS=surfmaths.o 
 
+PTX_GPUOBJS=link_gpu.o saveResults_ptxGPU.o probtrackx_gpu.o CUDA/tractographyInput.o CUDA/tractographyData.o probtrackxOptions.o csv.o csv_mesh.o
 
-XFILES = probtrackx2 surfmaths surf2surf surf2volume surf_proj label2surf find_the_biggest proj_thresh fdt_matrix_merge
+XFILES = probtrackx2 surfmaths surf2surf surf2volume surf_proj label2surf find_the_biggest proj_thresh fdt_matrix_merge ${COMPILE_WITH_GPU}
 
 
 all: ${XFILES} 
@@ -101,4 +105,13 @@ ${L2S}:         ${L2SOBJS}
 
 ${SM}:         ${SMOBJS}
 		${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${SMOBJS} ${DLIBS}
+		
+probtrackx2_gpu:	${PTX_GPUOBJS}
+		${CXX} ${CXXFLAGS} ${LDFLAGS} -o probtrackx2_gpu ${PTX_GPUOBJS} tractography_gpu.o ${DLIBS} -I${INC_CUDA} -lcudart -lcudadevrt -lcuda -lnvToolsExt -L${LIB_CUDA}
+		
+link_gpu.o:	tractography_gpu.o
+		$(NVCC) ${XFIBRES_GPUOBJS} -dlink tractography_gpu.o -o link_gpu.o -L${LIB_CUDA}
+		
+tractography_gpu.o:
+		$(NVCC) ${XFIBRES_GPUOBJS} -I$(INC_CUDA) -I${FSLDIR}/include -I${INC_NEWMAT} -I. -O3 -dc -maxrregcount=64 -Xptxas -v CUDA/tractography_gpu.cu
 
