@@ -107,11 +107,11 @@ ${SM}:         ${SMOBJS}
 		${CXX} ${CXXFLAGS} ${LDFLAGS} -o $@ ${SMOBJS} ${DLIBS}
 		
 probtrackx2_gpu:	${PTX_GPUOBJS}
-		${CXX} ${CXXFLAGS} ${LDFLAGS} -o probtrackx2_gpu ${PTX_GPUOBJS} tractography_gpu.o ${DLIBS} -I${INC_CUDA} -lcudart -lcudadevrt -lcuda -lnvToolsExt -L${LIB_CUDA}
+		${CXX} ${CXXFLAGS} ${LDFLAGS} -o probtrackx2_gpu ${PTX_GPUOBJS} tractography_gpu.o ${DLIBS} -I${INC_CUDA} -lcudart -lcudadevrt -lcuda -lnvToolsExt -L${LIB_CUDA} -L${LIB_CUDA}/stubs
 		
 link_gpu.o:	tractography_gpu.o
-		$(NVCC) ${GENCODE_FLAGS} -dlink tractography_gpu.o -o link_gpu.o -L${LIB_CUDA}
+		$(NVCC) ${GENCODE_FLAGS} -dlink tractography_gpu.o -o link_gpu.o -L${LIB_CUDA} 
 		
 tractography_gpu.o:
-		$(NVCC) ${GENCODE_FLAGS} -I$(INC_CUDA) -I${FSLDIR}/include -I${INC_NEWMAT} -I. -O3 -dc -maxrregcount=64 -Xptxas -v CUDA/tractography_gpu.cu
+		$(NVCC) ${GENCODE_FLAGS} -I$(INC_CUDA) -I${FSLDIR}/include -I${INC_NEWMAT} -I${INC_BOOST} -I. -O3 -dc -maxrregcount=64 -Xptxas -v CUDA/tractography_gpu.cu
 
