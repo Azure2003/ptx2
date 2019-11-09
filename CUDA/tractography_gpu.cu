@@ -32,7 +32,7 @@ void tractography_gpu(
   init_gpu();
   size_t free,total;
   cudaMemGetInfo(&free,&total);
-  cout << "Free memory at the beginning: "<< free <<  " ---- Total memory: " << total << "\n";
+  cout << "Device memory available (MB): "<< free/1048576 <<  " ---- Total device memory(MB): " << total/1048576 << "\n";
   
   probtrackxOptions& opts=probtrackxOptions::getInstance();
   
@@ -43,7 +43,7 @@ void tractography_gpu(
   copy_ToTextureMemory(data_host);	// Set Texture memory
   
   cuMemGetInfo(&free,&total);
-  cout << "Free memory after copying masks: "<< free <<  " ---- Total memory: " << total << "\n";
+  cout << "Device memory available after copying data (MB): "<< free/1048576 << "\n";
   
   int MAX_SLs;
   int THREADS_STREAM; // MAX_Streamlines and NSTREAMS must be multiples
@@ -159,7 +159,6 @@ void tractography_gpu(
   
   checkCuda(cudaDeviceSynchronize());
   cuMemGetInfo(&free,&total);
-  cout << "Free memory before running iterations: "<< free <<  " ---- Total memory: " << total << "\n";
 
   // run iterations
   for(int iter=0;iter<niters;iter++){
@@ -296,7 +295,6 @@ void tractography_gpu(
 	      for(int i=0;i<THREADS_STREAM;i++){
 	        if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){ 
 	          vector<float> tmp;
-	          bool included_seed=false;
             if(lengths_host[0][pos]>0){
               int posSEED=i*data_host.nsteps*3;
               int posCURRENT=0;
@@ -305,12 +303,10 @@ void tractography_gpu(
                 tmp.push_back(paths_host[0][posSEED+posCURRENT*3+1]);
                 tmp.push_back(paths_host[0][posSEED+posCURRENT*3+2]);
 	            }
-	            included_seed=true;
 	          }
 	          if(lengths_host[0][pos+1]>0){
               int pos2=i*data_host.nsteps*3+((data_host.nsteps/2)*3);
               int co=0;
-              //if(included_seed) co=1;
 	            for(;co<lengths_host[0][pos+1];co++){
                 tmp.push_back(paths_host[0][pos2+co*3]);
                 tmp.push_back(paths_host[0][pos2+co*3+1]);
@@ -397,7 +393,6 @@ void tractography_gpu(
     for(int i=0;i<last_iter;i++){
       if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){ 
         vector<float> tmp;
-        bool included_seed=false;
         if(lengths_host[0][pos]>0){
           int posSEED=i*data_host.nsteps*3;
           int posCURRENT=0;
@@ -406,12 +401,10 @@ void tractography_gpu(
             tmp.push_back(paths_host[0][posSEED+posCURRENT*3+1]);
             tmp.push_back(paths_host[0][posSEED+posCURRENT*3+2]);
           }
-          included_seed=true;
         }
 	      if(lengths_host[0][pos+1]>0){
           int pos2=i*data_host.nsteps*3+((data_host.nsteps/2)*3);
           int co=0;
-          //if(included_seed) co=1;
           for(;co<lengths_host[0][pos+1];co++){
             tmp.push_back(paths_host[0][pos2+co*3]);
             tmp.push_back(paths_host[0][pos2+co*3+1]);

@@ -17,17 +17,17 @@ extern "C" __global__ void setup_randoms_kernel(curandState* state, double seed)
 
 template <int randfib,bool loopcheck,bool modeuler>
 __global__ void get_path_kernel(
-				tractographyData*	data_gpu,
-				const int		      maxThread,
+				tractographyData* data_gpu,
+				const int         maxThread,
 				//essential 
-				curandState*		  state,
-				const long long		offset,	
+				curandState*      state,
+				const long long   offset,	
 				//loopcheck
-				int*			        loopcheckkeys,
-				float3*			      loopcheckdirs,						
+				int*              loopcheckkeys,
+				float3*           loopcheckdirs,						
 				//OUTPUT
-				float*			      path,
-				int*			        lengths)
+				float*            path,
+				int*              lengths)
 {
   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
   if(id>=maxThread) return;
@@ -64,13 +64,15 @@ __global__ void get_path_kernel(
 	
   // Use path to store my intial coordinates
   // We want to start at the same exact point, even if sampvox is activated
-  path[id*data_gpu->nsteps*3]= data_gpu->seeds[numseed*3];
-  path[id*data_gpu->nsteps*3+1]= data_gpu->seeds[numseed*3+1];
-  path[id*data_gpu->nsteps*3+2]= data_gpu->seeds[numseed*3+2];
+  uint offset_path_fw = id*data_gpu->nsteps*3;
+  uint offset_path_bw = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
+  path[offset_path_fw]= data_gpu->seeds[numseed*3];
+  path[offset_path_fw+1]= data_gpu->seeds[numseed*3+1];
+  path[offset_path_fw+2]= data_gpu->seeds[numseed*3+2];
 
-  path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)]= data_gpu->seeds[numseed*3];
-  path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)+1]= data_gpu->seeds[numseed*3+1];
-  path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)+2]= data_gpu->seeds[numseed*3+2];
+  path[offset_path_bw]= data_gpu->seeds[numseed*3];
+  path[offset_path_bw+1]= data_gpu->seeds[numseed*3+1];
+  path[offset_path_bw+2]= data_gpu->seeds[numseed*3+2];
 
 		
   if(data_gpu->sampvox>0){
@@ -85,13 +87,13 @@ __global__ void get_path_kernel(
 	      rej=false;
     }
 
-    path[id*data_gpu->nsteps*3]+=dx/C_Sdims[0];
-    path[id*data_gpu->nsteps*3+1]+=dy/C_Sdims[1];
-    path[id*data_gpu->nsteps*3+2]+=dz/C_Sdims[2];
+    path[offset_path_fw]+=dx/C_Sdims[0];
+    path[offset_path_fw+1]+=dy/C_Sdims[1];
+    path[offset_path_fw+2]+=dz/C_Sdims[2];
 
-    path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)]+=dx/C_Sdims[0];
-    path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)+1]+=dy/C_Sdims[1];
-    path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)+2]+=dz/C_Sdims[2];
+    path[offset_path_bw]+=dx/C_Sdims[0];
+    path[offset_path_bw+1]+=dy/C_Sdims[1];
+    path[offset_path_bw+2]+=dz/C_Sdims[2];
   }
   // track in one direction
   lengths[id*2]=streamline<randfib,loopcheck,modeuler>(data_gpu,
@@ -101,7 +103,7 @@ __global__ void get_path_kernel(
 						       &partRx[threadIdx.x],&partRy[threadIdx.x],&partRz[threadIdx.x],
 						       &memSH_a[threadIdx.x],&memSH_b[threadIdx.x],&memSH_c[threadIdx.x],
 						       &memSH_d[threadIdx.x],&memSH_e[threadIdx.x],&memSH_f[threadIdx.x],
-						       &path[id*data_gpu->nsteps*3],part_init,part_has_jumped);
+						       &path[offset_path_fw],part_init,part_has_jumped);
 
   // track in the other direction
   lengths[id*2+1]=streamline<randfib,loopcheck,modeuler>(data_gpu,
@@ -111,7 +113,7 @@ __global__ void get_path_kernel(
 							 &partRx[threadIdx.x],&partRy[threadIdx.x],&partRz[threadIdx.x],
 							 &memSH_a[threadIdx.x],&memSH_b[threadIdx.x],&memSH_c[threadIdx.x],
 							 &memSH_d[threadIdx.x],&memSH_e[threadIdx.x],&memSH_f[threadIdx.x],
-							 &path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)],part_init,part_has_jumped);
+							 &path[offset_path_bw],part_init,part_has_jumped);
 
   state[id]=localState; // save state, otherwise random numbers will be repeated (start at the same point)
 }
@@ -120,11 +122,11 @@ __global__ void get_path_kernel(
 /////// AVOID MASK ///////
 /////////////////////////
 template <bool avoidVol,bool avoidSurf>
-__global__ void avoid_masks_kernel(	tractographyData*	data_gpu,
-					const int		maxThread,
-					//INPUT-OUTPUT
-					float*			paths,
-					int*			  lengths)
+__global__ void avoid_masks_kernel( tractographyData*   data_gpu,
+                                    const int           maxThread,
+                                    //INPUT-OUTPUT
+                                    float*              paths,
+                                    int*                lengths)
 {	
   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
   if(id>=maxThread) return;
@@ -139,7 +141,8 @@ __global__ void avoid_masks_kernel(	tractographyData*	data_gpu,
   ///////////////////////
   ////// ONE WAY ////////
   ///////////////////////
-  float* mypath=&paths[id*data_gpu->nsteps*3];
+  uint offset_path = id*data_gpu->nsteps*3;
+  float* mypath=&paths[offset_path];
   int mylength=lengths[id*2];            
   int2 rejflag;
 
@@ -193,8 +196,9 @@ __global__ void avoid_masks_kernel(	tractographyData*	data_gpu,
   ///////////////////////	
   ////// OTHER WAY /////
   ///////////////////////	
-  rejflag.y=0;    
-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
+  rejflag.y=0;
+  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
+  mypath=&paths[offset_path];
   mylength=lengths[id*2+1];
 	
   segmentAx[threadIdx.x]=mypath[0];
@@ -253,11 +257,11 @@ __global__ void avoid_masks_kernel(	tractographyData*	data_gpu,
 /////// STOP MASK ///////
 /////////////////////////
 template <bool stopVol,bool stopSurf>
-__global__ void stop_masks_kernel(	tractographyData*	data_gpu,
-					const int		maxThread,
-					// INPUT-OUTPUT
-					float*			paths,
-					int*			  lengths)	// num of coordinates
+__global__ void stop_masks_kernel(  tractographyData*   data_gpu,
+                                    const int           maxThread,
+                                    // INPUT-OUTPUT
+                                    float*              paths,
+                                    int*                lengths)	// num of coordinates
 {	
   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
   if(id>=maxThread) return;
@@ -273,7 +277,8 @@ __global__ void stop_masks_kernel(	tractographyData*	data_gpu,
   ///////////////////////
   ////// ONE WAY ////////
   ///////////////////////
-  float* mypath=&paths[id*data_gpu->nsteps*3];
+  uint offset_path = id*data_gpu->nsteps*3;
+  float* mypath=&paths[offset_path];
   int mylength=lengths[id*2];        
   segmentAx[threadIdx.x]=mypath[0];
   segmentAy[threadIdx.x]=mypath[1];
@@ -327,8 +332,9 @@ __global__ void stop_masks_kernel(	tractographyData*	data_gpu,
   }
   ///////////////////////	
   ////// OTHER WAY /////
-  ///////////////////////	
-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
+  ///////////////////////
+  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);	
+  mypath=&paths[offset_path];
   mylength=lengths[id*2+1];
 	
   segmentAx[threadIdx.x]=mypath[0];
@@ -394,11 +400,11 @@ __global__ void stop_masks_kernel(	tractographyData*	data_gpu,
 // ignoring forcefirststep ... if seed is inside wtstop: is treated
 
 template <bool wtstopVol,bool wtstopSurf>
-__global__ void wtstop_masks_kernel(	tractographyData*	data_gpu,
-					const int		maxThread,
-					// INPUT-OUTPUT
-					float*			paths,
-					int*			  lengths)
+__global__ void wtstop_masks_kernel(  tractographyData*   data_gpu,
+                                      const int           maxThread,
+                                      // INPUT-OUTPUT
+                                      float*              paths,
+                                      int*                lengths)
 {
   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
   if(id>=maxThread) return;
@@ -420,7 +426,8 @@ __global__ void wtstop_masks_kernel(	tractographyData*	data_gpu,
   /////////////////	
   //// ONE WAY ////
   /////////////////
-  float* mypath=&paths[id*data_gpu->nsteps*3];
+  uint offset_path = id*data_gpu->nsteps*3;
+  float* mypath=&paths[offset_path];
   int mylength=lengths[id*2];            
   bool wtstop=false;
   // set flags to 1 (still not in roi)
@@ -486,7 +493,8 @@ __global__ void wtstop_masks_kernel(	tractographyData*	data_gpu,
   ////////////////////	
   //// OTHER WAY /////
   ////////////////////
-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
+  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
+  mypath=&paths[offset_path];
   mylength=lengths[id*2+1];
   wtstop=false;
   // set flags to 1 (still not in roi)
@@ -555,11 +563,11 @@ __global__ void wtstop_masks_kernel(	tractographyData*	data_gpu,
 /////// WAYPOINTS MASK ////////
 ///////////////////////////////
 template <bool wayVol,bool waySurf>
-__global__ void way_masks_kernel(	tractographyData*	data_gpu,
-					const int		maxThread,
-					// INNPUT-OUTPUT
-					float*			paths,
-					int*			lengths)
+__global__ void way_masks_kernel( tractographyData*     data_gpu,
+                                  const int              maxThread,
+                                  // INNPUT-OUTPUT
+                                  float*                paths,
+                                  int*                  lengths)
 {
   ///// DYNAMIC SHARED MEMORY /////
   extern __shared__ float shared[];
@@ -574,7 +582,8 @@ __global__ void way_masks_kernel(	tractographyData*	data_gpu,
   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
   if(id>=maxThread) return;
 
-  float* mypath=&paths[id*data_gpu->nsteps*3];
+  uint offset_path = id*data_gpu->nsteps*3;
+  float* mypath=&paths[offset_path];
   int mylength=lengths[id*2];
 	
   int numpassed=0; 
@@ -685,7 +694,8 @@ __global__ void way_masks_kernel(	tractographyData*	data_gpu,
     numpassed=0;
     order=true;
   }
-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
+  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
+  mypath=&paths[offset_path];
   mylength=lengths[id*2+1];
 
   if(waySurf){
@@ -781,18 +791,17 @@ __global__ void way_masks_kernel(	tractographyData*	data_gpu,
 /////////////////////////////
 template <bool netVol,bool netSurf,int savelength,bool flags_in_shared>
 // savelength 0: no --pd, nor --ompl | 1: --pd | 2: --ompl (ConNet pathlengths, ConNetb binary hits, and later calculates mean)
-__global__ void net_masks_kernel(
-				 tractographyData*	data_gpu,
-				 const int		maxThread,
-				 const long long  offset,
-				 // INNPUT-OUTPUT
-				 float*			paths,
-				 int*			  lengths,
-				 float*			ConNet,
-				 float*			ConNetb,
-				 // To use in case too many Net ROIs
-				 float*			net_flags_Global,
-				 float*			net_values_Global)
+__global__ void net_masks_kernel( tractographyData*   data_gpu,
+                                  const int           maxThread,
+                                  const long long     offset,
+                                  // INNPUT-OUTPUT
+                                  float*              paths,
+                                  int*                lengths,
+                                  float*              ConNet,
+                                  float*              ConNetb,
+                                  // To use in case too many Net ROIs
+                                  float*              net_flags_Global,
+                                  float*              net_values_Global)
 {
   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
   if(id>=maxThread) return;
@@ -827,7 +836,8 @@ __global__ void net_masks_kernel(
   int numseed = (offset+id)/data_gpu->nparticles;
   int ROI = data_gpu->seeds_ROI[numseed];
 
-  float* mypath=&paths[id*data_gpu->nsteps*3];
+  uint offset_path = id*data_gpu->nsteps*3;
+  float* mypath=&paths[offset_path];
   int mylength=lengths[id*2];
   int numpassed=1; // count my own ROI
 	
@@ -927,7 +937,8 @@ __global__ void net_masks_kernel(
   net_flags[ROI]=1; // my own ROI
   numpassed=1; // count my own ROI
 
-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
+  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
+  mypath=&paths[offset_path];
   mylength=lengths[id*2+1];
 
   if(netSurf){
@@ -1032,16 +1043,16 @@ __global__ void net_masks_kernel(
 /////////////////////////////
 template <bool targVol,bool targSurf,int savelength, bool flags_in_shared>
 // savelength 0: no --pd or --ompl | 1: --pd | 2: --ompl 
-__global__ void targets_masks_kernel( tractographyData*	data_gpu,
-			const int		  maxThread,
-			const long long offset,
-			// INNPUT-OUTPUT
-			float*			  paths,
-			int*			    lengths,
-			float*			  s2targets_gpu,		// a values for each Seed and for each target (Nseeds x NTragets)
-      float*			  s2targetsb_gpu,
-      // To use in case too many Net ROIs
-			float*			  targ_flags_Global)
+__global__ void targets_masks_kernel( tractographyData*     data_gpu,
+                                      const int             maxThread,
+                                      const long long       offset,
+                                      // INNPUT-OUTPUT
+                                      float*                paths,
+                                      int*                  lengths,
+                                      float*                s2targets_gpu,		// (Nseeds x NTargets)
+                                      float*                s2targetsb_gpu,
+                                      // To use in case too many Net ROIs
+                                      float*                targ_flags_Global)
 {
   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
   if(id>=maxThread) return;
@@ -1067,7 +1078,8 @@ __global__ void targets_masks_kernel( tractographyData*	data_gpu,
     targ_flags = &targ_flags_Global[id*totalTargets];		
   }		
 
-  float* mypath=&paths[id*data_gpu->nsteps*3];
+  uint offset_path = id*data_gpu->nsteps*3;
+  float* mypath=&paths[offset_path];
   int mylength=lengths[id*2];
 	
   for(int i=0;i<totalTargets;i++){
@@ -1144,7 +1156,8 @@ __global__ void targets_masks_kernel( tractographyData*	data_gpu,
   //// OTHER WAY ////
   ///////////////////
   pathlength=data_gpu->steplength;
-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
+  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
+  mypath=&paths[offset_path];
   mylength=lengths[id*2+1];
 
   if(targSurf){
@@ -1229,16 +1242,16 @@ __global__ void targets_masks_kernel( tractographyData*	data_gpu,
 /////// MATRIX  MASKs /////////
 ///////////////////////////////
 template <bool HVols,bool HSurfs, bool M2> // M2 is for Matrix2: it can be defined in a different space
-__global__ void matrix_kernel(	tractographyData*	data_gpu,
-				const int		maxThread,
-				float*			paths,
-				int*			lengths,
-				bool 			pathdist,
-				bool			omeanpathlength,
-				MaskData*		matrixData, 	// info vols & surfs
-				// OUTPUT
-				float3*			crossed,
-				int*			numcrossed)
+__global__ void matrix_kernel(  tractographyData*     data_gpu,
+                                const int             maxThread,
+                                float*                paths,
+                                int*                  lengths,
+                                bool                  pathdist,
+                                bool                  omeanpathlength,
+                                MaskData*             matrixData, // info vols & surfs
+                                // OUTPUT
+                                float3*               crossed,
+                                int*                   numcrossed)
 {	
   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
   if(id>=maxThread) return;
@@ -1271,7 +1284,8 @@ __global__ void matrix_kernel(	tractographyData*	data_gpu,
   /////////////////	
   //// ONE WAY ////
   /////////////////
-  float* mypath=&paths[id*data_gpu->nsteps*3];
+  uint offset_path = id*data_gpu->nsteps*3;
+  float* mypath=&paths[offset_path];
   if(HSurfs){
     if(M2){
       vox_to_vox_S2M2(mypath,&segmentAx[threadIdx.x],&segmentAy[threadIdx.x],&segmentAz[threadIdx.x]);
@@ -1328,7 +1342,8 @@ __global__ void matrix_kernel(	tractographyData*	data_gpu,
   if(pathdist||omeanpathlength) pathlength=-data_gpu->steplength; // it starts with the second coordinate of the path 
   // reverse, m_tracksign !! . If different directions when crossing 2 nodes, then the path distance is longer.
 
-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
+  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
+  mypath=&paths[offset_path];
   mylength=lengths[id*2+1];
   if(HSurfs){
     if(M2){
@@ -1384,21 +1399,22 @@ __global__ void matrix_kernel(	tractographyData*	data_gpu,
 ///////// UPDATE PATHS VOLUME ///////
 /////////////////////////////////////
 template <bool pathdist, bool omeanpathlength, bool opathdir>
-__global__ void update_path_kernel(	tractographyData*	data_gpu,
-					const int		maxThread,
-					float* 			path,
-					int*			  lengths,
-					int*			  beenhere,					
-					const int 	upper_limit,
-					// OUTPUT
-					float*			m_prob,
-					float*			m_prob2,	// for omeanpathlength
-					float*			m_localdir)	// for opathdir
+__global__ void update_path_kernel( tractographyData*     data_gpu,
+                                    const int             maxThread,
+                                    float*                path,
+                                    int*                  lengths,
+                                    int*                  beenhere,					
+                                    const int             upper_limit,
+                                    // OUTPUT
+                                    float*                m_prob,
+                                    float*                m_prob2,	// for omeanpathlength
+                                    float*                m_localdir)	// for opathdir
 {
   int id = threadIdx.x + blockIdx.x*blockDim.x;
   if(id>=maxThread) return;
 
-  float* mypath = &path[id*data_gpu->nsteps*3];
+  uint offset_path = id*data_gpu->nsteps*3;
+  float* mypath = &path[offset_path];
   int mylength = lengths[id*2];
   int* m_beenhere = &beenhere[id*(data_gpu->nsteps)];
   int coordinatex,coordinatey,coordinatez;
@@ -1495,7 +1511,8 @@ __global__ void update_path_kernel(	tractographyData*	data_gpu,
   }	
 
   // other way
-  mypath = &path[id*data_gpu->nsteps*3+(data_gpu->nsteps/2)*3];
+  offset_path = id*data_gpu->nsteps*3+(data_gpu->nsteps/2)*3;
+  mypath = &path[offset_path];
   mylength = lengths[id*2+1];
   pathlength=0.0f;
 	
