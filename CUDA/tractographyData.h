@@ -39,7 +39,7 @@ class tractographyData{
 	int		nvoxels;
 	int		nsamples;
 	int		nfibres;
-	int		nseeds;
+	size_t nseeds;
 	int		nparticles;
 	int		nsteps;
 

@@ -266,7 +266,7 @@ void counter_save(
   ////// save seeds to targets //////
   ///////////////////////////////////
   if(opts.s2tout.value()){
-    long pos=0;
+    size_t pos=0;
     int ntargets=data_host.targets.NVols+data_host.targets.NSurfs;
     if (fsl_imageexists(opts.seedfile.value())){
       volume<float> tmp;
@@ -332,7 +332,7 @@ void counter_save(
 	int nfaces=data_host.seeds_mesh_info[1];
 	
 	if(f.is_open()){
-	  int pos2=0;
+	  size_t pos2=0;
 	  for(int i=0;i<nvertices;i++){
 	    flot<<data_host.seeds_vertices[pos2]<<" "
 		<<data_host.seeds_vertices[pos2+1]<<" "
@@ -471,7 +471,7 @@ void counter_save(
 	    int nvertices=data_host.seeds_mesh_info[id_mesh*2];
 	    int nfaces=data_host.seeds_mesh_info[id_mesh*2+1];
 	    if (f.is_open()){
-	      int pos2=0;
+	      size_t pos2=0;
 	      for(int i=0;i<id_mesh;i++) pos2+= (data_host.seeds_mesh_info[i*2]*3);
 	      for(int i=0;i<nvertices;i++){
 		flot<<data_host.seeds_vertices[pos2]<<" "
@@ -550,7 +550,7 @@ void counter_save(
       if(opts.omeanpathlength.value()){
 	out2= new ofstream(file2.c_str());
       }
-      for(int i=0;i<data_host.nseeds;i++){
+      for(size_t i=0;i<data_host.nseeds;i++){
 	pos=i;
 	for(int j=0;j<ntargets;j++){
 	  if(!opts.omeanpathlength.value()){			

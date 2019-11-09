@@ -6,8 +6,9 @@
 
 /*  CCOPYRIGHT  */
 
-cudaError_t checkCuda(cudaError_t result){
+cudaError_t checkCuda(cudaError_t result, const char *msg=NULL){
   if (result != cudaSuccess) {
+    if (msg) fprintf(stderr, "Error: %s\n", msg);
     fprintf(stderr, "CUDA Runtime Error: %s\n", 
 	    cudaGetErrorString(result));
     exit(1);
@@ -408,62 +409,155 @@ void copy_ToTextureMemory(	tractographyData&	data_host)
   }
 }
 
+size_t calculate_mem_required(tractographyData&	data_host){
+  probtrackxOptions& opts =probtrackxOptions::getInstance();
+  size_t total_mem_required;
+  total_mem_required = sizeof(tractographyData);
+  total_mem_required += data_host.nseeds*3*sizeof(float); // seeds
+  if(opts.network.value()) total_mem_required += data_host.nseeds*sizeof(float); // network
+  total_mem_required += 2*data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(float); //mask & lut_vol2mat
+  total_mem_required += 3*data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float); // samples
+
+  size_t seedVolSize=data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]*sizeof(float);
+  size_t voxFacesIndexSize = (data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int);
+  if(data_host.avoid.NVols) total_mem_required += seedVolSize;
+  if(data_host.avoid.NSurfs){
+    size_t surfSize = size_t(data_host.avoid.sizesStr[1]*sizeof(float)) +  data_host.avoid.sizesStr[2]*sizeof(int)
+                      + data_host.avoid.sizesStr[3]*sizeof(int) + voxFacesIndexSize;
+    total_mem_required += surfSize;
+  } 
+  if(data_host.stop.NVols) total_mem_required += seedVolSize;
+  if(data_host.stop.NSurfs){
+    size_t surfSize = size_t(data_host.stop.sizesStr[1]*sizeof(float)) +  data_host.stop.sizesStr[2]*sizeof(int)
+                      + data_host.stop.sizesStr[3]*sizeof(int) + voxFacesIndexSize;
+    total_mem_required += surfSize;
+  } 
+  if(data_host.wtstop.NVols)  total_mem_required += data_host.wtstop.NVols * seedVolSize;
+  if(data_host.wtstop.NSurfs){
+    size_t surfSize = size_t(data_host.wtstop.sizesStr[1]*sizeof(float)) +  data_host.wtstop.sizesStr[2]*sizeof(int)
+                      + data_host.wtstop.sizesStr[3]*sizeof(int) + data_host.wtstop.NSurfs*voxFacesIndexSize;
+    total_mem_required += surfSize;
+  }
+  if(data_host.network.NVols) total_mem_required += data_host.network.NVols * seedVolSize;
+  if(data_host.network.NSurfs){
+    size_t surfSize = size_t(data_host.network.sizesStr[1]*sizeof(float)) +  data_host.network.sizesStr[2]*sizeof(int)
+                      + data_host.network.sizesStr[3]*sizeof(int) + data_host.network.NSurfs*voxFacesIndexSize;
+    total_mem_required += surfSize;
+  }
+  if(data_host.network.NVols||data_host.network.NSurfs){
+    total_mem_required += data_host.network.NVols+data_host.network.NSurfs*sizeof(int);
+  }
+  if(data_host.networkREF.NVols) total_mem_required += seedVolSize;
+  if(data_host.networkREF.NSurfs){
+    size_t surfSize = size_t(data_host.networkREF.sizesStr[1]*sizeof(float)) +  data_host.networkREF.sizesStr[2]*sizeof(int)
+                      + data_host.networkREF.sizesStr[3]*sizeof(int) + voxFacesIndexSize;
+    total_mem_required += surfSize;
+  }
+  if(data_host.waypoint.NVols) total_mem_required += data_host.waypoint.NVols * seedVolSize;
+  if(data_host.waypoint.NSurfs){
+    size_t surfSize = size_t(data_host.waypoint.sizesStr[1]*sizeof(float)) +  data_host.waypoint.sizesStr[2]*sizeof(int)
+                      + data_host.waypoint.sizesStr[3]*sizeof(int) + data_host.waypoint.NSurfs*voxFacesIndexSize;
+    total_mem_required += surfSize;
+  }
+  if(data_host.waypoint.NVols||data_host.waypoint.NSurfs){
+    total_mem_required += data_host.waypoint.NVols+data_host.waypoint.NSurfs*sizeof(int);
+  }
+  if(data_host.targets.NVols) total_mem_required += data_host.targets.NVols * seedVolSize;
+  if(data_host.targets.NSurfs){
+    size_t surfSize = size_t(data_host.targets.sizesStr[1]*sizeof(float)) +  data_host.targets.sizesStr[2]*sizeof(int)
+                      + data_host.targets.sizesStr[3]*sizeof(int) + data_host.targets.NSurfs*voxFacesIndexSize;
+    total_mem_required += surfSize;
+  }
+  if(data_host.targets.NVols||data_host.targets.NSurfs){
+    total_mem_required += data_host.targets.NVols+data_host.targets.NSurfs*sizeof(int);
+  }
+  if(data_host.targetsREF.NVols) total_mem_required += seedVolSize;
+  if(data_host.targetsREF.NSurfs){
+    size_t surfSize = size_t(data_host.targetsREF.sizesStr[1]*sizeof(float)) +  data_host.targetsREF.sizesStr[2]*sizeof(int)
+                      + data_host.targetsREF.sizesStr[3]*sizeof(int) + voxFacesIndexSize;
+    total_mem_required += surfSize;
+  }
+  if(data_host.lrmatrix1.NVols){
+    if(opts.matrix2out.value())
+      total_mem_required += data_host.lrmatrix1.NVols*data_host.M2sizes[0]*data_host.M2sizes[1]*data_host.M2sizes[2]*sizeof(float);
+    else
+      total_mem_required += data_host.lrmatrix1.NVols * seedVolSize;
+  }
+  if(data_host.lrmatrix1.NSurfs){
+    size_t surfSize = size_t(data_host.lrmatrix1.sizesStr[0]*sizeof(int)) 
+                      + data_host.lrmatrix1.sizesStr[1]*sizeof(float) +  data_host.lrmatrix1.sizesStr[2]*sizeof(int)
+                      + data_host.lrmatrix1.sizesStr[3]*sizeof(int) + data_host.lrmatrix1.NSurfs*voxFacesIndexSize;
+    total_mem_required += surfSize;
+  }
+  if(data_host.matrix3.NVols) total_mem_required += data_host.matrix3.NVols * seedVolSize;
+  if(data_host.matrix3.NSurfs){
+    size_t surfSize = size_t(data_host.matrix3.sizesStr[0]*sizeof(int)) 
+                      + data_host.matrix3.sizesStr[1]*sizeof(float) +  data_host.matrix3.sizesStr[2]*sizeof(int)
+                      + data_host.matrix3.sizesStr[3]*sizeof(int) + data_host.matrix3.NSurfs*voxFacesIndexSize;
+    total_mem_required += surfSize;
+  }
+  if(data_host.lrmatrix3.NVols) total_mem_required += data_host.lrmatrix3.NVols * seedVolSize;		
+  if(data_host.lrmatrix3.NSurfs){
+    size_t surfSize = size_t(data_host.lrmatrix3.sizesStr[0]*sizeof(int)) 
+                      + data_host.lrmatrix3.sizesStr[1]*sizeof(float) +  data_host.lrmatrix3.sizesStr[2]*sizeof(int)
+                      + data_host.lrmatrix3.sizesStr[3]*sizeof(int) + data_host.lrmatrix3.NSurfs*voxFacesIndexSize;
+    total_mem_required += surfSize;
+  }
+  return total_mem_required;
+}
+
 
 void copy_to_gpu( 	tractographyData&	data_host,
-			tractographyData*&	data_gpu)
+			              tractographyData*&	data_gpu)
 {
   probtrackxOptions& opts =probtrackxOptions::getInstance();
 
+  size_t total_mem_required = calculate_mem_required(data_host);
+  cout << "Memory required for allocating data (MB): "<< total_mem_required/1048576 << endl;
+
+  size_t free,total;
+  cudaMemGetInfo(&free,&total);
+  if(total_mem_required > free){
+    cout << "Not enough Memory available on device. Exiting ..." << endl;
+    terminate();
+  }
+  
   checkCuda(cudaMalloc((void**)&data_gpu,sizeof(tractographyData)));	
   checkCuda(cudaMemcpy(data_gpu,&data_host,sizeof(tractographyData),cudaMemcpyHostToDevice));
 	
   int* auxI;
   float* auxF;
-  
-  // sizes and dims .... now in Constant memory
-	
+
   // seeds
-  checkCuda(cudaMalloc((void**)&auxF,data_host.nseeds*3*sizeof(float)));
+  checkCuda(cudaMalloc((void**)&auxF,data_host.nseeds*3*sizeof(float)), "Allocating seeds");
   checkCuda(cudaMemcpy(auxF,data_host.seeds,data_host.nseeds*3*sizeof(float),cudaMemcpyHostToDevice));
   checkCuda(cudaMemcpy(&data_gpu->seeds,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
   if(opts.network.value()){
-    checkCuda(cudaMalloc((void**)&auxF,data_host.nseeds*sizeof(float)));
+    checkCuda(cudaMalloc((void**)&auxF,data_host.nseeds*sizeof(float)), "Allocating Network ROIs");
     checkCuda(cudaMemcpy(auxF,data_host.seeds_ROI,data_host.nseeds*sizeof(float),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->seeds_ROI,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
   }
   // mask
-  checkCuda(cudaMalloc((void**)&auxF,data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(float)));
+  checkCuda(cudaMalloc((void**)&auxF,data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(float)), "Allocating mask");
   checkCuda(cudaMemcpy(auxF,data_host.mask,data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(float),cudaMemcpyHostToDevice));
-  checkCuda(cudaMemcpy(&data_gpu->mask,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
+  checkCuda(cudaMemcpy(&data_gpu->mask,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
   // th_samples
-  checkCuda(cudaMalloc((void**)&auxF,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float)));
+  checkCuda(cudaMalloc((void**)&auxF,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float)), "Allocating th_samples");
   checkCuda(cudaMemcpy(auxF,data_host.thsamples,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float),cudaMemcpyHostToDevice));
-  checkCuda(cudaMemcpy(&data_gpu->thsamples,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
+  checkCuda(cudaMemcpy(&data_gpu->thsamples,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
   // ph_samples
-  checkCuda(cudaMalloc((void**)&auxF,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float)));
+  checkCuda(cudaMalloc((void**)&auxF,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float)), "Allocating ph_samples");
   checkCuda(cudaMemcpy(auxF,data_host.phsamples,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float),cudaMemcpyHostToDevice));
-  checkCuda(cudaMemcpy(&data_gpu->phsamples,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
+  checkCuda(cudaMemcpy(&data_gpu->phsamples,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
   // f_samples
-  checkCuda(cudaMalloc((void**)&auxF,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float)));
+  checkCuda(cudaMalloc((void**)&auxF,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float)), "Allocating f_samples");
   checkCuda(cudaMemcpy(auxF,data_host.fsamples,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float),cudaMemcpyHostToDevice));
-  checkCuda(cudaMemcpy(&data_gpu->fsamples,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
+  checkCuda(cudaMemcpy(&data_gpu->fsamples,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
   // lut_vol2mat
-  checkCuda(cudaMalloc((void**)&auxI,data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(int)));
+  checkCuda(cudaMalloc((void**)&auxI,data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(int)), "Allocating lut_vol2mat");
   checkCuda(cudaMemcpy(auxI,data_host.lut_vol2mat,data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(int),cudaMemcpyHostToDevice));
   checkCuda(cudaMemcpy(&data_gpu->lut_vol2mat,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
 
-  //Seeds_to_DTI...... now in Constant memory
- 
-  //DTI_to_Seeds...... now in Constant memory
-  
-  //VOX2MM...... now in Constant memory
-
-  //NON-LINEAR ...... now in Constant memory and Texture Memory
-
-  //Warp sizes.... now in constant memory
-
-  //Sampling Inverse.... now in constant memory
-  
   //Avoid mask
   if(data_host.avoid.NVols){
     checkCuda(cudaMalloc((void**)&auxF,data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]*sizeof(float)));
@@ -471,10 +565,6 @@ void copy_to_gpu( 	tractographyData&	data_host,
     checkCuda(cudaMemcpy(&data_gpu->avoid.volume,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
   }
   if(data_host.avoid.NSurfs){
-    //cudaMalloc((void**)&auxI,data_host.avoid.sizesStr[0]*sizeof(int));
-    //cudaMemcpy(auxI,data_host.avoid.locs,data_host.avoid.sizesStr[0]*sizeof(int),cudaMemcpyHostToDevice);
-    //cudaMemcpy(&data_gpu->avoid.locs,&auxI,sizeof(int*),cudaMemcpyHostToDevice);
-    // no deed locs
     checkCuda(cudaMalloc((void**)&auxF,data_host.avoid.sizesStr[1]*sizeof(float)));
     checkCuda(cudaMemcpy(auxF,data_host.avoid.vertices,data_host.avoid.sizesStr[1]*sizeof(float),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->avoid.vertices,&auxF,sizeof(float*),cudaMemcpyHostToDevice));	
@@ -495,10 +585,6 @@ void copy_to_gpu( 	tractographyData&	data_host,
     checkCuda(cudaMemcpy(&data_gpu->stop.volume,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
   }
   if(data_host.stop.NSurfs){
-    //cudaMalloc((void**)&auxI,data_host.stop.sizesStr[0]*sizeof(int));
-    //cudaMemcpy(auxI,data_host.stop.locs,data_host.stop.sizesStr[0]*sizeof(int),cudaMemcpyHostToDevice);
-    //cudaMemcpy(&data_gpu->stop.locs,&auxI,sizeof(int*),cudaMemcpyHostToDevice);
-    // no need locs
     checkCuda(cudaMalloc((void**)&auxF,data_host.stop.sizesStr[1]*sizeof(float)));
     checkCuda(cudaMemcpy(auxF,data_host.stop.vertices,data_host.stop.sizesStr[1]*sizeof(float),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->stop.vertices,&auxF,sizeof(float*),cudaMemcpyHostToDevice));	
@@ -519,10 +605,6 @@ void copy_to_gpu( 	tractographyData&	data_host,
     checkCuda(cudaMemcpy(&data_gpu->wtstop.volume,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
   }
   if(data_host.wtstop.NSurfs){
-    //cudaMalloc((void**)&auxI,data_host.wtstop.sizesStr[0]*sizeof(int));
-    //cudaMemcpy(auxI,data_host.wtstop.locs,data_host.wtstop.sizesStr[0]*sizeof(int),cudaMemcpyHostToDevice);
-    //cudaMemcpy(&data_gpu->wtstop.locs,&auxI,sizeof(int*),cudaMemcpyHostToDevice);
-    // no need locs
     checkCuda(cudaMalloc((void**)&auxF,data_host.wtstop.sizesStr[1]*sizeof(float)));
     checkCuda(cudaMemcpy(auxF,data_host.wtstop.vertices,data_host.wtstop.sizesStr[1]*sizeof(float),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->wtstop.vertices,&auxF,sizeof(float*),cudaMemcpyHostToDevice));	
@@ -532,8 +614,8 @@ void copy_to_gpu( 	tractographyData&	data_host,
     checkCuda(cudaMalloc((void**)&auxI,data_host.wtstop.sizesStr[3]*sizeof(int)));
     checkCuda(cudaMemcpy(auxI,data_host.wtstop.VoxFaces,data_host.wtstop.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->wtstop.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
-    checkCuda(cudaMalloc((void**)&auxI,(data_host.wtstop.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
-    checkCuda(cudaMemcpy(auxI,data_host.wtstop.VoxFacesIndex,(data_host.wtstop.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
+    checkCuda(cudaMalloc((void**)&auxI,(data_host.wtstop.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
+    checkCuda(cudaMemcpy(auxI,data_host.wtstop.VoxFacesIndex,(data_host.wtstop.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->wtstop.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
   }
   // Network mask
@@ -543,10 +625,6 @@ void copy_to_gpu( 	tractographyData&	data_host,
     checkCuda(cudaMemcpy(&data_gpu->network.volume,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
   }
   if(data_host.network.NSurfs){	
-    //cudaMalloc((void**)&auxI,data_host.network.sizesStr[0]*sizeof(int));
-    //cudaMemcpy(auxI,data_host.network.locs,data_host.network.sizesStr[0]*sizeof(int),cudaMemcpyHostToDevice);
-    //cudaMemcpy(&data_gpu->network.locs,&auxI,sizeof(int*),cudaMemcpyHostToDevice);
-    // no locs
     checkCuda(cudaMalloc((void**)&auxF,data_host.network.sizesStr[1]*sizeof(float)));
     checkCuda(cudaMemcpy(auxF,data_host.network.vertices,data_host.network.sizesStr[1]*sizeof(float),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->network.vertices,&auxF,sizeof(float*),cudaMemcpyHostToDevice));	
@@ -556,8 +634,8 @@ void copy_to_gpu( 	tractographyData&	data_host,
     checkCuda(cudaMalloc((void**)&auxI,data_host.network.sizesStr[3]*sizeof(int)));
     checkCuda(cudaMemcpy(auxI,data_host.network.VoxFaces,data_host.network.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->network.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
-    checkCuda(cudaMalloc((void**)&auxI,(data_host.network.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
-    checkCuda(cudaMemcpy(auxI,data_host.network.VoxFacesIndex,(data_host.network.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
+    checkCuda(cudaMalloc((void**)&auxI,(data_host.network.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
+    checkCuda(cudaMemcpy(auxI,data_host.network.VoxFacesIndex,(data_host.network.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->network.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
   }
   if(data_host.network.NVols||data_host.network.NSurfs){
@@ -594,9 +672,6 @@ void copy_to_gpu( 	tractographyData&	data_host,
     checkCuda(cudaMemcpy(&data_gpu->waypoint.volume,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
   }
   if(data_host.waypoint.NSurfs){
-    //cudaMalloc((void**)&auxI,data_host.waypoint.sizesStr[0]*sizeof(int));
-    //cudaMemcpy(auxI,data_host.waypoint.locs,data_host.waypoint.sizesStr[0]*sizeof(int),cudaMemcpyHostToDevice);
-    //cudaMemcpy(&data_gpu->waypoint.locs,&auxI,sizeof(int*),cudaMemcpyHostToDevice);	
     checkCuda(cudaMalloc((void**)&auxF,data_host.waypoint.sizesStr[1]*sizeof(float)));
     checkCuda(cudaMemcpy(auxF,data_host.waypoint.vertices,data_host.waypoint.sizesStr[1]*sizeof(float),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->waypoint.vertices,&auxF,sizeof(float*),cudaMemcpyHostToDevice));	
@@ -606,8 +681,8 @@ void copy_to_gpu( 	tractographyData&	data_host,
     checkCuda(cudaMalloc((void**)&auxI,data_host.waypoint.sizesStr[3]*sizeof(int)));
     checkCuda(cudaMemcpy(auxI,data_host.waypoint.VoxFaces,data_host.waypoint.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->waypoint.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
-    checkCuda(cudaMalloc((void**)&auxI,(data_host.waypoint.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
-    checkCuda(cudaMemcpy(auxI,data_host.waypoint.VoxFacesIndex,(data_host.waypoint.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
+    checkCuda(cudaMalloc((void**)&auxI,(data_host.waypoint.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
+    checkCuda(cudaMemcpy(auxI,data_host.waypoint.VoxFacesIndex,(data_host.waypoint.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->waypoint.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
   }
   if(data_host.waypoint.NVols||data_host.waypoint.NSurfs){
@@ -632,8 +707,8 @@ void copy_to_gpu( 	tractographyData&	data_host,
     checkCuda(cudaMalloc((void**)&auxI,data_host.targets.sizesStr[3]*sizeof(int)));
     checkCuda(cudaMemcpy(auxI,data_host.targets.VoxFaces,data_host.targets.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->targets.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
-    checkCuda(cudaMalloc((void**)&auxI,(data_host.targets.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
-    checkCuda(cudaMemcpy(auxI,data_host.targets.VoxFacesIndex,(data_host.targets.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
+    checkCuda(cudaMalloc((void**)&auxI,(data_host.targets.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
+    checkCuda(cudaMemcpy(auxI,data_host.targets.VoxFacesIndex,(data_host.targets.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->targets.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
   }
   if(data_host.targets.NVols||data_host.targets.NSurfs){
@@ -688,8 +763,8 @@ void copy_to_gpu( 	tractographyData&	data_host,
     checkCuda(cudaMalloc((void**)&auxI,data_host.lrmatrix1.sizesStr[3]*sizeof(int)));
     checkCuda(cudaMemcpy(auxI,data_host.lrmatrix1.VoxFaces,data_host.lrmatrix1.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->lrmatrix1.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
-    checkCuda(cudaMalloc((void**)&auxI,(data_host.lrmatrix1.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
-    checkCuda(cudaMemcpy(auxI,data_host.lrmatrix1.VoxFacesIndex,(data_host.lrmatrix1.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
+    checkCuda(cudaMalloc((void**)&auxI,(data_host.lrmatrix1.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
+    checkCuda(cudaMemcpy(auxI,data_host.lrmatrix1.VoxFacesIndex,(data_host.lrmatrix1.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->lrmatrix1.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
     //cudaMalloc((void**)&auxI,data_host.lrmatrix1.sizesStr[4]*sizeof(int));
     //cudaMemcpy(auxI,data_host.lrmatrix1.IndexRoi,data_host.lrmatrix1.sizesStr[4]*sizeof(int),cudaMemcpyHostToDevice);
@@ -714,8 +789,8 @@ void copy_to_gpu( 	tractographyData&	data_host,
     checkCuda(cudaMalloc((void**)&auxI,data_host.matrix3.sizesStr[3]*sizeof(int)));
     checkCuda(cudaMemcpy(auxI,data_host.matrix3.VoxFaces,data_host.matrix3.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->matrix3.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
-    checkCuda(cudaMalloc((void**)&auxI,(data_host.matrix3.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
-    checkCuda(cudaMemcpy(auxI,data_host.matrix3.VoxFacesIndex,(data_host.matrix3.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
+    checkCuda(cudaMalloc((void**)&auxI,(data_host.matrix3.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
+    checkCuda(cudaMemcpy(auxI,data_host.matrix3.VoxFacesIndex,(data_host.matrix3.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->matrix3.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
     //cudaMalloc((void**)&auxI,data_host.matrix3.sizesStr[4]*sizeof(int));
     //cudaMemcpy(auxI,data_host.matrix3.IndexRoi,data_host.matrix3.sizesStr[4]*sizeof(int),cudaMemcpyHostToDevice);
@@ -740,8 +815,8 @@ void copy_to_gpu( 	tractographyData&	data_host,
     checkCuda(cudaMalloc((void**)&auxI,data_host.lrmatrix3.sizesStr[3]*sizeof(int)));
     checkCuda(cudaMemcpy(auxI,data_host.lrmatrix3.VoxFaces,data_host.lrmatrix3.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->lrmatrix3.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
-    checkCuda(cudaMalloc((void**)&auxI,(data_host.lrmatrix3.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
-    checkCuda(cudaMemcpy(auxI,data_host.lrmatrix3.VoxFacesIndex,(data_host.lrmatrix3.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
+    checkCuda(cudaMalloc((void**)&auxI,(data_host.lrmatrix3.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
+    checkCuda(cudaMemcpy(auxI,data_host.lrmatrix3.VoxFacesIndex,(data_host.lrmatrix3.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(&data_gpu->lrmatrix3.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
     //cudaMalloc((void**)&auxI,data_host.lrmatrix3.sizesStr[4]*sizeof(int));
     //cudaMemcpy(auxI,data_host.lrmatrix3.IndexRoi,data_host.lrmatrix3.sizesStr[4]*sizeof(int),cudaMemcpyHostToDevice);
