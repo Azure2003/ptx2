@@ -1,6 +1,6 @@
 include $(FSLCONFDIR)/default.mk
 
-PROJNAME = fdt
+PROJNAME = ptx2
 
 #OPTFLAGS = -ggdb
 
@@ -11,6 +11,10 @@ ifeq ($(FSLMACHTYPE),apple-darwin8-gcc4.0)
         ARCHFLAGS =  -arch i386 -isysroot /Developer/SDKs/MacOSX10.4u.sdk -I/usr/X11R6/include/
         ARCHLDFLAGS = -Wl,-search_paths_first -arch i386 -isysroot /Developer/SDKs/MacOSX10.4u.sdk -L/Developer/SDKs/MacOSX10.4u.sdk/usr/X11R6/lib/ 
 endif 
+
+ifeq ($(FSLMASTERBUILD),1)
+	COMPILE_GPU=PTX2_COMPILE_GPU
+endif
 
 ifeq ($(COMPILE_GPU), 1)
 	COMPILE_WITH_GPU=probtrackx2_gpu
