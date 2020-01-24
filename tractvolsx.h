@@ -42,7 +42,7 @@ namespace TRACTVOLSX{
       bool           init_sample;
       int            fibst;
       bool           usef;
-      
+
       volume<int>    locfibchoice;
 
     public:
@@ -53,7 +53,7 @@ namespace TRACTVOLSX{
       ~Tractvolsx(){}
       int get_nfibres()const{return nfibres;}
       int get_nsamples()const{return nsamples;}
-      
+
       void reset(const int& fibst_in){
 	init_sample=true;
 	fibst=fibst_in;
@@ -62,7 +62,7 @@ namespace TRACTVOLSX{
       int sample_fibre(int col,int samp,const ColumnVector& dir){
 	float th,ph;ColumnVector x(3);
 	vector<int> fibvec;
-	for(int fib=0;fib<nfibres;fib++){	    
+	for(int fib=0;fib<nfibres;fib++){
 	  float ft=fsamples[fib](samp,col);
 	  if(ft>opts.fibthresh.value()){
 	    th=thsamples[fib](samp,col);
@@ -93,7 +93,7 @@ namespace TRACTVOLSX{
 	else{
 	  if(mode==1){//sample all>thresh
 	    vector<int> fibvec;
-	    for(int fib=0;fib<nfibres;fib++){	    
+	    for(int fib=0;fib<nfibres;fib++){
 	      float ft=fsamples[fib](samp,col);
 	      if(ft>opts.fibthresh.value()){
 		fibvec.push_back(fib);
@@ -109,24 +109,24 @@ namespace TRACTVOLSX{
 	  }
 	  else if(mode==2){//sample all>thresh in proportion of f (default)
 	    float fsumtmp=0;
-	    for(int fib=0;fib<nfibres;fib++){	    
+	    for(int fib=0;fib<nfibres;fib++){
 	      float ft=fsamples[fib](samp,col);
 	      if(ft>opts.fibthresh.value()){
-		fsumtmp+=ft;  //count total weight of f in this voxel. 
+		fsumtmp+=ft;  //count total weight of f in this voxel.
 	      }
-	    } 
+	    }
 	    if(fsumtmp==0){
 	      return(0);
 	    }
 	    else{
 	      float ft,fsumtmp2=0;
-	      float rtmp=fsumtmp * (float)rand()/float(RAND_MAX);	      
+	      float rtmp=fsumtmp * (float)rand()/float(RAND_MAX);
 	      for(int fib=0;fib<nfibres;fib++){
 		ft=fsamples[fib](samp,col);
 		if(ft>opts.fibthresh.value())
 		  fsumtmp2 += ft;
 		if(rtmp<=fsumtmp2){
-		  return(fib); 
+		  return(fib);
 		}
 	      }
 	    }
@@ -160,7 +160,7 @@ namespace TRACTVOLSX{
       //Initialise
       void initialise(const string& basename,const volume<float>& mask){
 	volume4D<float> tmpvol;
-	Matrix          tmpmat;		
+	Matrix          tmpmat;
 
 	cout<<"Load bedpostx samples"<<endl;
 	if(fsl_imageexists(basename+"_thsamples")){
@@ -221,11 +221,11 @@ namespace TRACTVOLSX{
 	cout<<"Done loading samples."<<endl;
 
 	if(opts.locfibchoice.value()!=""){
-	  read_volume(locfibchoice,opts.locfibchoice.value());	  
+	  read_volume(locfibchoice,opts.locfibchoice.value());
 	}
       }
-      
-      
+
+
       ColumnVector sample(const float& x,const float& y,const float&z,
 			  const float& r_x,const float& r_y,const float& r_z,
 			  float& prefer_x,float& prefer_y,float& prefer_z,
@@ -234,20 +234,27 @@ namespace TRACTVOLSX{
 
 	//Tracer_Plus tr("sample");
 	////////Probabilistic interpolation
-	int cx =(int) ceil(x),fx=(int) floor(x);
-	int cy =(int) ceil(y),fy=(int) floor(y);
-	int cz =(int) ceil(z),fz=(int) floor(z);
-	
-	float pcx = (cx==fx)?1:(x-fx)/(cx-fx);
-	float pcy = (cy==fy)?1:(y-fy)/(cy-fy);
-	float pcz = (cz==fz)?1:(z-fz)/(cz-fz);
-	
-	newx = ((float)rand()/(float)RAND_MAX)>pcx?fx:cx;
-	newy = ((float)rand()/(float)RAND_MAX)>pcy?fy:cy;
-	newz = ((float)rand()/(float)RAND_MAX)>pcz?fz:cz;
-	////////////////////////////////////	
+	if ( !opts.noprobinterpol.value() ) {
+		int cx =(int) ceil(x),fx=(int) floor(x);
+		int cy =(int) ceil(y),fy=(int) floor(y);
+		int cz =(int) ceil(z),fz=(int) floor(z);
 
-	ColumnVector th_ph_f(3);	
+		float pcx = (cx==fx)?1:(x-fx)/(cx-fx);
+		float pcy = (cy==fy)?1:(y-fy)/(cy-fy);
+		float pcz = (cz==fz)?1:(z-fz)/(cz-fz);
+
+		newx = ((float)rand()/(float)RAND_MAX)>pcx?fx:cx;
+		newy = ((float)rand()/(float)RAND_MAX)>pcy?fy:cy;
+		newz = ((float)rand()/(float)RAND_MAX)>pcz?fz:cz;
+	} else {
+	////////Nearest neighbour interpolation for determinisitic tractography
+		newx = (int)round((float)x);
+		newy = (int)round((float)y);
+		newz = (int)round((float)z);
+	}
+	////////////////////////////////////
+
+	ColumnVector th_ph_f(3);
 
 	int col = lut_vol2mat(newx,newy,newz);
 	if(col==0){//outside brain mask
@@ -271,11 +278,11 @@ namespace TRACTVOLSX{
 	  }
 	  else{
 	    if(sample_fib>0){ // pick specified fibre
-	      fibind=sample_fibre(col,samp,sample_fib);	      
+	      fibind=sample_fibre(col,samp,sample_fib);
 	      theta=thsamples[fibind](samp,col);
 	      phi=phsamples[fibind](samp,col);
 	    }
-	    else{ 
+	    else{
 	      if((fabs(prefer_x)+fabs(prefer_y)+fabs(prefer_z))==0){
 		prefer_x=r_x;prefer_y=r_y;prefer_z=r_z;
 	      }
@@ -292,7 +299,7 @@ namespace TRACTVOLSX{
 		theta=thsamples[fibind](samp,col);
 		phi=phsamples[fibind](samp,col);
 	      }
-	      else if (locrule==3) { 
+	      else if (locrule==3) {
 		fibind=sample_fibre(col,samp,2);
 		theta=thsamples[fibind](samp,col);
 		phi=phsamples[fibind](samp,col);
@@ -324,8 +331,8 @@ namespace TRACTVOLSX{
 	  theta=thsamples[0](samp,col);
 	  phi=phsamples[0](samp,col);
 	}
-	
-	float f;	
+
+	float f;
 	if(usef){
 	  f = fsamples[fibind](samp,col);
 	}
@@ -350,6 +357,3 @@ namespace TRACTVOLSX{
 }
 
 #endif
-
-
-
