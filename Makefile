@@ -20,10 +20,10 @@ ifeq ($(COMPILE_GPU), 1)
     COMPILE_WITH_GPU=probtrackx2_gpu
 endif
 
-USRINCFLAGS = -I${INC_NEWMAT} -I${INC_NEWRAN} -I${INC_CPROB} -I${INC_PROB} -I${INC_BOOST} -I${INC_ZLIB}
-USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_NEWRAN} -L${LIB_CPROB} -L${LIB_PROB} -L${LIB_ZLIB}
+USRINCFLAGS = -I${INC_NEWMAT} -I${INC_NEWRAN} -I${INC_CPROB} -I${INC_BOOST} -I${INC_ZLIB}
+USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_NEWRAN} -L${LIB_CPROB} -L${LIB_ZLIB}
 
-DLIBS =  -lnewmeshclass -lwarpfns -lbasisfield -lfslsurface  -lfslvtkio -lmeshclass -lnewimage -lutils -lmiscmaths -lnewmat -lnewran -lNewNifti -lgiftiio -lexpat -lfirst_lib -lznz -lcprob -lutils -lprob -lm -lz
+DLIBS =  -lnewmeshclass -lwarpfns -lbasisfield -lfslsurface  -lfslvtkio -lmeshclass -lnewimage -lutils -lmiscmaths -lnewran -lNewNifti -lgiftiio -lexpat -lfirst_lib -lznz -lcprob -lutils -lm -lz
 
 CCOPS=ccops
 PTX=probtrackx2

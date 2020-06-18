@@ -1,18 +1,18 @@
-/*   surfmaths.cc 
+/*   surfmaths.cc
      uniary and binary operations from fslmaths applied to surfaces
 
      Saad Jbabdi and Matthew Webster, FMRIB Image Analysis Group
 
      Copyright (C) 2012-2014 University of Oxford  */
-     
+
 
 /* CCOPYRIGHT */
 
-     
+
 #include "newmesh/newmesh.h"
 #include "miscmaths/miscmaths.h"
 #include "utils/fsl_isfinite.h"
-#include "libprob.h"
+#include "cprob/libprob.h"
 
 using namespace MISCMATHS;
 using namespace NEWMESH;
@@ -21,7 +21,7 @@ using namespace NEWMESH;
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
-int printUsage(const string& programName) 
+int printUsage(const string& programName)
 {
   cout << "\nUsage: surfmaths <first_input> [operations and inputs] <output> " << endl;
 
@@ -80,17 +80,17 @@ int inputParser(int argc, char *argv[]){
   newmesh inputSurface;
   inputSurface.load_gifti(string(argv[1]),false);
   int i=2;
-  for (i = 2; i < argc-1; i++){    
-    newmesh temp_surface;    
-    
+  for (i = 2; i < argc-1; i++){
+    newmesh temp_surface;
+
     /***************************************************************/
     /********************Binary Operations**************************/
     /***************************************************************/
-    if (string(argv[i])=="-mas"){  
-      loadSurface(inputSurface,temp_surface,string(argv[++i]));	
+    if (string(argv[i])=="-mas"){
+      loadSurface(inputSurface,temp_surface,string(argv[++i]));
       for(int v=0;v<temp_surface.npvalues();v++)
 	inputSurface.set_pvalue(v, temp_surface.get_pvalue(v)>0?inputSurface.get_pvalue(v):0 );
-    }                                                           
+    }
     /***************************************************************/
     else if (string(argv[i])=="-add"){
       i++;
@@ -98,8 +98,8 @@ int inputParser(int argc, char *argv[]){
 	for(int v=0;v<inputSurface.npvalues();v++)
 	  inputSurface.set_pvalue(v, inputSurface.get_pvalue(v)+atof(argv[i]));
       }
-      else{  
-	loadSurface(inputSurface,temp_surface,string(argv[i]));	
+      else{
+	loadSurface(inputSurface,temp_surface,string(argv[i]));
 	for(int v=0;v<temp_surface.npvalues();v++)
 	  inputSurface.set_pvalue(v, temp_surface.get_pvalue(v)+inputSurface.get_pvalue(v) );
       }
@@ -111,8 +111,8 @@ int inputParser(int argc, char *argv[]){
 	for(int v=0;v<inputSurface.npvalues();v++)
 	  inputSurface.set_pvalue(v, inputSurface.get_pvalue(v)-atof(argv[i]));
       }
-      else{  
-	loadSurface(inputSurface,temp_surface,string(argv[i]));	
+      else{
+	loadSurface(inputSurface,temp_surface,string(argv[i]));
 	for(int v=0;v<temp_surface.npvalues();v++)
 	  inputSurface.set_pvalue(v, temp_surface.get_pvalue(v)-inputSurface.get_pvalue(v) );
       }
@@ -124,12 +124,12 @@ int inputParser(int argc, char *argv[]){
 	for(int v=0;v<inputSurface.npvalues();v++)
 	  inputSurface.set_pvalue(v, inputSurface.get_pvalue(v)*atof(argv[i]));
       }
-      else{  
-	loadSurface(inputSurface,temp_surface,string(argv[i]));	
+      else{
+	loadSurface(inputSurface,temp_surface,string(argv[i]));
 	for(int v=0;v<temp_surface.npvalues();v++)
 	  inputSurface.set_pvalue(v, temp_surface.get_pvalue(v)*inputSurface.get_pvalue(v) );
-      }      
-    }    
+      }
+    }
     /***************************************************************/
     else if (string(argv[i])=="-div"){
       i++;
@@ -137,12 +137,12 @@ int inputParser(int argc, char *argv[]){
 	for(int v=0;v<inputSurface.npvalues();v++)
 	  inputSurface.set_pvalue(v, inputSurface.get_pvalue(v)/atof(argv[i]));
       }
-      else {  
-	loadSurface(inputSurface,temp_surface,string(argv[i]));	
+      else {
+	loadSurface(inputSurface,temp_surface,string(argv[i]));
 	for(int v=0;v<temp_surface.npvalues();v++)
 	  inputSurface.set_pvalue(v, temp_surface.get_pvalue(v)/inputSurface.get_pvalue(v) );
-      }   
-    }    
+      }
+    }
     /***************************************************************/
     /******************** Unary Operations *************************/
     /***************************************************************/
@@ -151,7 +151,7 @@ int inputParser(int argc, char *argv[]){
 	inputSurface.set_pvalue(v, inputSurface.get_pvalue(v)>=atof(argv[i+1])?inputSurface.get_pvalue(v):0);
       }
       i++;
-    }    
+    }
     /***************************************************************/
     else if (string(argv[i])=="-sqrt"){
       for(int v=0;v<inputSurface.npvalues();v++)
@@ -164,7 +164,7 @@ int inputParser(int argc, char *argv[]){
       i++;
     }
     /***************************************************************/
-    else if (string(argv[i])=="-sqr"){ 
+    else if (string(argv[i])=="-sqr"){
     for(int v=0;v<inputSurface.npvalues();v++)
       inputSurface.set_pvalue(v,inputSurface.get_pvalue(v)*inputSurface.get_pvalue(v));
     }
@@ -214,10 +214,10 @@ int inputParser(int argc, char *argv[]){
 	inputSurface.set_pvalue(v,std::atan((double)inputSurface.get_pvalue(v)));
     }
     /***************************************************************/
-    else if (string(argv[i])=="-abs"){      
+    else if (string(argv[i])=="-abs"){
       for(int v=0;v<inputSurface.npvalues();v++)
 	inputSurface.set_pvalue(v,std::fabs(inputSurface.get_pvalue(v)));
-    } 
+    }
     /***************************************************************/
     else if (string(argv[i])=="-bin"){
       for(int v=0;v<inputSurface.npvalues();v++)
@@ -239,15 +239,12 @@ int inputParser(int argc, char *argv[]){
 
 
 int main(int argc,char *argv[]){
-  if (argc < 2)  
-    return printUsage(string(argv[0])); 
-  
-  if(string(argv[1]) == "-h" || string(argv[1]) == "--help") { 
-    printUsage(string(argv[0])); 
-    exit(0); 
+  if (argc < 2)
+    return printUsage(string(argv[0]));
+
+  if(string(argv[1]) == "-h" || string(argv[1]) == "--help") {
+    printUsage(string(argv[0]));
+    exit(0);
   }
   return inputParser(argc,argv);
 }
-
-
-
