@@ -248,9 +248,9 @@ namespace TRACTVOLSX{
 		newz = ((float)rand()/(float)RAND_MAX)>pcz?fz:cz;
 	} else {
 	////////Nearest neighbour interpolation for determinisitic tractography
-		newx = (int)round((float)x);
-		newy = (int)round((float)y);
-		newz = (int)round((float)z);
+		newx = (int)MISCMATHS::round((float)x);
+		newy = (int)MISCMATHS::round((float)y);
+		newz = (int)MISCMATHS::round((float)z);
 	}
 	////////////////////////////////////
 
