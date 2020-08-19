@@ -425,20 +425,20 @@ void  tractographyInput::init_surfvol(int*		Ssizes,
 void  tractographyInput::csv_tri_crossed_voxels(	float 			tri[3][3],
 							                                    vector<ColumnVector>&	crossed)
 {
-  int minx=(int)round(tri[0][0]);
-  int miny=(int)round(tri[0][1]);
-  int minz=(int)round(tri[0][2]);
+  int minx=(int)MISCMATHS::round(tri[0][0]);
+  int miny=(int)MISCMATHS::round(tri[0][1]);
+  int minz=(int)MISCMATHS::round(tri[0][2]);
   int maxx=minx,maxy=miny,maxz=minz;
   crossed.clear();
   int i=0;int tmpi;
   do{
-    tmpi=(int)round(tri[i][0]);
+    tmpi=(int)MISCMATHS::round(tri[i][0]);
     minx=tmpi<minx?tmpi:minx;
     maxx=tmpi>maxx?tmpi:maxx;
-    tmpi=(int)round(tri[i][1]);
+    tmpi=(int)MISCMATHS::round(tri[i][1]);
     miny=tmpi<miny?tmpi:miny;
     maxy=tmpi>maxy?tmpi:maxy;
-    tmpi=(int)round(tri[i][2]);
+    tmpi=(int)MISCMATHS::round(tri[i][2]);
     minz=tmpi<minz?tmpi:minz;
     maxz=tmpi>maxz?tmpi:maxz;
     i++;
