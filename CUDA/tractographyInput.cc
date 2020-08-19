@@ -14,7 +14,7 @@
 
 tractographyInput::tractographyInput(){}
 
-// Helper function to convert between conventions 
+// Helper function to convert between conventions
 // for saving the coordinates (for instance RADIOLOGICAL/NEUROLOGICAL)
 void applycoordchange(float* coords, const Matrix& old2new_mat)
 {
@@ -27,7 +27,7 @@ void applycoordchange(float* coords, const Matrix& old2new_mat)
 }
 
 void  tractographyInput::load_mesh(	string&		      filename,
-                                    vector<float>&	vertices,	
+                                    vector<float>&	vertices,
                                     vector<int>&	  faces,
                                     vector<int>&	  locs,
                                     int&		        nlocs,
@@ -56,10 +56,10 @@ void tractographyInput::load_mesh_ascii(	string&		      filename,
                                           bool		        wcoords,
                                           int		          nroi,
                                           vector<float>&	coords)
-{ 
+{
   // load a freesurfer ascii mesh
   ifstream f(filename.c_str());
-  if (f.is_open()){	
+  if (f.is_open()){
     // reading the header
     string header;
     getline(f, header);
@@ -90,7 +90,7 @@ void tractographyInput::load_mesh_ascii(	string&		      filename,
     vector<float> values;
     values.resize(NVertices);
     bool zeros=false;
-    bool nonzeros=false;	
+    bool nonzeros=false;
     for (size_t i=0; i<NVertices; i++){
       f>>vertices[posV]>>vertices[posV+1]>>vertices[posV+2]>>values[i]; // write from file to vector
       if(values[i]==0) zeros=true;
@@ -121,7 +121,7 @@ void tractographyInput::load_mesh_ascii(	string&		      filename,
         posLV++;
         auxCount+=3;
       }
-    }      
+    }
     // reading the triangles
     for (size_t i=0; i<NFaces; i++){
       int p0, p1, p2;
@@ -147,7 +147,7 @@ void tractographyInput::load_mesh_vtk(string&		      filename,
                                       vector<float>&	coords)
 {
   ifstream f(filename.c_str());
-  if (f.is_open()){	
+  if (f.is_open()){
     // reading the header
     string header;
     getline(f, header);
@@ -166,7 +166,7 @@ void tractographyInput::load_mesh_vtk(string&		      filename,
     initV=posV;
     vertices.resize(posV+NVertices*3);
     locs.resize(posLV+NVertices);
-		  
+
     // reading the points
     // if is not possible to define values, then all vertices are activated
     int local_loc=1;
@@ -199,7 +199,7 @@ void tractographyInput::load_mesh_vtk(string&		      filename,
       faces[posF+2]=initV+p2*3;
       posF=posF+3;
     }
-    // reading the values (csv_mesh.cc) !!!!   
+    // reading the values (csv_mesh.cc) !!!!
     // I think is not possible to define values in VTK surfaces
     f.close();
   }else{
@@ -208,7 +208,7 @@ void tractographyInput::load_mesh_vtk(string&		      filename,
 }
 
 void tractographyInput::load_mesh_gifti(string&		      filename,
-                                        vector<float>&	vertices,	
+                                        vector<float>&	vertices,
                                         vector<int>&	  faces,
                                         vector<int>&	  locs,
                                         int&		        nlocs,
@@ -217,7 +217,7 @@ void tractographyInput::load_mesh_gifti(string&		      filename,
                                         vector<float>&	coords)
 {
   fslsurface_name::fslSurface<float,unsigned int> surf;
-  read_surface(surf,filename);        
+  read_surface(surf,filename);
   size_t posV,posF,initV,posLV;
   posV=vertices.size();
   posLV=locs.size();
@@ -230,7 +230,7 @@ void tractographyInput::load_mesh_gifti(string&		      filename,
     vertices[posV+2]=i->z;
     posV=posV+3;
     count++;
-  }            
+  }
   posF=faces.size();
   for (vector<unsigned int>::const_iterator i=surf.const_facebegin(); i!=surf.const_faceend(); i+=3){
     faces.resize(posF+3);
@@ -238,7 +238,7 @@ void tractographyInput::load_mesh_gifti(string&		      filename,
     faces[posF+1]=initV+*(i+1)*3;
     faces[posF+2]=initV+*(i+2)*3;
     posF=posF+3;
-  }        
+  }
   // read the values
   bool allMesh=true;
   vector<float> values;
@@ -276,8 +276,8 @@ void tractographyInput::load_mesh_gifti(string&		      filename,
         posLV++;
         auxCount+=3;
       }
-    }      
-  }else{	// it is possible that gifti surfaces do not have values 
+    }
+  }else{	// it is possible that gifti surfaces do not have values
     int local_loc=0;
     size_t auxCount=posV-count*3;
     for (size_t i=0; i<count; i++){
@@ -294,7 +294,7 @@ void tractographyInput::load_mesh_gifti(string&		      filename,
       }
       posLV++;
       nlocs++;
-    }      
+    }
   }
 }
 
@@ -337,7 +337,7 @@ void  tractographyInput::load_volume(	string&		filename,
 }
 
 void  tractographyInput::init_surfvol(int*		Ssizes,
-					Matrix&		mm2vox,	
+					Matrix&		mm2vox,
 					vector<float>&	vertices,
 					int*		faces,
 					int		sizefaces,
@@ -357,7 +357,7 @@ void  tractographyInput::init_surfvol(int*		Ssizes,
     // int idTri=int(VoxFaces[pos+j]/3);
     if ((locsV[int(faces[j]/3)]==-1) && (locsV[int(faces[j+1]/3)]==-1) && (locsV[int(faces[j+2]/3)]==-1)){
       continue;
-    }           
+    }
 
     x1 << vertices[faces[j]] << vertices[faces[j]+1] << vertices[faces[j]+2] << 1;
     x2 << vertices[faces[j+1]] << vertices[faces[j+1]+1] << vertices[faces[j+1]+2] << 1;
@@ -372,7 +372,7 @@ void  tractographyInput::init_surfvol(int*		Ssizes,
     float tri[3][3]={{xx1(1),xx1(2),xx1(3)},{xx2(1),xx2(2),xx2(3)},{xx3(1),xx3(2),xx3(3)}};
     csv_tri_crossed_voxels(tri,crossed);
 
-    for (unsigned int i=0;i<crossed.size();i++){	// loop over voxels crossed by triangle tid 
+    for (unsigned int i=0;i<crossed.size();i++){	// loop over voxels crossed by triangle tid
       int voxX = MISCMATHS::round(crossed[i](1));
       int voxY = MISCMATHS::round(crossed[i](2));
       int voxZ = MISCMATHS::round(crossed[i](3));
@@ -382,12 +382,12 @@ void  tractographyInput::init_surfvol(int*		Ssizes,
           vector<int> t(1);
           t[0]=j;     		// this position is relative to this portion of faces !!!!!!
           triangles.push_back(t); // add to set of triangles that cross voxels
-          surfvol(voxX,voxY,voxZ)=triangles.size()-1;	
+          surfvol(voxX,voxY,voxZ)=triangles.size()-1;
           total++;
 	      }else{ 				// voxel already labeled as "crossed"
           triangles[val].push_back(j); 	// add this triangle to the set that cross this voxel
           total++;
-	      }		
+	      }
       }else{
         printf("Warning: Ignoring some vertices because they are defined outside the limits\n");
         printf("Please check that your meshspace is defined correctly\n");
@@ -398,7 +398,7 @@ void  tractographyInput::init_surfvol(int*		Ssizes,
   int initvoxFaces = voxFaces.size();
   voxFaces.resize(initvoxFaces+total);
   // ....like sparse matrix
-  int index= 0; 
+  int index= 0;
   voxFacesIndex[0]=initvoxFaces;
   int count=0;
   for (int z=0;z<Ssizes[2];z++){
@@ -408,7 +408,7 @@ void  tractographyInput::init_surfvol(int*		Ssizes,
         if (val!=-1){
           vector<int> t;
           t.insert(t.end(),triangles[val].begin(),triangles[val].end());  // get position of the triangles (faces) crossed by this voxel
-          for (unsigned int i=0;i<t.size();i++){		
+          for (unsigned int i=0;i<t.size();i++){
             voxFaces[initvoxFaces+count]=initfaces+t[i]; 		// store their positions (maybe position relative !!! -> add initfaces)
             count++;
           }
@@ -491,7 +491,7 @@ void  tractographyInput::load_rois_mixed(	string		filename,
     //memset(data.volume,-1,sizeVol*sizeof(float));
     load_volume(filename,Ssizes,data.volume,data.nlocs,true,false,0,nullV);
     data.NVols=1;
-  }else if (meshExists(filename)){  
+  }else if (meshExists(filename)){
     load_mesh(filename,verticesVec,facesVec,locsVec,data.nlocs,false,0,nullV);
     data.NSurfs=1;
   }else{
@@ -510,7 +510,7 @@ void  tractographyInput::load_rois_mixed(	string		filename,
       exit(0);
     }
 
-    for (unsigned int i=0;i<fnames.size();i++){   
+    for (unsigned int i=0;i<fnames.size();i++){
       if (fsl_imageexists(fnames[i])){
         if (data.NVols==0){
           data.volume=new float[sizeVol];
@@ -537,7 +537,7 @@ void  tractographyInput::load_rois_mixed(	string		filename,
 
     data.locs=new int[locsVec.size()];
     data.sizesStr[0]=locsVec.size();
-    for (unsigned int i=0;i<locsVec.size();i++) data.locs[i]=locsVec[i]; 
+    for (unsigned int i=0;i<locsVec.size();i++) data.locs[i]=locsVec[i];
 
     data.vertices=new float[verticesVec.size()];
     data.sizesStr[1]=verticesVec.size();
@@ -545,11 +545,11 @@ void  tractographyInput::load_rois_mixed(	string		filename,
 
     data.faces=new int[facesVec.size()];
     data.sizesStr[2]=facesVec.size();
-    for (unsigned int i=0;i<facesVec.size();i++) data.faces[i]=facesVec[i]; 
+    for (unsigned int i=0;i<facesVec.size();i++) data.faces[i]=facesVec[i];
 
     data.VoxFaces=new int[voxFacesVec.size()];
     data.sizesStr[3]=voxFacesVec.size();
-    for (unsigned int i=0;i<voxFacesVec.size();i++) data.VoxFaces[i]=voxFacesVec[i]; 
+    for (unsigned int i=0;i<voxFacesVec.size();i++) data.VoxFaces[i]=voxFacesVec[i];
   }
 }
 
@@ -558,7 +558,7 @@ void  tractographyInput::load_rois( // Input
                                     Matrix		      mm2vox,
                                     float*		      Sdims,	// Or Matrix2 sizes
                                     int*		        Ssizes,
-                                    int		          wcoords, 
+                                    int		          wcoords,
                                     volume<float>& 	refVol,
                                     // Output
                                     MaskData&	      data,
@@ -590,7 +590,7 @@ void  tractographyInput::load_rois( // Input
     data.IndexRoi=new int[1];
     data.IndexRoi[0]=0;
     data.sizesStr[4]=1;
-  }else if (meshExists(filename)){  
+  }else if (meshExists(filename)){
     load_mesh(filename,verticesVec,facesVec,locsVec,data.nlocs,wcoords,0,coordsV);
     size_t sizeVox2Face = sizeVol+1;
     data.VoxFacesIndex=new int[sizeVox2Face];
@@ -609,7 +609,7 @@ void  tractographyInput::load_rois( // Input
       fs>>tmp;
       do{
         fnames.push_back(tmp);
-        if (fsl_imageexists(tmp)) data.NVols++; 
+        if (fsl_imageexists(tmp)) data.NVols++;
         if (meshExists(tmp)) data.NSurfs++;
 	      fs>>tmp;
       }while (!fs.eof());
@@ -643,7 +643,7 @@ void  tractographyInput::load_rois( // Input
               voxFacesVec,&data.VoxFacesIndex[posSeedsurf],locsVec);
         data.IndexRoi[data.NVols+ns]=nroi;
         ns++;
-        nroi++;	
+        nroi++;
         lastfacesSize=facesVec.size();
       }else{
         cerr<<"load_rois: Unknown file type: "<<fnames[i]<<endl;
@@ -655,9 +655,9 @@ void  tractographyInput::load_rois( // Input
   if (data.NSurfs){
     data.locs=new int[locsVec.size()];
     data.sizesStr[0]=locsVec.size();
-    for (unsigned int i=0;i<locsVec.size();i++){ 
+    for (unsigned int i=0;i<locsVec.size();i++){
       data.locs[i]=locsVec[i];
-    } 
+    }
 
     data.vertices=new float[verticesVec.size()];
     data.sizesStr[1]=verticesVec.size();
@@ -665,11 +665,11 @@ void  tractographyInput::load_rois( // Input
 
     data.faces=new int[facesVec.size()];
     data.sizesStr[2]=facesVec.size();
-    for (unsigned int i=0;i<facesVec.size();i++) data.faces[i]=facesVec[i]; 
+    for (unsigned int i=0;i<facesVec.size();i++) data.faces[i]=facesVec[i];
 
     data.VoxFaces=new int[voxFacesVec.size()];
     data.sizesStr[3]=voxFacesVec.size();
-    for (unsigned int i=0;i<voxFacesVec.size();i++) data.VoxFaces[i]=voxFacesVec[i]; 
+    for (unsigned int i=0;i<voxFacesVec.size();i++) data.VoxFaces[i]=voxFacesVec[i];
   }
   if (wcoords){
     if(wcoords==2){
@@ -700,7 +700,7 @@ void  tractographyInput::load_rois( // Input
   }
 }
 
-void search_triangles(// Input 
+void search_triangles(// Input
 		                  int		        id_vertex,
                       int		        id_search,
                       vector<int> 	facesVec,
@@ -728,7 +728,7 @@ void  tractographyInput::load_rois_matrix1(	tractographyData&	tData,
                                             float*			      Sdims,
                                             int*			        Ssizes,
                                             bool			        wcoords,
-                                            volume<float>& 		refVol, 
+                                            volume<float>& 		refVol,
                                             // Output
                                             MaskData&		      data,
                                             Matrix&			      coords)
@@ -768,7 +768,7 @@ void  tractographyInput::load_rois_matrix1(	tractographyData&	tData,
       tData.matrix1_idTri[MAX_TRI_SEED*i]=-1;
       tData.matrix1_Ntri[i]=1;
     }
-  }else if (meshExists(filename)){  
+  }else if (meshExists(filename)){
     load_mesh(filename,verticesVec,facesVec,locsVec,data.nlocs,wcoords,0,coordsV);
     data.VoxFacesIndex=new int[sizeVol+1];
     init_surfvol(Ssizes,mm2vox,verticesVec,&facesVec[0],facesVec.size(),
@@ -789,7 +789,7 @@ void  tractographyInput::load_rois_matrix1(	tractographyData&	tData,
       fs>>tmp;
       do{
         fnames.push_back(tmp);
-        if (fsl_imageexists(tmp)) data.NVols++; 
+        if (fsl_imageexists(tmp)) data.NVols++;
         if (meshExists(tmp)) data.NSurfs++;
         fs>>tmp;
       }while (!fs.eof());
@@ -807,7 +807,7 @@ void  tractographyInput::load_rois_matrix1(	tractographyData&	tData,
     int nroi=0;
     int lastfacesSize=0;
 
-    int last_loc=0;	
+    int last_loc=0;
     int locs_from_volume=0;
     for (unsigned int file=0;file<fnames.size();file++){
       if (fsl_imageexists(fnames[file])){
@@ -830,7 +830,7 @@ void  tractographyInput::load_rois_matrix1(	tractographyData&	tData,
               voxFacesVec,&data.VoxFacesIndex[ns*(sizeVol+1)],locsVec);
         data.IndexRoi[data.NVols+ns]=nroi;
         ns++;
-	      nroi++;	
+	      nroi++;
 	      lastfacesSize=facesVec.size();
 
         for(int i=last_loc;i<data.nlocs;i++){
@@ -915,8 +915,8 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
     Sdims[0]=seedsVol.xdim();
     Sdims[1]=seedsVol.ydim();
     Sdims[2]=seedsVol.zdim();
-    Ssizes[0]=seedsVol.xsize(); 
-    Ssizes[1]=seedsVol.ysize(); 
+    Ssizes[0]=seedsVol.xsize();
+    Ssizes[1]=seedsVol.ysize();
     Ssizes[2]=seedsVol.zsize();
     size_t sizeVol = Ssizes[0]*Ssizes[1]*Ssizes[2];
     set_vox2mm(convention,Sdims,Ssizes,seedsVol,mm2vox,vox2mm);
@@ -926,9 +926,9 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
       for (int y=0;y<Ssizes[1];y++){
         for (int x=0;x<Ssizes[0];x++){
           if (seedsVol(x,y,z)){
-            seeds[nseeds*3]=x; 
-            seeds[nseeds*3+1]=y; 
-            seeds[nseeds*3+2]=z; 
+            seeds[nseeds*3]=x;
+            seeds[nseeds*3+1]=y;
+            seeds[nseeds*3+2]=z;
             nseeds++;
           }
         }
@@ -944,7 +944,7 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
       copybasicproperties(seedsVol,*m_prob2);
       *m_prob2=0;
     }
-    if(opts.opathdir.value()){ 	// OPATHDIR 
+    if(opts.opathdir.value()){ 	// OPATHDIR
       m_localdir->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2],6);
       copybasicproperties(seedsVol,*m_localdir);
       *m_localdir=0;
@@ -965,8 +965,8 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
         Sdims[0]=refVol.xdim();
         Sdims[1]=refVol.ydim();
         Sdims[2]=refVol.zdim();
-        Ssizes[0]=refVol.xsize(); 
-        Ssizes[1]=refVol.ysize(); 
+        Ssizes[0]=refVol.xsize();
+        Ssizes[1]=refVol.ysize();
         Ssizes[2]=refVol.zsize();
         set_vox2mm(convention,Sdims,Ssizes,refVol,mm2vox,vox2mm);
         if (initialize_m_prob){
@@ -979,7 +979,7 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
           copybasicproperties(refVol,*m_prob2);
           *m_prob2=0;
         }
-        if(opts.opathdir.value()){ 	// OPATHDIR 
+        if(opts.opathdir.value()){ 	// OPATHDIR
           m_localdir->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2],6);
           copybasicproperties(refVol,*m_localdir);
           *m_localdir=0;
@@ -998,10 +998,10 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
       float c1,c2,c3;
       for (unsigned int vertex=0;vertex<vertices.size();vertex+=3){
         if (locs[loc]!=-1){	// if activated
-          // get voxel that correspond to the vertex 				
+          // get voxel that correspond to the vertex
           c1=vertices[vertex];
-          c2=vertices[vertex+1]; 
-          c3=vertices[vertex+2]; 
+          c2=vertices[vertex+1];
+          c3=vertices[vertex+2];
           seeds[nseeds*3]=mm2vox(1,1)*c1+mm2vox(1,2)*c2+mm2vox(1,3)*c3+mm2vox(1,4);
           seeds[nseeds*3+1]=mm2vox(2,1)*c1+mm2vox(2,2)*c2+mm2vox(2,3)*c3+mm2vox(2,4);
           seeds[nseeds*3+2]=mm2vox(3,1)*c1+mm2vox(3,2)*c2+mm2vox(3,3)*c3+mm2vox(3,4);
@@ -1060,8 +1060,8 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
           Sdims[0]=seedsVol.xdim();
           Sdims[1]=seedsVol.ydim();
           Sdims[2]=seedsVol.zdim();
-          Ssizes[0]=seedsVol.xsize(); 
-          Ssizes[1]=seedsVol.ysize(); 
+          Ssizes[0]=seedsVol.xsize();
+          Ssizes[1]=seedsVol.ysize();
           Ssizes[2]=seedsVol.zsize();
           set_vox2mm(convention,Sdims,Ssizes,seedsVol,mm2vox,vox2mm);
           if (initialize_m_prob){
@@ -1074,7 +1074,7 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
             copybasicproperties(seedsVol,*m_prob2);
             *m_prob2=0;
           }
-          if(opts.opathdir.value()){ 	// OPATHDIR 
+          if(opts.opathdir.value()){ 	// OPATHDIR
             m_localdir->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2],6);
             copybasicproperties(seedsVol,*m_localdir);
             *m_localdir=0;
@@ -1098,8 +1098,8 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
         Sdims[0]=refVol.xdim();
         Sdims[1]=refVol.ydim();
         Sdims[2]=refVol.zdim();
-        Ssizes[0]=refVol.xsize(); 
-        Ssizes[1]=refVol.ysize(); 
+        Ssizes[0]=refVol.xsize();
+        Ssizes[1]=refVol.ysize();
         Ssizes[2]=refVol.zsize();
         set_vox2mm(convention,Sdims,Ssizes,refVol,mm2vox,vox2mm);
         if (initialize_m_prob){
@@ -1112,7 +1112,7 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
           copybasicproperties(refVol,*m_prob2);
           *m_prob2=0;
         }
-        if(opts.opathdir.value()){ 	// OPATHDIR 
+        if(opts.opathdir.value()){ 	// OPATHDIR
           m_localdir->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2],6);
           copybasicproperties(refVol,*m_localdir);
           *m_localdir=0;
@@ -1130,7 +1130,7 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
 
     // for network mode, to know the ROI id of each seed
     size_t* sizes_rois= new size_t[fnames.size()];
-    int last_num_seeds=0;		
+    int last_num_seeds=0;
 
     // read all volumes & surfaces
     for (unsigned int i=0;i<fnames.size();i++){
@@ -1146,9 +1146,9 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
         float s1,s2,s3;
         for (unsigned int vertex=0;vertex<vertices.size();vertex+=3){
           if (locs[loc]!=-1){	// if activated
-            // get voxel that correspond to the vertex 				
+            // get voxel that correspond to the vertex
             c1=vertices[vertex];
-            c2=vertices[vertex+1]; 
+            c2=vertices[vertex+1];
             c3=vertices[vertex+2];
             s1=mm2vox(1,1)*c1+mm2vox(1,2)*c2+mm2vox(1,3)*c3+mm2vox(1,4);
             s2=mm2vox(2,1)*c1+mm2vox(2,2)*c2+mm2vox(2,3)*c3+mm2vox(2,4);
@@ -1197,9 +1197,9 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
           for (int y=0;y<Ssizes[1];y++){
             for (int x=0;x<Ssizes[0];x++){
               if (seedsVol(x,y,z)){
-                seedsV[nseeds*3]=x; 
-                seedsV[nseeds*3+1]=y; 
-                seedsV[nseeds*3+2]=z; 
+                seedsV[nseeds*3]=x;
+                seedsV[nseeds*3+1]=y;
+                seedsV[nseeds*3+2]=z;
                 nseeds++;
               }
             }
@@ -1210,7 +1210,7 @@ size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
       }else{
         cerr<<"Unknown file type: "<<fnames[i]<<endl;
         exit(1);
-      }	
+      }
     }
     seeds=new float[nseeds*3];
     memcpy(seeds,&seedsV[0],nseeds*3*sizeof(float));
@@ -1243,13 +1243,13 @@ void  tractographyInput::set_vox2mm(int		        convention,
                                     Matrix&		    mm2vox,
                                     float*		    vox2mm)
 {
-  // VOX2MM 
+  // VOX2MM
   Matrix Mvox2mm(4,4);
   if (convention==0){
     // caret
     Mvox2mm = vol.sform_mat();
     mm2vox= Mvox2mm.i();
-  }else if (convention==1){	
+  }else if (convention==1){
     // freesurfer
     Matrix mat(4,4);
     mat << -1/Sdims[0] << 0 << 0 << Ssizes[0]/2
@@ -1277,14 +1277,14 @@ void  tractographyInput::set_vox2mm(int		        convention,
       mm2vox=Mvox2mm.i();
     }
   }else if (convention==2){
-    // vox	
+    // vox
     Mvox2mm=IdentityMatrix(4);
     mm2vox=IdentityMatrix(4);
   }
   vox2mm[0]=Mvox2mm(1,1); vox2mm[1]=Mvox2mm(1,2); vox2mm[2]=Mvox2mm(1,3); vox2mm[3]=Mvox2mm(1,4);
   vox2mm[4]=Mvox2mm(2,1); vox2mm[5]=Mvox2mm(2,2); vox2mm[6]=Mvox2mm(2,3); vox2mm[7]=Mvox2mm(2,4);
   vox2mm[8]=Mvox2mm(3,1); vox2mm[9]=Mvox2mm(3,2); vox2mm[10]=Mvox2mm(3,3); vox2mm[11]=Mvox2mm(3,4);
-  vox2mm[12]=Mvox2mm(4,1); vox2mm[13]=Mvox2mm(4,2); vox2mm[14]=Mvox2mm(4,3); vox2mm[15]=Mvox2mm(4,4); 
+  vox2mm[12]=Mvox2mm(4,1); vox2mm[13]=Mvox2mm(4,2); vox2mm[14]=Mvox2mm(4,3); vox2mm[15]=Mvox2mm(4,4);
 }
 
 void tractographyInput::load_tractographyData(tractographyData&	tData,
@@ -1319,10 +1319,10 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
   tData.sampvox=opts.sampvox.value();
   if (opts.fibst.set()) tData.fibst=opts.fibst.value()-1;  //0,1,2 ....
   else tData.fibst=-1;   //not set
-  tData.usef=opts.usef.value();		
+  tData.usef=opts.usef.value();
 
   // set convention
-  int convention=0;  
+  int convention=0;
   // 0 -> caret . default
   // 1 -> freesurfer
   // 2 -> first
@@ -1336,7 +1336,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
     cerr<<"Error: Unknown convention "<<opts.meshspace.value()<<endl;
     exit(1);
   }
-	
+
   /////////////////////////////////////////////
   ////////        LOAD SEEDS &       //////////
   //////// READ DIMS-SIZE SEED-SPACE //////////
@@ -1361,8 +1361,8 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
   //////// LOAD MASK //////
   /////////////////////////
   volume<float> mask3D;
-  read_volume(mask3D,opts.maskfile.value());	
-  tData.mask= new float[mask3D.xsize()*mask3D.ysize()*mask3D.zsize()];	
+  read_volume(mask3D,opts.maskfile.value());
+  tData.mask= new float[mask3D.xsize()*mask3D.ysize()*mask3D.zsize()];
   for(int z=0;z<mask3D.zsize();z++){
     for(int y=0;y<mask3D.ysize();y++){
       for(int x=0;x<mask3D.xsize();x++){
@@ -1375,8 +1375,8 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
   tData.Ddims[1]=mask3D.ydim();
   tData.Ddims[2]=mask3D.zdim();
   tData.Dsizes = new int[3];
-  tData.Dsizes[0]=mask3D.xsize(); 
-  tData.Dsizes[1]=mask3D.ysize(); 
+  tData.Dsizes[0]=mask3D.xsize();
+  tData.Dsizes[1]=mask3D.ysize();
   tData.Dsizes[2]=mask3D.zsize();
 
   /////////////////////////
@@ -1388,7 +1388,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
   tData.nvoxels=0;
   tData.nsamples=0;
   tData.nfibres=0;
-  if(fsl_imageexists(basename+"_thsamples")){ 
+  if(fsl_imageexists(basename+"_thsamples")){
     // only 1 fibre
     read_volume4D(tmpvol,basename+"_thsamples");
     tmpmat=tmpvol.matrix(mask3D);
@@ -1471,10 +1471,10 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
 	      tData.lut_vol2mat[z*mask3D.ysize()*mask3D.xsize()+y*mask3D.xsize()+x]=tmpvol2(x,y,z);
       }
     }
-  }	
+  }
 
   //////////////////////////
-  ////// Seeds_to_DTI ////// 
+  ////// Seeds_to_DTI //////
   ////// DTI_to_Seeds //////
   //////////////////////////
   float* Seeds_to_DTI_read;
@@ -1508,9 +1508,9 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
   tData.DTI_to_Seeds=new float[12];
 
   float C = Seeds_to_DTI_read[12]+Seeds_to_DTI_read[13]+Seeds_to_DTI_read[14]+Seeds_to_DTI_read[15];
-  float* div = new float[3]; 
-  div[0]=C*tData.Ddims[0]; 
-  div[1]=C*tData.Ddims[1]; 
+  float* div = new float[3];
+  div[0]=C*tData.Ddims[0];
+  div[1]=C*tData.Ddims[1];
   div[2]=C*tData.Ddims[2];
   tData.Seeds_to_DTI[0]=Seeds_to_DTI_read[0]*tData.Sdims[0]/div[0];
   tData.Seeds_to_DTI[1]=Seeds_to_DTI_read[1]*tData.Sdims[1]/div[0];
@@ -1526,8 +1526,8 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
   tData.Seeds_to_DTI[11]=Seeds_to_DTI_read[11]/div[2];
 
   C = DTI_to_Seeds_read[12]+DTI_to_Seeds_read[13]+DTI_to_Seeds_read[14]+DTI_to_Seeds_read[15];
-  div[0]=C*tData.Sdims[0]; 
-  div[1]=C*tData.Sdims[1]; 
+  div[0]=C*tData.Sdims[0];
+  div[1]=C*tData.Sdims[1];
   div[2]=C*tData.Sdims[2];
   tData.DTI_to_Seeds[0]=DTI_to_Seeds_read[0]*tData.Ddims[0]/div[0];
   tData.DTI_to_Seeds[1]=DTI_to_Seeds_read[1]*tData.Ddims[1]/div[0];
@@ -1545,7 +1545,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
   ///////////////////////////////
   ////// NON LINEAR warps ///////
   ///////////////////////////////
-  tData.IsNonlinXfm = false;  
+  tData.IsNonlinXfm = false;
   tData.Warp_S2D_sizes=new int[3];
   tData.Warp_D2S_sizes=new int[3];
   tData.Warp_S2D_sizes[0]=0;
@@ -1562,7 +1562,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
     if(!fsl_imageexists(opts.seeds_to_dti.value())){  // presumably ascii file provided
       //m _Seeds_to_DTI = read_ascii_matrix(opts.seeds_to_dti.value());
       // m_DTI_to_Seeds = m_Seeds_to_DTI.i();
-      // m_rotdir       = m_Seeds_to_DTI.SubMatrix(1,3,1,3);	
+      // m_rotdir       = m_Seeds_to_DTI.SubMatrix(1,3,1,3);
     }else{
       tData.IsNonlinXfm = true;
       FnirtFileReader ffr(opts.seeds_to_dti.value());
@@ -1571,7 +1571,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
       tData.Warp_S2D_sizes[0]=SeedDTIwarp4D.xsize();
       tData.Warp_S2D_sizes[1]=SeedDTIwarp4D.ysize();
       tData.Warp_S2D_sizes[2]=SeedDTIwarp4D.zsize();
-      tData.SeedDTIwarp= new float[3*size];	
+      tData.SeedDTIwarp= new float[3*size];
       for(int v=0;v<3;v++){
         for(int z=0;z<tData.Warp_S2D_sizes[2];z++){
           for(int y=0;y<tData.Warp_S2D_sizes[1];y++){
@@ -1580,7 +1580,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
             }
           }
         }
-      }	
+      }
       if(opts.dti_to_seeds.value()==""){
         cerr << "TRACT::Streamliner:: DTI -> Seeds transform needed" << endl;
         exit(1);
@@ -1591,7 +1591,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
       tData.Warp_D2S_sizes[0]=DTISeedwarp4D.xsize();
       tData.Warp_D2S_sizes[1]=DTISeedwarp4D.ysize();
       tData.Warp_D2S_sizes[2]=DTISeedwarp4D.zsize();
-      tData.DTISeedwarp = new float[3*size];	
+      tData.DTISeedwarp = new float[3*size];
       for(int v=0;v<3;v++){
         for(int z=0;z<tData.Warp_D2S_sizes[2];z++){
           for(int y=0;y<tData.Warp_D2S_sizes[1];y++){
@@ -1600,7 +1600,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
             }
           }
         }
-      }	
+      }
       Matrix samp=IdentityMatrix(4);
       samp(1,1) = tData.Sdims[0];
       samp(2,2) = tData.Sdims[1];
@@ -1613,7 +1613,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
       samp(1,1) = tData.Ddims[0];
       samp(2,2) = tData.Ddims[1];
       samp(3,3) = tData.Ddims[2];
-      samp=samp.i(); 
+      samp=samp.i();
       tData.DsamplingI[0]=samp(1,1);
       tData.DsamplingI[1]=samp(2,2);
       tData.DsamplingI[2]=samp(3,3);
@@ -1632,8 +1632,8 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
       samp=samp.i();
       tData.Wsampling_D2S_I[0]=samp(1,1);
       tData.Wsampling_D2S_I[1]=samp(2,2);
-      tData.Wsampling_D2S_I[2]=samp(3,3);	
-    }	
+      tData.Wsampling_D2S_I[2]=samp(3,3);
+    }
   }
 
 
@@ -1681,7 +1681,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
   tData.waypoint.NSurfs=0;
   if(opts.waypoints.set()){
     load_rois(opts.waypoints.value(),mm2vox,tData.Sdims,tData.Ssizes,0,refVol,tData.waypoint,null);
-  } 
+  }
 
   /////////////////////////////////
   ///////// TARGET MASKs //////////
@@ -1705,7 +1705,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
 	      m_s2targetsb[i]=0;
       }
     }
-		
+
     if (fsl_imageexists(opts.targetfile.value())||meshExists(opts.targetfile.value())){
       string tmpname=opts.targetfile.value();
       int pos=tmpname.find("/",0);
@@ -1715,7 +1715,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
 	      pos=tmpname.find("/",pos);
 	      // replace / with _
 	      tmpname[pos]='_';
-      }      
+      }
       //only take things after the last pos
       tmpname=tmpname.substr(lastpos+1,tmpname.length()-lastpos-1);
       //// remove extension
@@ -1745,7 +1745,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
 	          pos=tmpname.find("/",pos);
 	          // replace / with _
 	          tmpname[pos]='_';
-	        }      
+	        }
 	        //only take things after the last pos
 	        tmpname=tmpname.substr(lastpos+1,tmpname.length()-lastpos-1);
 	        //// remove extension
@@ -1764,7 +1764,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
 	      }while (!fs.eof());
       }
     }
-    /////// TARGET REF MASK ////////  
+    /////// TARGET REF MASK ////////
     load_rois_mixed(opts.targetfile.value(),mm2vox,tData.Sdims,tData.Ssizes,tData.targetsREF);
   }
 
@@ -1794,9 +1794,9 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
       // Matrix 2 needs space transformation ?
       volume<float> tmpvolM2;
       read_volume(tmpvolM2,opts.lrmask.value());
-      float* div = new float[3]; 
-      div[0]=tmpvolM2.xdim(); 
-      div[1]=tmpvolM2.ydim(); 
+      float* div = new float[3];
+      div[0]=tmpvolM2.xdim();
+      div[1]=tmpvolM2.ydim();
       div[2]=tmpvolM2.zdim();
       tData.Seeds_to_M2[0]=Seeds_to_DTI_read[0]*tData.Sdims[0]/div[0];
       tData.Seeds_to_M2[1]=Seeds_to_DTI_read[1]*tData.Sdims[1]/div[0];
@@ -1811,8 +1811,8 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
       tData.Seeds_to_M2[10]=Seeds_to_DTI_read[10]*tData.Sdims[2]/div[2];
       tData.Seeds_to_M2[11]=Seeds_to_DTI_read[11]/div[2];
       tData.M2sizes = new int[3];
-      tData.M2sizes[0]=tmpvolM2.xsize(); 
-      tData.M2sizes[1]=tmpvolM2.ysize(); 
+      tData.M2sizes[0]=tmpvolM2.xsize();
+      tData.M2sizes[1]=tmpvolM2.ysize();
       tData.M2sizes[2]=tmpvolM2.zsize();
 
       tData.lrmatrix1.nlocs=0;
@@ -1826,9 +1826,9 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
       volume<int> m_lrmask;
       read_volume(m_lrmask,opts.lrmask.value());
       m_lookup2.reinitialize(m_lrmask.xsize(),m_lrmask.ysize(),m_lrmask.zsize());
-      copybasicproperties(m_lrmask,m_lookup2);	
+      copybasicproperties(m_lrmask,m_lookup2);
       m_lookup2=0;
-      int numnz=0;    
+      int numnz=0;
       for(int Wz=m_lrmask.minz();Wz<=m_lrmask.maxz();Wz++){
 	      for(int Wy=m_lrmask.miny();Wy<=m_lrmask.maxy();Wy++){
 	        for(int Wx=m_lrmask.minx();Wx<=m_lrmask.maxx();Wx++){
@@ -1874,7 +1874,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
   tData.matrix3.NVols=0;
   tData.matrix3.NSurfs=0;
 
-  tData.lrmatrix3.distthresh=opts.distthresh3.value();	
+  tData.lrmatrix3.distthresh=opts.distthresh3.value();
   tData.lrmatrix3.nlocs=0;
   tData.lrmatrix3.NVols=0;
   tData.lrmatrix3.NSurfs=0;
@@ -1885,7 +1885,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
     load_rois(opts.mask3.value(),mm2vox,tData.Sdims,tData.Ssizes,2,refVol,tData.matrix3,m3_coords);
 
     write_ascii_matrix(m3_coords,logger.appendDir("coords_for_fdt_matrix3"));
-		
+
     ConMat3 = new float*[tData.matrix3.nlocs];
     nRowsMat3=tData.matrix3.nlocs;
 
@@ -1896,7 +1896,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
     if(opts.lrmask3.value()!=""){
       Matrix lrm3_coords;
       load_rois(opts.lrmask3.value(),mm2vox,tData.Sdims,tData.Ssizes,2,refVol,tData.lrmatrix3,lrm3_coords);
-			
+
       write_ascii_matrix(lrm3_coords,logger.appendDir("tract_space_coords_for_fdt_matrix3"));
       nColsMat3=tData.lrmatrix3.nlocs;
     }else{
@@ -1928,7 +1928,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
   tData.networkREF.nlocs=0;
   tData.networkREF.NVols=0;
   tData.networkREF.NSurfs=0;
-  
+
   if(opts.network.value()){
     load_rois(opts.seedfile.value(),mm2vox,tData.Sdims,tData.Ssizes,0,refVol,tData.network,null);
 
@@ -1937,13 +1937,13 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
     ConNet = new float*;
     ConNet[0] = new float[nRowsNet*nColsNet];
     printf("Dimensions Network Matrix: %i x %i\n",nRowsNet,nColsNet);
-		
+
     if(opts.omeanpathlength.value()){
       ConNetb = new float*;
       ConNetb[0] = new float[nRowsNet*nColsNet];
     }
-  
-    /////// NETWORK REF MASK ////////  
+
+    /////// NETWORK REF MASK ////////
     load_rois_mixed(opts.seedfile.value(),mm2vox,tData.Sdims,tData.Ssizes,tData.networkREF);
   }
 }
