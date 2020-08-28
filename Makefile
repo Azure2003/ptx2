@@ -65,10 +65,10 @@ PTX2GPUOBJS = probtrackx_gpu.o tractography_gpu.o link_gpu.o \
               CUDA/tractographyData.o probtrackxOptions.o csv.o csv_mesh.o
 
 probtrackx2_gpu: ${PTX2GPUOBJS}
-	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS} ${CUDALDFLAGS}
+	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS} ${NVCCLDFLAGS}
 
 link_gpu.o:	tractography_gpu.o
-	$(NVCC) ${CUDACXXFLAGS} -o $@ -dlink tractography_gpu.o
+	$(NVCC) ${NVCCFLAGS} -o $@ -dlink tractography_gpu.o
 
 tractography_gpu.o:
-	$(NVCC) ${CUDACXXFLAGS} -dc -o $@ CUDA/tractography_gpu.cu
+	$(NVCC) ${NVCCFLAGS} -dc -o $@ CUDA/tractography_gpu.cu
