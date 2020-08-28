@@ -1,3 +1,10 @@
+# This is the Makefile for the ptx2 project
+#
+# Some commands provided by ptx2 are CUDA-capable - these
+# commands can be compiled by setting the "cuda" variable
+# when calling make, i.e.:
+#
+#     make gpu=1
 include $(FSLCONFDIR)/default.mk
 
 PROJNAME = ptx2
@@ -5,7 +12,7 @@ XFILES   = probtrackx2 surfmaths surf2surf surf2volume \
            surf_proj label2surf find_the_biggest proj_thresh \
            fdt_matrix_merge
 
-ifeq ($(PTX2_COMPILE_GPU), 1)
+ifdef gpu
     XFILES += probtrackx2_gpu
 endif
 
