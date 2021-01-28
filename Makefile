@@ -1,26 +1,36 @@
 # This is the Makefile for the ptx2 project
 #
-# Some commands provided by ptx2 are CUDA-capable - these
-# commands can be compiled by setting the "cuda" variable
-# when calling make, i.e.:
+# The ptx2 project provides some CPU-only libraries and executables,
+# and some GPU/CUDA-enabled libraries and executables.
 #
-#     make gpu=1
+# This Makefile can be used in one of three modes:
+#  - make:             Compile/install only CPU code
+#  - make gpu=1:       Compile/install both CPU and GPU code
+#  - make cpu=0 gpu=1: Compile/install only GPU code
+#  - make cpu=0 gpu=0: Compile/install nothing
+#
 include $(FSLCONFDIR)/default.mk
 
 PROJNAME = ptx2
-XFILES   = probtrackx2 surfmaths surf2surf surf2volume \
-           surf_proj label2surf find_the_biggest proj_thresh \
-           fdt_matrix_merge
-
-ifdef gpu
-    XFILES += probtrackx2_gpu
-endif
-
-CUDALIBS = -lcudadevrt -lcudart -lcuda -lnvToolsExt
 LIBS     = -lfsl-newmeshclass -lfsl-warpfns -lfsl-basisfield \
            -lfsl-surface -lfsl-vtkio -lfsl-meshclass -lfsl-newimage \
            -lfsl-utils -lfsl-miscmaths -lfsl-NewNifti -lfsl-giftiio \
            -lfsl-first_lib -lfsl-znz -lfsl-cprob -lfsl-utils -lexpat
+CUDALIBS = -lcudadevrt -lcudart -lcuda -lnvToolsExt
+XFILES   =
+
+cpu ?= 1
+gpu ?= 0
+
+ifeq (${cpu}, 1)
+    XFILES += probtrackx2 surfmaths surf2surf surf2volume \
+              surf_proj label2surf find_the_biggest proj_thresh \
+              fdt_matrix_merge
+endif
+
+ifeq (${gpu}, 1)
+    XFILES += probtrackx2_gpu
+endif
 
 
 all: ${XFILES}
@@ -67,15 +77,12 @@ label2surf: label2surf.o csv_mesh.o
 surfmaths: surfmaths.o
 	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
 
-PTX2GPUOBJS = probtrackx_gpu.o tractography_gpu.o link_gpu.o \
-              saveResults_ptxGPU.o CUDA/tractographyInput.o \
-              CUDA/tractographyData.o probtrackxOptions.o csv.o csv_mesh.o
+PTX2GPUOBJS = probtrackx_gpu.o tractography_gpu.o saveResults_ptxGPU.o \
+              CUDA/tractographyInput.o CUDA/tractographyData.o \
+              probtrackxOptions.o csv.o csv_mesh.o
+
+tractography_gpu.o: CUDA/tractography_gpu.cu
+	$(NVCC) ${NVCCFLAGS} -c -o $@ $<
 
 probtrackx2_gpu: ${PTX2GPUOBJS}
-	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS} ${NVCCLDFLAGS}
-
-link_gpu.o:	tractography_gpu.o
-	$(NVCC) ${NVCCFLAGS} -o $@ -dlink tractography_gpu.o
-
-tractography_gpu.o:
-	$(NVCC) ${NVCCFLAGS} -dc -o $@ CUDA/tractography_gpu.cu
+	${NVCC} ${NVCCFLAGS} -o $@ $^ ${NVCCLDFLAGS}
