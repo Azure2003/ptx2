@@ -801,8 +801,12 @@ namespace TRACT{
 
         // Do this only once as it is the same for all surfaces
         if(cnt>0 && m_surfexists){
-          float line[2][3]={{m_path[cnt-1](1),m_path[cnt-1](2),m_path[cnt-1](3)},
-                            {m_path[cnt](1),m_path[cnt](2),m_path[cnt](3)}};
+          float line[2][3]={{static_cast<float>(m_path[cnt-1](1)),
+                             static_cast<float>(m_path[cnt-1](2)),
+                             static_cast<float>(m_path[cnt-1](3))},
+                            {static_cast<float>(m_path[cnt](1)),
+                             static_cast<float>(m_path[cnt](2)),
+                             static_cast<float>(m_path[cnt](3))}};
           m_seeds.line_crossed_voxels(line,crossedvox); //crossed in voxels
           m_crossedvox.push_back(crossedvox);
         }
