@@ -388,7 +388,12 @@ int CSV::coord_sign(const int& loc,const ColumnVector& x2)const{
 //   // add more triangles 
    //cout<<"MORE!!"<<endl;
   vector<ColumnVector> crossed; // voxels crossed when going from x1 to x2
-  float line[2][3]={{x1(1),x1(2),x1(3)},{x2(1),x2(2),x2(3)}};
+  float line[2][3]={{static_cast<float>(x1(1)),
+                     static_cast<float>(x1(2)),
+                     static_cast<float>(x1(3))},
+                    {static_cast<float>(x2(1)),
+                     static_cast<float>(x2(2)),
+                     static_cast<float>(x2(3))}};
   line_crossed_voxels(line,crossed);
   vector< pair<int,int> > localtriangles;
   for(unsigned int i=0;i<crossed.size();i++){
@@ -470,9 +475,15 @@ void CSV::init_surfvol(){
       xx2=x2.SubMatrix(1,3,1,1);
       xx3=x3.SubMatrix(1,3,1,1);
 
-      float tri[3][3]={{xx1(1),xx1(2),xx1(3)},
-		       {xx2(1),xx2(2),xx2(3)},
-		       {xx3(1),xx3(2),xx3(3)}};
+      float tri[3][3]={{static_cast<float>(xx1(1)),
+                        static_cast<float>(xx1(2)),
+                        static_cast<float>(xx1(3))},
+                       {static_cast<float>(xx2(1)),
+                        static_cast<float>(xx2(2)),
+                        static_cast<float>(xx2(3))},
+                       {static_cast<float>(xx3(1)),
+                        static_cast<float>(xx3(2)),
+                        static_cast<float>(xx3(3))}};
 
       tri_crossed_voxels(tri,crossed);
  
