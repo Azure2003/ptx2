@@ -11,7 +11,6 @@
 #include <CUDA/memManager_gpu.cu>
 #include <CUDA/tractography_CallKernels.cu>
 #include <sys/time.h>
-#include "nvToolsExt.h"	  // host profiling
 
 void tractography_gpu(
   tractographyData&	data_host,
@@ -524,7 +523,6 @@ void write_mask3(
 			float**			        ConMat3b)
 
 {
-  nvtxRangePushA("Write_mask3");
 
   probtrackxOptions& opts =probtrackxOptions::getInstance();
 
@@ -645,7 +643,6 @@ void write_mask3(
       }
     }
   }
-  nvtxRangePop();
 }
 
 ////////////////////////
@@ -662,7 +659,6 @@ void write_mask1(	tractographyData&	data_host,
 			float**			ConMat1b)
 
 {
-  nvtxRangePushA("Write_mask1");
 
   probtrackxOptions& opts =probtrackxOptions::getInstance();
   int nsteps=opts.nsteps.value();
@@ -734,5 +730,4 @@ void write_mask1(	tractographyData&	data_host,
       }
     }
   }
-  nvtxRangePop();
 }
