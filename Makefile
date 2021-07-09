@@ -9,6 +9,10 @@
 #  - make cpu=0 gpu=1: Compile/install only GPU code
 #  - make cpu=0 gpu=0: Compile/install nothing
 #
+# The common build files from the fsl/base project provide a number of
+# other options for compiling CUDA projects - refer to that project
+# for more details.
+#
 include $(FSLCONFDIR)/default.mk
 
 PROJNAME = ptx2
@@ -16,7 +20,7 @@ LIBS     = -lfsl-newmeshclass -lfsl-warpfns -lfsl-basisfield \
            -lfsl-surface -lfsl-vtkio -lfsl-meshclass -lfsl-newimage \
            -lfsl-utils -lfsl-miscmaths -lfsl-NewNifti -lfsl-giftiio \
            -lfsl-first_lib -lfsl-znz -lfsl-cprob -lfsl-utils -lexpat
-CUDALIBS = -lcudadevrt -lcudart -lcuda -lnvToolsExt
+CUDALIBS = -lcudadevrt
 XFILES   =
 
 cpu ?= 1
