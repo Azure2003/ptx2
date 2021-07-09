@@ -13,7 +13,7 @@
 #include <sys/time.h>
 #include "nvToolsExt.h"	  // host profiling
 
-void tractography_gpu(	
+void tractography_gpu(
   tractographyData&	data_host,
 	volume<float>*&		mprob,
 	volume<float>*&		mprob2,		// omeanpathlength
@@ -33,48 +33,48 @@ void tractography_gpu(
   size_t free,total;
   cudaMemGetInfo(&free,&total);
   cout << "Device memory available (MB): "<< free/1048576 <<  " ---- Total device memory(MB): " << total/1048576 << "\n";
-  
+
   probtrackxOptions& opts=probtrackxOptions::getInstance();
-  
+
   tractographyData *data_gpu;
-  copy_to_gpu(data_host,data_gpu);	// Copy all the masks, seeds and other info to the GPU  
-  
+  copy_to_gpu(data_host,data_gpu);	// Copy all the masks, seeds and other info to the GPU
+
   copy_ToConstantMemory(data_host);	// Set Constant memory
   copy_ToTextureMemory(data_host);	// Set Texture memory
-  
+
   cuMemGetInfo(&free,&total);
   cout << "Device memory available after copying data (MB): "<< free/1048576 << "\n";
-  
+
   long MAX_SLs;
   long THREADS_STREAM; // MAX_Streamlines and NSTREAMS must be multiples
-  
+
   ///// DATA in HOST ////
   int** lengths_host=new int*;			// Pinned Memory
   float** paths_host=new float*;		// Pinned Memory, only used if save_paths
   float** mprob_host=new float*;		// Pinned Memory
   float** mprob2_host=new float*;	    	// Pinned Memory
   float** mlocaldir_host=new float*;		// Pinned Memory
-  
+
   float3** mat_crossed_host=new float3*; 	// .x id, .y triangle, .z value   Pinned Memory
   int** mat_numcrossed_host=new int*; 		// Pinned Memory
   long long size_mat_cross;
   int max_per_jump_mat;
-  
+
   float3** lrmat_crossed_host=new float3*;	// Pinned Memory
   int** lrmat_numcrossed_host=new int*;		// Pinned Memory
   long long size_lrmat_cross;
   int max_per_jump_lrmat;
-  
+
   //float** targVOLvalues_host=new float*;	// Pinned Memory
   //float** targvaluesb_host=new float*;        // Pinned Memory
-  
+
   allocate_host_mem(data_host,MAX_SLs,THREADS_STREAM,
 		    lengths_host,paths_host,mprob_host,mprob2_host,mlocaldir_host,
 		    //targvalues_host,targvaluesb_host,
 		    mat_crossed_host,mat_numcrossed_host,size_mat_cross,max_per_jump_mat,
 		    lrmat_crossed_host,lrmat_numcrossed_host,size_lrmat_cross,max_per_jump_lrmat);
   ///////////////////////
-  
+
   // Calculate number of Iterations
   int niters=0;
   unsigned long long totalSLs = (unsigned long long)data_host.nseeds*data_host.nparticles;
@@ -82,7 +82,7 @@ void tractography_gpu(
   niters=totalSLs/THREADS_STREAM;
   if(totalSLs%THREADS_STREAM) niters++;
   int last_iter = totalSLs-((niters-1)*THREADS_STREAM); // last iteration
-	
+
   ///// DATA in GPU /////
   float** mprob_gpu=new float*;
   float** mprob2_gpu=new float*;
@@ -97,17 +97,17 @@ void tractography_gpu(
   bool targ_flags_in_shared;
   float** targ_flags_gpu=new float*;
   float** mlocaldir_gpu=new float*;
-  
+
   float** paths_gpu=new float*;
   int** lengths_gpu=new int*;
   int** loopcheckkeys_gpu=new int*;
   float3** loopcheckdirs_gpu=new float3*;
-  
+
   float3** mat_crossed_gpu=new float3*;
   int** mat_numcrossed_gpu=new int*;
   float3** lrmat_crossed_gpu=new float3*;
   int** lrmat_numcrossed_gpu=new int*;
-	
+
   allocate_gpu_mem(data_host,MAX_SLs,THREADS_STREAM,
 		   mprob_gpu,mprob2_gpu,mlocaldir_gpu,beenhere_gpu,
 		   ConNet_gpu,ConNetb_gpu,net_flags_in_shared,net_flags_gpu,net_values_gpu,
@@ -121,7 +121,7 @@ void tractography_gpu(
   initialise_SeedsGPU(devStates,THREADS_STREAM);
 
   // Set shared memory bank size to 2 bytes (floats)
-  checkCuda(cudaDeviceSetSharedMemConfig(cudaSharedMemBankSizeEightByte)); 
+  checkCuda(cudaDeviceSetSharedMemConfig(cudaSharedMemBankSizeEightByte));
 
   // create cuda streams:
   // 1 stream for processing on the GPU, 1 stream for copying GPU->CPU
@@ -130,15 +130,15 @@ void tractography_gpu(
   for(int i=0;i<NSTREAMS;i++){
     checkCuda(cudaStreamCreate(&streams[i]));
   }
-	
-  //The host memory involved in the data transfer must be pinned memory.	
-  //The default stream is different from other streams because it is a synchronizing stream with respect 
-  //to operations on the device: no operation in the default stream will begin until all previously issued 
-  //operations in any stream on the device have completed, and an operation in the default stream must complete 
+
+  //The host memory involved in the data transfer must be pinned memory.
+  //The default stream is different from other streams because it is a synchronizing stream with respect
+  //to operations on the device: no operation in the default stream will begin until all previously issued
+  //operations in any stream on the device have completed, and an operation in the default stream must complete
   //before any other operation (in any stream on the device) will begin.
 
   long long offset_SLs=0;	//offset Stream Lines
-  
+
   int* PTR_lengths_gpuA=lengths_gpu[0];
   int* PTR_lengths_gpuB=lengths_gpu[0];
   float* PTR_paths_gpuA=paths_gpu[0];		// only change if save_paths
@@ -150,21 +150,21 @@ void tractography_gpu(
   float3* PTR_lrmat_crossed_gpuA=lrmat_crossed_gpu[0];
   int* PTR_lrmat_numcrossed_gpuA=lrmat_numcrossed_gpu[0];
   float3* PTR_lrmat_crossed_gpuB=lrmat_crossed_gpu[0];
-  int* PTR_lrmat_numcrossed_gpuB=lrmat_numcrossed_gpu[0];	
+  int* PTR_lrmat_numcrossed_gpuB=lrmat_numcrossed_gpu[0];
 
   //set num blocks in general (update kernel uses a different block size)
   int num_threads=THREADS_STREAM;
-  
+
   int update_upper_limit = data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2];
-  
+
   checkCuda(cudaDeviceSynchronize());
   cuMemGetInfo(&free,&total);
 
   // run iterations
   for(int iter=0;iter<niters;iter++){
-	
+
     printf("Iteration %i out of %i\n",iter+1,niters);
-		
+
     if(iter%2){
       PTR_lengths_gpuA=&lengths_gpu[0][THREADS_STREAM*2];  // here processing
       PTR_mat_crossed_gpuA=&mat_crossed_gpu[0][size_mat_cross];
@@ -175,7 +175,7 @@ void tractography_gpu(
 	      PTR_paths_gpuA=&paths_gpu[0][THREADS_STREAM*data_host.nsteps*3];
       }
 
-      PTR_lengths_gpuB=lengths_gpu[0];			// here tranferring 
+      PTR_lengths_gpuB=lengths_gpu[0];			// here tranferring
       PTR_paths_gpuB=paths_gpu[0];
       PTR_mat_crossed_gpuB=mat_crossed_gpu[0];
       PTR_mat_numcrossed_gpuB=mat_numcrossed_gpu[0];
@@ -188,7 +188,7 @@ void tractography_gpu(
       PTR_mat_numcrossed_gpuA=mat_numcrossed_gpu[0];
       PTR_lrmat_crossed_gpuA=lrmat_crossed_gpu[0];
       PTR_lrmat_numcrossed_gpuA=lrmat_numcrossed_gpu[0];
-		
+
       PTR_lengths_gpuB=&lengths_gpu[0][THREADS_STREAM*2];	// here tranferring
       PTR_paths_gpuB=&paths_gpu[0][THREADS_STREAM*data_host.nsteps*3];
       PTR_mat_crossed_gpuB=&mat_crossed_gpu[0][size_mat_cross];
@@ -210,13 +210,13 @@ void tractography_gpu(
 
     // STOP MASK
     stop_mask(streams[0],data_host,data_gpu,num_threads,PTR_paths_gpuA,PTR_lengths_gpuA);
-	
+
     // WTSTOP MASKS
     wtstop_masks(streams[0],data_host,data_gpu,num_threads,PTR_paths_gpuA,PTR_lengths_gpuA);
 
     // AVOID MASK
     avoid_mask(streams[0],data_host,data_gpu,num_threads,PTR_paths_gpuA,PTR_lengths_gpuA);
-		
+
     // WAYPOINTS MASK
     way_masks(streams[0],data_host,data_gpu,num_threads,PTR_paths_gpuA,PTR_lengths_gpuA);
 
@@ -239,7 +239,7 @@ void tractography_gpu(
 	    PTR_mat_crossed_gpuA,PTR_mat_numcrossed_gpuA,
 	    PTR_lrmat_crossed_gpuA,PTR_lrmat_numcrossed_gpuA);
     }
-		
+
     // MATRIX 3
     if(opts.matrix3out.value()){
       matrix3(streams[0],data_host,data_gpu,num_threads,PTR_paths_gpuA,PTR_lengths_gpuA,
@@ -257,14 +257,14 @@ void tractography_gpu(
         checkCuda(cudaMemcpyAsync(*lrmat_crossed_host,PTR_lrmat_crossed_gpuB,size_lrmat_cross*sizeof(float3),cudaMemcpyDeviceToHost,streams[1]));
         checkCuda(cudaMemcpyAsync(*lrmat_numcrossed_host,PTR_lrmat_numcrossed_gpuB,THREADS_STREAM*sizeof(int),cudaMemcpyDeviceToHost,streams[1]));
       }
-			
+
       checkCuda(cudaMemcpyAsync(*lengths_host,PTR_lengths_gpuB,THREADS_STREAM*2*sizeof(int),cudaMemcpyDeviceToHost,streams[1]));
       if(opts.save_paths.value()){
 	      checkCuda(cudaMemcpyAsync(*paths_host,PTR_paths_gpuB,THREADS_STREAM*data_host.nsteps*3*sizeof(float),cudaMemcpyDeviceToHost,streams[1]));
       }
 
       checkCuda(cudaStreamSynchronize(streams[1])); // WAIT HERE UNTIL ALL COPIES HAVE FINISHED
-      
+
       // HOST work
       // Update keeptotal
       int pos=0;
@@ -293,7 +293,7 @@ void tractography_gpu(
 	      // save coordinates
 	      pos=0;
 	      for(int i=0;i<THREADS_STREAM;i++){
-	        if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){ 
+	        if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){
 	          vector<float> tmp;
             if(lengths_host[0][pos]>0){
               int posSEED=i*data_host.nsteps*3;
@@ -327,7 +327,7 @@ void tractography_gpu(
 		    lrmat_crossed_host[0],lrmat_numcrossed_host[0],max_per_jump_lrmat,ConMat1,ConMat1b);
       }
     }
-				
+
     offset_SLs+=THREADS_STREAM;
   }
   // end iterations
@@ -350,7 +350,7 @@ void tractography_gpu(
 
   checkCuda(cudaStreamSynchronize(streams[0]));
 
-  if(opts.matrix3out.value()){	
+  if(opts.matrix3out.value()){
     checkCuda(cudaMemcpyAsync(*mat_crossed_host,PTR_mat_crossed_gpuB,size_mat_cross*sizeof(float3),cudaMemcpyDeviceToHost,streams[1]));
     checkCuda(cudaMemcpyAsync(*mat_numcrossed_host,PTR_mat_numcrossed_gpuB,num_threads*sizeof(int),cudaMemcpyDeviceToHost,streams[1]));
   }
@@ -362,7 +362,7 @@ void tractography_gpu(
   if(opts.save_paths.value()){
     checkCuda(cudaMemcpyAsync(*paths_host,PTR_paths_gpuB,THREADS_STREAM*data_host.nsteps*3*sizeof(float),cudaMemcpyDeviceToHost,streams[1]));
   }
-	
+
   checkCuda(cudaStreamSynchronize(streams[1]));
 
   // HOST work
@@ -391,7 +391,7 @@ void tractography_gpu(
     // save coordinates
     pos=0;
     for(int i=0;i<last_iter;i++){
-      if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){ 
+      if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){
         vector<float> tmp;
         if(lengths_host[0][pos]>0){
           int posSEED=i*data_host.nsteps*3;
@@ -463,7 +463,7 @@ void tractography_gpu(
       }
     }
   }
-	
+
   if(opts.network.value()){
     int size_ConNet=(data_host.network.NVols+data_host.network.NSurfs)*(data_host.network.NVols+data_host.network.NSurfs);
     checkCuda(cudaMemcpy(*ConNet,*ConNet_gpu,size_ConNet*sizeof(float),cudaMemcpyDeviceToHost));
@@ -511,7 +511,7 @@ void make_unique(vector<float3>& conns){
 ////////////////////////
 ///// WRITE MASK  3 ////
 ////////////////////////
-void write_mask3(	
+void write_mask3(
       unsigned long long 	nstreamlines,
 			float3*			        mat_crossed_host,
 			int* 			          mat_numcrossed_host,
@@ -537,7 +537,7 @@ void write_mask3(
     vector< int > mytrianglesj; // List with the roi and triangles of an individual vertex j
     float3 mytruple;
     for(unsigned long long sl=0;sl<nstreamlines;sl++){
-      inmask.clear();          
+      inmask.clear();
       for(int c=0; c<mat_numcrossed_host[sl];c++){
         mytruple.x=mat_crossed_host[sl*nsteps*max_per_jump_mat+c].x;
         mytruple.y=mat_crossed_host[sl*nsteps*max_per_jump_mat+c].y;  // Triangle id
@@ -552,20 +552,20 @@ void write_mask3(
         mytrianglesi.push_back(inmask[i].y);
         for(;(i+1)<inmask.size() && inmask[i+1].x==index;i++){  // Same vertix - different roi-triangle
           mytrianglesi.push_back(inmask[i+1].y);
-        }	
+        }
         unsigned int j=i+1;
         for(;j<inmask.size();j++){
           mytrianglesj.clear();
           index=inmask[j].x;
           mytrianglesj.push_back(inmask[j].y);
           for(;(j+1)<inmask.size() && inmask[j+1].x==index;j++){  // Same vertix - different roi-triangle
-            mytrianglesj.push_back(inmask[j+1].y); 
+            mytrianglesj.push_back(inmask[j+1].y);
           }
           bool connect=false;
           for(unsigned int ii=0;ii<mytrianglesi.size()&&!connect;ii++){
             for(unsigned int jj=0;jj<mytrianglesj.size()&&!connect;jj++){
               if(mytrianglesi[ii]!=mytrianglesj[jj] || mytrianglesi[ii]==-1 || mytrianglesj[jj]==-1){
-                // If is -1 is because it is not a vertex, it is a voxel 
+                // If is -1 is because it is not a vertex, it is a voxel
                 connect=true;
 	            }
 	          }
@@ -589,7 +589,7 @@ void write_mask3(
     vector< int > mytrianglesj; // List with the roi and triangles of an individual vertex j
     float3 mytruple;
     for(unsigned long long sl=0;sl<nstreamlines;sl++){
-      vector< float3 > inmask;          
+      vector< float3 > inmask;
       for(int c=0; c<mat_numcrossed_host[sl];c++){
         mytruple.x=mat_crossed_host[sl*nsteps*max_per_jump_mat+c].x;
         mytruple.y=mat_crossed_host[sl*nsteps*max_per_jump_mat+c].y;  // Triangle id
@@ -598,7 +598,7 @@ void write_mask3(
       }
       make_unique(inmask);
 
-      vector< float3 > inlrmask;   	       
+      vector< float3 > inlrmask;
       for(int c=0; c<lrmat_numcrossed_host[sl];c++){
         mytruple.x=lrmat_crossed_host[sl*nsteps*max_per_jump_lrmat+c].x;
         mytruple.y=lrmat_crossed_host[sl*nsteps*max_per_jump_lrmat+c].y;  // Triangle id
@@ -613,19 +613,19 @@ void write_mask3(
         mytrianglesi.push_back(inmask[i].y);
 	      for(;(i+1)<inmask.size() && inmask[i+1].x==index;i++){  // Same vertix - different roi-triangle
 	        mytrianglesi.push_back(inmask[i+1].y);
-	      }	
+	      }
 	      for(unsigned j=0;j<inlrmask.size();j++){
           mytrianglesj.clear();
           index=inlrmask[j].x;
           mytrianglesj.push_back(inlrmask[j].y);
           for(;(j+1)<inlrmask.size() && inlrmask[j+1].x==index;j++){  // Same vertix - different roi-triangle
-            mytrianglesj.push_back(inlrmask[j+1].y); 
+            mytrianglesj.push_back(inlrmask[j+1].y);
           }
           bool connect=false;
           for(unsigned int ii=0;ii<mytrianglesi.size()&&!connect;ii++){
             for(unsigned int jj=0;jj<mytrianglesj.size()&&!connect;jj++){
               if(mytrianglesi[ii]!=mytrianglesj[jj] || mytrianglesi[ii]==-1 || mytrianglesj[jj]==-1){
-                // If is -1 is because is not a vertex, it is a voxel 
+                // If is -1 is because is not a vertex, it is a voxel
 		            connect=true;
               }
             }
@@ -671,12 +671,12 @@ void write_mask1(	tractographyData&	data_host,
   vector< int > mytrianglesj; // List with the roi and triangles of an individual vertex j
   float3 mytruple;
 
-  vector< float3 > inmask;  	// is only 1 loc (seed) but maybe different triangles    
-  vector< float3 > inlrmask;   	
+  vector< float3 > inmask;  	// is only 1 loc (seed) but maybe different triangles
+  vector< float3 > inlrmask;
 
   for(unsigned long long sl=0;sl<nstreamlines;sl++){
     int numseed = (offset_SLs+sl)/(data_host.nparticles);
-    inmask.clear();    
+    inmask.clear();
     for(int c=0; c<data_host.matrix1_Ntri[numseed];c++){
       mytruple.x=data_host.matrix1_locs[MAX_TRI_SEED*numseed+c];	// Loc
       mytruple.y=data_host.matrix1_idTri[MAX_TRI_SEED*numseed+c];  	// Triangle id
@@ -701,9 +701,9 @@ void write_mask1(	tractographyData&	data_host,
       mytrianglesi.push_back(inmask[i].y);
       for(;(i+1)<inmask.size() && inmask[i+1].x==index;i++){  // Same vertix - different roi-triangle
 	      mytrianglesi.push_back(inmask[i+1].y);
-      }	
+      }
       for(unsigned j=0;j<inlrmask.size();j++){
-        if(!opts.matrix2out.value() && inmask[i].x==inlrmask[j].x) continue; // Diagonal	
+        if(!opts.matrix2out.value() && inmask[i].x==inlrmask[j].x) continue; // Diagonal
         mytrianglesj.clear();
         index=inlrmask[j].x;
         mytrianglesj.push_back(inlrmask[j].y);
@@ -714,7 +714,7 @@ void write_mask1(	tractographyData&	data_host,
         for(unsigned int ii=0;ii<mytrianglesi.size()&&!connect;ii++){
           for(unsigned int jj=0;jj<mytrianglesj.size()&&!connect;jj++){
             if(mytrianglesi[ii]!=mytrianglesj[jj] || mytrianglesi[ii]==-1 || mytrianglesj[jj]==-1){
-              // If is -1 is because is not a vertex, it is a voxel 
+              // If is -1 is because is not a vertex, it is a voxel
               connect=true;
             }
           }
@@ -736,4 +736,3 @@ void write_mask1(	tractographyData&	data_host,
   }
   nvtxRangePop();
 }
-
