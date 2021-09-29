@@ -87,5 +87,8 @@ PTX2GPUOBJS = probtrackx_gpu.o tractography_gpu.o saveResults_ptxGPU.o \
 tractography_gpu.o: CUDA/tractography_gpu.cu
 	$(NVCC) ${NVCCFLAGS} -c -o $@ $<
 
+probtrackx_gpu.o: probtrackx_gpu.cc
+	$(NVCC) ${NVCCFLAGS} -c -o $@ $<
+
 probtrackx2_gpu: ${PTX2GPUOBJS}
 	${NVCC} ${NVCCFLAGS} -o $@ $^ ${NVCCLDFLAGS}
