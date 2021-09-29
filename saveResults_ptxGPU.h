@@ -6,16 +6,20 @@
 
 /*  CCOPYRIGHT  */
 
+#include <vector>
+
+#include "newimage/newimage.h"
+
 #include "CUDA/tractographyData.h"
 
 void counter_save_total(int*& keeptotal, int numKeeptotals);
 
-void counter_save_pathdist(volume<float>& m_prob,volume<float>& m_prob2);
+void counter_save_pathdist(NEWIMAGE::volume<float>& m_prob,NEWIMAGE::volume<float>& m_prob2);
 
 void counter_save(
 	tractographyData& 	data_host,
-	volume<float> 		*m_prob, 	// spatial histogram of tract location within brain mask (in seed space)
-	volume<float> 		*m_prob2,	// omeanpathlength
+	NEWIMAGE::volume<float> 		*m_prob, 	// spatial histogram of tract location within brain mask (in seed space)
+	NEWIMAGE::volume<float> 		*m_prob2,	// omeanpathlength
 	float**			ConNet,		// Network mode
 	float**			ConNetb,	// Network mode
 	int 			nRowsNet,	// Network mode
@@ -30,6 +34,5 @@ void counter_save(
 	int 			nColsMat3,
 	float*			m_s2targets,
 	float*			m_s2targetsb,
-	vector< vector<float> >& m_save_paths,
-	volume4D<float> 	*m_localdir);
-
+	std::vector< std::vector<float> >& m_save_paths,
+	NEWIMAGE::volume4D<float> 	*m_localdir);

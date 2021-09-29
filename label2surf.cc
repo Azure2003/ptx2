@@ -8,12 +8,17 @@
 
 /*  CCOPYRIGHT */
 
+#include <string>
+#include <vector>
+#include <iostream>
 
 #include "utils/options.h"
+#include "miscmaths/miscmaths.h"
 #include "csv_mesh.h"
 
+using namespace std;
 using namespace Utilities;
-
+using namespace MISCMATHS;
 
 string title="label2surf \n\t Transform a group of labels into a surface";
 string examples="label2surf -s <surface> -o <outputsurface> -l <labels>";
@@ -55,7 +60,7 @@ void read_fnames(vector<string>& fnames,const string& filename){
 void read_label(vector<int>& IDs,const string& labelfile){
   IDs.clear();
   ifstream fs(labelfile.c_str());
-  if (!fs) { 
+  if (!fs) {
     cerr << "Could not open label file " << labelfile << endl;
     exit(1);
   }
@@ -89,7 +94,7 @@ void read_label(vector<int>& IDs,const string& labelfile){
 
 int main(int argc,char *argv[]){
   OptionParser options(title,examples);
- 
+
   options.add(verbose);
   options.add(help);
   options.add(isurf);
@@ -101,19 +106,19 @@ int main(int argc,char *argv[]){
     options.usage();
     return 1;
   }
-  
+
   ////////
   if(verbose.value())
     cout<<"read input surface"<<endl;
-  
+
   CsvMesh m;
   m.load(isurf.value());
   m.reset_pvalues();
   m.reset_tvalues();
-  
+
   if(verbose.value())
     cout<<"read input labels"<<endl;
-  
+
   vector<string> labs;
   vector<int>    IDs;
   read_fnames(labs,labels.value());

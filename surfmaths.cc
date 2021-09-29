@@ -8,12 +8,15 @@
 
 /* CCOPYRIGHT */
 
+#include <string>
+#include <iostream>
 
 #include "newmesh/newmesh.h"
 #include "miscmaths/miscmaths.h"
 #include "utils/fsl_isfinite.h"
 #include "cprob/libprob.h"
 
+using namespace std;
 using namespace MISCMATHS;
 using namespace NEWMESH;
 

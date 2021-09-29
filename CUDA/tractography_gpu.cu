@@ -6,11 +6,20 @@
 
 /*  CCOPYRIGHT  */
 
+#include <vector>
+#include <string>
+#include <iostream>
+
 #include <CUDA/tractography_gpu.cuh>
 #include <CUDA/tractographyKernels.cu>
 #include <CUDA/memManager_gpu.cu>
 #include <CUDA/tractography_CallKernels.cu>
 #include <sys/time.h>
+
+#include "newimage/newimage.h"
+
+using namespace std;
+using namespace NEWIMAGE;
 
 void tractography_gpu(
   tractographyData&	data_host,

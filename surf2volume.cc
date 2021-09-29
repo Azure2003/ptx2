@@ -2,6 +2,8 @@
 
 /*  CCOPYRIGHT  */
 
+#include <string>
+#include <iostream>
 
 #include "csv.h"
 #include "newimage/newimageio.h"
@@ -10,6 +12,7 @@
 #include "miscmaths/SpMat.h"
 #include "meshclass/meshclass.h"
 
+using namespace std;
 using namespace NEWIMAGE;
 using namespace MISCMATHS;
 using namespace mesh;
@@ -44,7 +47,7 @@ int main(int argc, char** argv){
 //   for(int i=0;i<csv.get_mesh(0).nvertices();i++){
 //     pos=csv.get_vertex_as_vox(0,i);
 //     dir=csv.get_normal_as_vox(0,i);
-    
+
 //     odir((int)round((float)pos(1)),
 // 	 (int)round((float)pos(2)),
 // 	 (int)round((float)pos(3)),0)=dir(1);
@@ -54,7 +57,7 @@ int main(int argc, char** argv){
 //     odir((int)round((float)pos(1)),
 // 	 (int)round((float)pos(2)),
 // 	 (int)round((float)pos(3)),2)=dir(3);
-	 
+
 //   }
 //   odir.setDisplayMaximumMinimum(1,-1);
 //   save_volume4D(odir,string(argv[3])+"_normal");

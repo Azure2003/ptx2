@@ -6,8 +6,24 @@
 
 /*  CCOPYRIGHT  */
 
+#include <string>
+#include <vector>
+#include <iostream>
+
+#include "utils/log.h"
+#include "armawrap/newmat.h"
+#include "miscmaths/miscmaths.h"
+#include "newimage/newimage.h"
+
 #include "probtrackx.h"
 #include "CUDA/tractographyInput.h"
+
+using namespace std;
+using namespace Utilities;
+using namespace NEWMAT;
+using namespace NEWIMAGE;
+using namespace MISCMATHS;
+using namespace TRACT;
 
 void counter_save_total(int*& keeptotal, int numKeeptotals){
   // save total number of particles that made it through the streamlining
@@ -18,13 +34,13 @@ void counter_save_total(int*& keeptotal, int numKeeptotals){
   write_ascii_matrix(keeptotvec,logger.appendDir("waytotal"));
 }
 
-void counter_save_pathdist(volume<float>& m_prob,volume<float>& m_prob2){  
+void counter_save_pathdist(volume<float>& m_prob,volume<float>& m_prob2){
   Log& logger = LogSingleton::getInstance();
   probtrackxOptions& opts =probtrackxOptions::getInstance();
-  
+
   m_prob.setDisplayMaximumMinimum(m_prob.max(),m_prob.min());
   save_volume(m_prob,logger.appendDir(opts.outfile.value()));
-  
+
   if(opts.omeanpathlength.value()){
     if(!opts.pathdist.value()){
       for (int z=0; z<m_prob.zsize(); z++) {
@@ -54,13 +70,13 @@ void counter_save_pathdist(volume<float>& m_prob,volume<float>& m_prob2){
     m_prob.setDisplayMaximumMinimum(m_prob.max(),m_prob.min());
     save_volume(m_prob,logger.appendDir(opts.outfile.value())+"_lengths");
   }
-  
+
   /*if(opts.pathfile.set()){
     m_prob_alt.save_rois(logger.appendDir(opts.outfile.value())+"_alt");
     //m_prob_alt.save_as_volume(logger.appendDir(opts.outfile.value())+"_alt_vol");
     //m_beenhere_alt.save_rois(logger.appendDir(opts.outfile.value())+"_beenhere");
     }*/
-  
+
 }
 
 void counter_save(
@@ -82,20 +98,20 @@ void counter_save(
 	float*			m_s2targets,
 	float*			m_s2targetsb,
 	vector< vector<float> >& m_save_paths,
-	volume4D<float> 	*m_localdir)		
+	volume4D<float> 	*m_localdir)
 {
   Log& logger = LogSingleton::getInstance();
   probtrackxOptions& opts =probtrackxOptions::getInstance();
   if(opts.simpleout.value()){
     counter_save_pathdist(*m_prob,*m_prob2);
   }
-  
+
   if(opts.network.value()){
     string file(logger.appendDir("fdt_network_matrix"));
     ostream* out=0;
-    out= new ofstream(file.c_str());    	
+    out= new ofstream(file.c_str());
     //(*out) << setprecision(8);
-    
+
     if(!opts.omeanpathlength.value()){
       int pos=0;
       for(int i=0;i<nRowsNet;i++){
@@ -143,26 +159,26 @@ void counter_save(
 	}
 	(*out2) << endl;
       }
-      delete out2;  
+      delete out2;
     }
-    
+
   }
   if(opts.matrix1out.value()||opts.matrix2out.value()){
     ostream* out;
     if(opts.matrix2out.value()){
       string file(logger.appendDir("fdt_matrix2.dot"));
       out=0;
-      out= new ofstream(file.c_str());  		
+      out= new ofstream(file.c_str());
     }else{
       string file(logger.appendDir("fdt_matrix1.dot"));
       out=0;
-      out= new ofstream(file.c_str());  
-    }      		  	
+      out= new ofstream(file.c_str());
+    }
     //(*out) << setprecision(8);
     if(!opts.omeanpathlength.value()){
       for(int i=0;i<nRowsMat1;i++){
 	for(int j=0;j<nColsMat1;j++){
-	  if(ConMat1[i][j]) 
+	  if(ConMat1[i][j])
 	    (*out) << i+1 <<"  "<< j+1 <<"  "<< ConMat1[i][j] << endl;
 	}
       }
@@ -172,7 +188,7 @@ void counter_save(
       if(!opts.pathdist.value()){
 	for(int i=0;i<nRowsMat1;i++){
 	  for(int j=0;j<nColsMat1;j++){
-	    if(ConMat1b[i][j]) 
+	    if(ConMat1b[i][j])
 	      (*out) << i+1 <<"  "<< j+1 <<"  "<< ConMat1b[i][j] << endl;
 	  }
 	}
@@ -181,13 +197,13 @@ void counter_save(
       }else{
 	for(int i=0;i<nRowsMat1;i++){
 	  for(int j=0;j<nColsMat1;j++){
-	    if(ConMat1[i][j]) 
+	    if(ConMat1[i][j])
 	      (*out) << i+1 <<"  "<< j+1 <<"  "<< ConMat1[i][j] << endl;
 	  }
 	}
 	(*out) << nRowsMat1 <<"  "<< nColsMat1 <<"  " << 0 << endl;
 	delete out;
-	
+
       }
     }
     if(opts.omeanpathlength.value()){
@@ -195,15 +211,15 @@ void counter_save(
       if(opts.matrix2out.value()){
 	string file2(logger.appendDir("fdt_matrix2_lengths.dot"));
 	out2=0;
-	out2= new ofstream(file2.c_str());  		
+	out2= new ofstream(file2.c_str());
       }else{
 	string file2(logger.appendDir("fdt_matrix1_lengths.dot"));
 	out2=0;
-	out2= new ofstream(file2.c_str());  
-      }      	
+	out2= new ofstream(file2.c_str());
+      }
       for(int i=0;i<nRowsMat1;i++){
 	for(int j=0;j<nColsMat1;j++){
-	  if(ConMat1b[i][j]) 
+	  if(ConMat1b[i][j])
 	    (*out2) << i+1 <<"  "<< j+1 <<"  "<< (ConMat1[i][j]/ConMat1b[i][j]) << endl;
 	}
       }
@@ -211,16 +227,16 @@ void counter_save(
       delete out2;
     }
   }
-  
+
   if(opts.matrix3out.value()){
     string file(logger.appendDir("fdt_matrix3.dot"));
     ostream* out=0;
-    out= new ofstream(file.c_str());    	
+    out= new ofstream(file.c_str());
     //(*out) << setprecision(8);
     if(!opts.omeanpathlength.value()){
       for(int i=0;i<nRowsMat3;i++){
 	for(int j=0;j<nColsMat3;j++){
-	  if(ConMat3[i][j]) 
+	  if(ConMat3[i][j])
 	    (*out) << i+1 <<"  "<< j+1 <<"  "<< ConMat3[i][j] << endl;
 	}
       }
@@ -230,7 +246,7 @@ void counter_save(
       if(!opts.pathdist.value()){
 	for(int i=0;i<nRowsMat3;i++){
 	  for(int j=0;j<nColsMat3;j++){
-	    if(ConMat3b[i][j]) 
+	    if(ConMat3b[i][j])
 	      (*out) << i+1 <<"  "<< j+1 <<"  "<< ConMat3b[i][j] << endl;
 	  }
 	}
@@ -239,7 +255,7 @@ void counter_save(
       }else{
 	for(int i=0;i<nRowsMat3;i++){
 	  for(int j=0;j<nColsMat3;j++){
-	    if(ConMat3[i][j]) 
+	    if(ConMat3[i][j])
 	      (*out) << i+1 <<"  "<< j+1 <<"  "<< ConMat3[i][j] << endl;
 	  }
 	}
@@ -250,10 +266,10 @@ void counter_save(
     if(opts.omeanpathlength.value()){
       string file2(logger.appendDir("fdt_matrix3_lengths.dot"));
       ostream* out2=0;
-      out2= new ofstream(file2.c_str());    	
+      out2= new ofstream(file2.c_str());
       for(int i=0;i<nRowsMat3;i++){
 	for(int j=0;j<nColsMat3;j++){
-	  if(ConMat3b[i][j]) 
+	  if(ConMat3b[i][j])
 	    (*out2) << i+1 <<"  "<< j+1 <<"  "<< (ConMat3[i][j]/ConMat3b[i][j]) << endl;
 	}
       }
@@ -261,7 +277,7 @@ void counter_save(
       delete out2;
     }
   }
-  
+
   ///////////////////////////////////
   ////// save seeds to targets //////
   ///////////////////////////////////
@@ -271,7 +287,7 @@ void counter_save(
     if (fsl_imageexists(opts.seedfile.value())){
       volume<float> tmp;
       read_volume(tmp,opts.seedfile.value());
-      
+
       for(int targ=0;targ<ntargets;targ++){
 	volume<float> tmp2;
 	volume<float> tmp3;
@@ -320,7 +336,7 @@ void counter_save(
       CSV seeds;//(refvol);
       seeds.set_convention(opts.meshspace.value());
       seeds.load_rois(opts.seedfile.value());
-      
+
       for(int targ=0;targ<ntargets;targ++){
 	//save ascii
 	string fname;
@@ -330,7 +346,7 @@ void counter_save(
 	stringstream flot2;
 	int nvertices=data_host.seeds_mesh_info[0];
 	int nfaces=data_host.seeds_mesh_info[1];
-	
+
 	if(f.is_open()){
 	  size_t pos2=0;
 	  for(int i=0;i<nvertices;i++){
@@ -363,10 +379,10 @@ void counter_save(
 		     <<data_host.seeds_vertices[pos2+2]<<" "<<0<<endl;
 	      }
 	    }
-	    pos2=pos2+3;					
+	    pos2=pos2+3;
 	  }
 	  pos2=0;
-	  for(int i=0;i<nfaces;i++){	
+	  for(int i=0;i<nfaces;i++){
 	    flot<<data_host.seeds_faces[pos2]<<" "
 		<<data_host.seeds_faces[pos2+1]<<" "
 		<<data_host.seeds_faces[pos2+2]<<" "<<0<<endl;
@@ -446,7 +462,7 @@ void counter_save(
 	    if(ntargets>1)
 	      fname=logger.appendDir("seeds_"+num2str(R)+"_to_"+data_host.targetnames[targ]);
 	    else
-	      fname=logger.appendDir("seeds_to_"+data_host.targetnames[targ]);		
+	      fname=logger.appendDir("seeds_to_"+data_host.targetnames[targ]);
 	    tmp2.setDisplayMaximumMinimum(tmp2.max(),tmp2.min());
 	    save_volume(tmp2,fname);
 	    if(opts.omeanpathlength.value()){
@@ -503,7 +519,7 @@ void counter_save(
 			 <<data_host.seeds_vertices[pos2+2]<<" "<<0<<endl;
 		  }
 		}
-		pos2=pos2+3;					
+		pos2=pos2+3;
 	      }
 	      pos2=0;
 	      for(int i=0;i<id_mesh;i++) pos2+= (data_host.seeds_mesh_info[i*2+1]*3);
@@ -516,7 +532,7 @@ void counter_save(
 		       <<data_host.seeds_faces[pos2+1]<<" "
 		       <<data_host.seeds_faces[pos2+2]<<" "<<0<<endl;
 		}
-		pos2=pos2+3;	
+		pos2=pos2+3;
 	      }
 	      f<<"#!ascii file"<<endl;
 	      f<<nvertices<<" "<<nfaces<<endl<<flot.str();
@@ -553,7 +569,7 @@ void counter_save(
       for(size_t i=0;i<data_host.nseeds;i++){
 	pos=i;
 	for(int j=0;j<ntargets;j++){
-	  if(!opts.omeanpathlength.value()){			
+	  if(!opts.omeanpathlength.value()){
 	    (*out) << m_s2targets[pos] <<"  ";
 	  }else{
 	    if(opts.pathdist.value()){
@@ -575,7 +591,7 @@ void counter_save(
       if(opts.omeanpathlength.value()) delete out2;
     }
   }
-  
+
   //////// SAVE PATHS /////////////
   if(opts.save_paths.value()){
     string filename=logger.appendDir("saved_paths.txt");
@@ -593,7 +609,7 @@ void counter_save(
     }else{
       cerr<<"Counter::save_paths:error opening file for writing: "<<filename<<endl;
     }
-  } 
+  }
   // PATH DIRECTION //
   if(opts.opathdir.value()){
     volume4D<float> tmplocdir(m_prob->xsize(),m_prob->ysize(),m_prob->zsize(),3);

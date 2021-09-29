@@ -7,6 +7,8 @@
 #include <time.h>
 
 using namespace std;
+using namespace NEWMAT;
+using namespace MISCMATHS;
 using namespace NEWIMAGE;
 using namespace TRACT;
 using namespace Utilities;
@@ -16,9 +18,9 @@ using namespace mesh;
 
 
 void seedmask()
-{ 
+{
   probtrackxOptions& opts =probtrackxOptions::getInstance();
-  
+
   // we need a reference volume for CSV
   // (in case seeds are a list of surfaces)
   volume<short int> refvol;
@@ -26,7 +28,7 @@ void seedmask()
     read_volume(refvol,opts.seedref.value());
   else
     read_volume(refvol,opts.maskfile.value());
-  
+
 
   cout<<"load seeds"<<endl;
   CSV seeds(refvol);
@@ -44,7 +46,7 @@ void seedmask()
   Seedmanager  seedmanager (counter);
 
   srand(opts.rseed.value()); // need to reinitialise random seed because of GIFTI!!
-  
+
   int keeptotal=0;
 
   time_t _time;
@@ -75,7 +77,7 @@ void seedmask()
 	  }
 	}
       }
-      
+
     }
 
   }
@@ -93,7 +95,7 @@ void seedmask()
 	cout << "   set all values to 0 or non-zero to use entire surface" << endl;
       }
       for(int p=0;p<seeds.get_mesh(i).nvertices();p++){
-	// check if active point	
+	// check if active point
 	if(seeds.get_mesh(i).get_pvalue(p)==0.0)
 	  continue;
 
@@ -103,7 +105,7 @@ void seedmask()
 	for(int t=0;t<vertex.ntriangles();t++){
 	  triangles.push_back(vertex.get_trID(t));
 	}
-	
+
 	counter.updateSeedLocation(seeds.get_surfloc(i,p),i,triangles);
 	pos=seeds.get_vertex_as_vox(i,p);
 
@@ -119,7 +121,7 @@ void seedmask()
 	}
 	keeptotal += seedmanager.run(pos(1),pos(2),pos(3),
 				       false,-1,opts.sampvox.value());
-	
+
 
       }
     }
@@ -129,10 +131,8 @@ void seedmask()
 
   // save results
   cout << "save results" << endl;
-  counter.save_total(keeptotal);  
+  counter.save_total(keeptotal);
   counter.save();
 
   cout<<"finished"<<endl;
 }
-
-

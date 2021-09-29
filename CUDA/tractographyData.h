@@ -10,10 +10,11 @@
 #ifndef Data_gpu_ptx_H
 #define Data_gpu_ptx_H
 
+#include <string>
+#include <vector>
+
 #include <probtrackxOptions.h>
 
-//using namespace NEWIMAGE;
-using namespace TRACT;
 
 struct MaskData{
 	float 		distthresh;
@@ -22,7 +23,7 @@ struct MaskData{
 	float* 		volume;
 	float* 		vertices;
 	int* 		faces;
-	int* 		VoxFaces;	
+	int* 		VoxFaces;
 	int* 		VoxFacesIndex;
 	int* 		IndexRoi;	// index with the id of the roi: first the id of all the volumes, then the id of all the surfaces
 	int 		NVols;		// 0 or 1 for mixed data
@@ -53,26 +54,26 @@ class tractographyData{
 
 	float*		Sdims;		// seed space dimensions
 	float*		Ddims;		// diffusion space dimensions
-	int*		Ssizes;		// seed space volume sizes 
+	int*		Ssizes;		// seed space volume sizes
 	int*		Dsizes;		// diffusion space volume sizes
 	int*		M2sizes;	// Matrix2 volume sizes
 
 	float*		seeds;
-	vector<float>	seeds_vertices;	// for --os2t, store vertices if any mesh in the seeds list
-	vector<int>	seeds_faces;	// for --os2t, store faces if any mesh in the seeds list
-	vector<int>	seeds_act;	// for --os2t, sknow if activated or not
-	vector<int>	seeds_mesh_info;// for --os2t and mesh. List with 2 numbers per mesh: number of vertices, number of faces 
+	std::vector<float>	seeds_vertices;	// for --os2t, store vertices if any mesh in the seeds list
+	std::vector<int>	seeds_faces;	// for --os2t, store faces if any mesh in the seeds list
+	std::vector<int>	seeds_act;	// for --os2t, sknow if activated or not
+	std::vector<int>	seeds_mesh_info;// for --os2t and mesh. List with 2 numbers per mesh: number of vertices, number of faces
 	int*		seeds_ROI;	// for network mode. Array with as many elms as seeds. Seed->ROI (sorted as text input file)
-	
+
 	float*		mask;
 	float*		thsamples;
 	float*		phsamples;
-	float*		fsamples;	
+	float*		fsamples;
 	int*		lut_vol2mat;
-	// what is the position of a voxel? 
+	// what is the position of a voxel?
 	// lu_vol2mat tell us the index of the voxel inside an array,
 	// array does not include data outside the mask, so cannot get voxel with coordinates xyz
-	// diffusion space ... using mask 
+	// diffusion space ... using mask
 
 	float*		vox2mm;		// for surfaces
 
@@ -103,7 +104,7 @@ class tractographyData{
 	bool		wayorder;		// reject streamlines that do not hit waypoints in given order. Only valid if waycond=AND. 0=NO ORDER, 1=ORDER, default 0
 	MaskData	waypoint;
 	MaskData	targets;		// --os2t
-	vector<string>	targetnames;// need it to write the files
+	std::vector<std::string>	targetnames;// need it to write the files
 	MaskData	targetsREF;		// --os2t reference
 	// when there are a lot of ROIs,
 	// the tool is not very efficient as it needs to check all of them every step.

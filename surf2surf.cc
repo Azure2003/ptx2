@@ -2,18 +2,21 @@
 
 /*  CCOPYRIGHT  */
 #include "utils/options.h"
+#include "armawrap/newmat.h"
+#include "miscmaths/miscmaths.h"
+#include "newimage/newimageall.h"
 #include "warpfns/warpfns.h"
 #include "warpfns/fnirt_file_reader.h"
-#include "newimage/newimageall.h"
 #include "csv.h"
 #include "stdlib.h"
 #include "string.h"
-#include "miscmaths/miscmaths.h"
 
-using namespace Utilities;
+
 using namespace std;
-using namespace NEWIMAGE;
+using namespace Utilities;
+using namespace NEWMAT;
 using namespace MISCMATHS;
+using namespace NEWIMAGE;
 
 
 string title="surf2surf - conversions between surface formats and/or conventions";
@@ -54,8 +57,8 @@ Option<string> vals(string("--values"),"",
 int main(int argc,char *argv[]){
 
   OptionParser options(title,examples);
-  
-  
+
+
   options.add(surfin);
   options.add(surfout);
   options.add(convin);
@@ -66,13 +69,13 @@ int main(int argc,char *argv[]){
   options.add(otype);
   options.add(vals);
 
-  
+
   options.parse_command_line(argc,argv);
   if(!options.check_compulsory_arguments(true)){
     options.usage();
     return(1);
   }
-  
+
   // check options
   if(convin.value()!=convout.value()){
     if(volin.value()==""){
@@ -99,7 +102,7 @@ int main(int argc,char *argv[]){
   csv.load_rois(surfin.value());
   //csv.get_mesh(0).print("grot.txt");
 
-  if(convin.value()!=convout.value()){  
+  if(convin.value()!=convout.value()){
     bool isWarp=false;
     volume4D<float> vox2vox_warp;
     Matrix          vox2vox;
@@ -117,7 +120,7 @@ int main(int argc,char *argv[]){
     }
     else
       vox2vox=IdentityMatrix(4);
-    
+
     csv.set_refvol(refvolout);
     if(convout.set()){
       if(!isWarp)
@@ -175,6 +178,3 @@ int main(int argc,char *argv[]){
 
   return 0;
 }
-
-
-

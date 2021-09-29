@@ -9,16 +9,15 @@
 #if !defined(probtrackxOptions_h)
 #define probtrackxOptions_h
 
-#include <string> 
+#include <string>
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
 #include "utils/options.h"
 #include "utils/log.h"
-#include "commonopts.h"
 
-using namespace Utilities;
+#include "commonopts.h"
 
 namespace TRACT {
 
@@ -26,331 +25,331 @@ class probtrackxOptions {
  public:
   static probtrackxOptions& getInstance();
   ~probtrackxOptions() { delete gopt; }
-  
-  Option<int>              verbose;
-  Option<bool>             help;
 
-  Option<string>           basename;
-  Option<string>           outfile;
-  Option<string>           logdir; 
-  Option<bool>             forcedir;
+  Utilities::Option<int>              verbose;
+  Utilities::Option<bool>             help;
 
-  Option<string>           maskfile;
-  Option<string>           seedfile; 
+  Utilities::Option<std::string>      basename;
+  Utilities::Option<std::string>      outfile;
+  Utilities::Option<std::string>      logdir;
+  Utilities::Option<bool>             forcedir;
 
-  Option<bool>             simple;
-  Option<bool>             network;
-  Option<bool>             simpleout;
-  Option<bool>             pathdist;
-  Option<bool>             omeanpathlength; 
-  Option<string>           pathfile;
-  Option<bool>             s2tout;
-  Option<bool>             s2tastext;
-  Option<bool>		   closestvertex;
+  Utilities::Option<std::string>      maskfile;
+  Utilities::Option<std::string>      seedfile;
 
-  Option<string>           targetfile;
-  Option<string>           waypoints;
-  Option<string>           waycond;
-  Option<bool>             wayorder;
-  Option<bool>             onewaycondition;  // apply waypoint conditions to half the tract
-  Option<string>           rubbishfile;
-  Option<string>           stopfile;
-  Option<string>           wtstopfiles;
+  Utilities::Option<bool>             simple;
+  Utilities::Option<bool>             network;
+  Utilities::Option<bool>             simpleout;
+  Utilities::Option<bool>             pathdist;
+  Utilities::Option<bool>             omeanpathlength;
+  Utilities::Option<std::string>      pathfile;
+  Utilities::Option<bool>             s2tout;
+  Utilities::Option<bool>             s2tastext;
+  Utilities::Option<bool>		      closestvertex;
 
-  Option<bool>             matrix1out;
-  Option<float>            distthresh1;  
-  Option<bool>             matrix2out;
-  Option<string>           lrmask;
-  Option<bool>             matrix3out;
-  Option<string>           mask3;
-  Option<string>           lrmask3;
-  Option<float>            distthresh3;  
-  Option<bool>             matrix4out;
-  Option<string>           mask4;
-  Option<string>           dtimask;
+  Utilities::Option<std::string>      targetfile;
+  Utilities::Option<std::string>      waypoints;
+  Utilities::Option<std::string>      waycond;
+  Utilities::Option<bool>             wayorder;
+  Utilities::Option<bool>             onewaycondition;  // apply waypoint conditions to half the tract
+  Utilities::Option<std::string>      rubbishfile;
+  Utilities::Option<std::string>      stopfile;
+  Utilities::Option<std::string>      wtstopfiles;
 
-  Option<string>           seeds_to_dti;
-  Option<string>           dti_to_seeds;
-  Option<string>           seedref;
-  Option<string>           meshspace;
+  Utilities::Option<bool>             matrix1out;
+  Utilities::Option<float>            distthresh1;
+  Utilities::Option<bool>             matrix2out;
+  Utilities::Option<std::string>      lrmask;
+  Utilities::Option<bool>             matrix3out;
+  Utilities::Option<std::string>      mask3;
+  Utilities::Option<std::string>      lrmask3;
+  Utilities::Option<float>            distthresh3;
+  Utilities::Option<bool>             matrix4out;
+  Utilities::Option<std::string>      mask4;
+  Utilities::Option<std::string>      dtimask;
 
-  Option<int>              nparticles;
-  Option<int>              nsteps;
-  Option<float>            steplength;
+  Utilities::Option<std::string>      seeds_to_dti;
+  Utilities::Option<std::string>      dti_to_seeds;
+  Utilities::Option<std::string>      seedref;
+  Utilities::Option<std::string>      meshspace;
+
+  Utilities::Option<int>              nparticles;
+  Utilities::Option<int>              nsteps;
+  Utilities::Option<float>            steplength;
 
 
-  Option<float>            distthresh;  
-  Option<float>            c_thr;
-  Option<float>            fibthresh;
-  Option<bool>             loopcheck;
-  Option<bool>             usef;
-  Option<bool>             modeuler;
+  Utilities::Option<float>            distthresh;
+  Utilities::Option<float>            c_thr;
+  Utilities::Option<float>            fibthresh;
+  Utilities::Option<bool>             loopcheck;
+  Utilities::Option<bool>             usef;
+  Utilities::Option<bool>             modeuler;
 
-  Option<float>            sampvox;
-  Option<int>              randfib;
-  Option<int>              fibst;
-  Option<int>              rseed;
+  Utilities::Option<float>            sampvox;
+  Utilities::Option<int>              randfib;
+  Utilities::Option<int>              fibst;
+  Utilities::Option<int>              rseed;
 
   // hidden options
-  FmribOption<string>      prefdirfile;      // inside this mask, pick orientation closest to whatever is in here
-  FmribOption<string>      skipmask;         // inside this mask, ignore data (inertia)
-  FmribOption<bool>        forcefirststep;   // always take at least one step 
-  FmribOption<bool>        osampfib;         // not yet
-  FmribOption<bool>        onewayonly;       // in surface mode, track towards the brain (assumes surface normal points towards the brain)
-  FmribOption<bool>        opathdir;         // like fdt_paths but with average local tract orientation
-  FmribOption<bool>        save_paths;       // save paths to ascii file
-  FmribOption<string>      locfibchoice;     // inside this mask, define local rules for fibre picking
-  FmribOption<string>      loccurvthresh;    // inside this mask, define local curvature threshold
-  FmribOption<bool>        targetpaths;      // output separate fdt_paths for each target
-  FmribOption<bool>        noprobinterpol;   // turn off probabilistic interpolation
+  Utilities::FmribOption<std::string> prefdirfile;      // inside this mask, pick orientation closest to whatever is in here
+  Utilities::FmribOption<std::string> skipmask;         // inside this mask, ignore data (inertia)
+  Utilities::FmribOption<bool>        forcefirststep;   // always take at least one step
+  Utilities::FmribOption<bool>        osampfib;         // not yet
+  Utilities::FmribOption<bool>        onewayonly;       // in surface mode, track towards the brain (assumes surface normal points towards the brain)
+  Utilities::FmribOption<bool>        opathdir;         // like fdt_paths but with average local tract orientation
+  Utilities::FmribOption<bool>        save_paths;       // save paths to ascii file
+  Utilities::FmribOption<std::string> locfibchoice;     // inside this mask, define local rules for fibre picking
+  Utilities::FmribOption<std::string> loccurvthresh;    // inside this mask, define local curvature threshold
+  Utilities::FmribOption<bool>        targetpaths;      // output separate fdt_paths for each target
+  Utilities::FmribOption<bool>        noprobinterpol;   // turn off probabilistic interpolation
 
-  void parse_command_line(int argc, char** argv,Log& logger);
+  void parse_command_line(int argc, char** argv,Utilities::Log& logger);
   void modecheck();
   void modehelp();
   void matrixmodehelp();
   void status();
  private:
-  probtrackxOptions();  
+  probtrackxOptions();
   const probtrackxOptions& operator=(probtrackxOptions&);
   probtrackxOptions(probtrackxOptions&);
 
-  OptionParser options; 
-      
+  Utilities::OptionParser options;
+
   static probtrackxOptions* gopt;
-  
+
 };
 
 
  inline probtrackxOptions& probtrackxOptions::getInstance(){
    if(gopt == NULL)
      gopt = new probtrackxOptions();
-   
+
    return *gopt;
  }
 
  inline probtrackxOptions::probtrackxOptions() :
-   verbose(string("-V,--verbose"), 0, 
-	   string("Verbose level, [0-2]"), 
-	   false, requires_argument),
-   help(string("-h,--help"), false,
-	string("Display this message\n\n"),
-	false, no_argument),
+   verbose(std::string("-V,--verbose"), 0,
+	   std::string("Verbose level, [0-2]"),
+	   false, Utilities::requires_argument),
+   help(std::string("-h,--help"), false,
+	std::string("Display this message\n\n"),
+	false, Utilities::no_argument),
 
-   basename(string("-s,--samples"),"",
-	    string("Basename for samples files - e.g. 'merged'"),
-	    true, requires_argument),  
+   basename(std::string("-s,--samples"),"",
+	    std::string("Basename for samples files - e.g. 'merged'"),
+	    true, Utilities::requires_argument),
 
-   outfile(string("-o,--out"), string("fdt_paths"),
-	   string("Output file (default='fdt_paths')"),
-	   false, requires_argument),
-   logdir(string("--dir"), string("logdir"),
-	  string("\tDirectory to put the final volumes in - code makes this directory - default='logdir'"),
-	  false, requires_argument),
-   forcedir(string("--forcedir"), false,
-	    string("Use the actual directory name given - i.e. don't add + to make a new directory\n\n"),
-	    false, no_argument),
+   outfile(std::string("-o,--out"), std::string("fdt_paths"),
+	   std::string("Output file (default='fdt_paths')"),
+	   false, Utilities::requires_argument),
+   logdir(std::string("--dir"), std::string("logdir"),
+	  std::string("\tDirectory to put the final volumes in - code makes this directory - default='logdir'"),
+	  false, Utilities::requires_argument),
+   forcedir(std::string("--forcedir"), false,
+	    std::string("Use the actual directory name given - i.e. don't add + to make a new directory\n\n"),
+	    false, Utilities::no_argument),
 
-   maskfile(string("-m,--mask"),"",
-	    string("Bet binary mask file in diffusion space"),
-	    true, requires_argument),   
-   seedfile(string("-x,--seed"),"",
-	    string("Seed volume or list (ascii text file) of volumes and/or surfaces"),
-	    true, requires_argument),
+   maskfile(std::string("-m,--mask"),"",
+	    std::string("Bet binary mask file in diffusion space"),
+	    true, Utilities::requires_argument),
+   seedfile(std::string("-x,--seed"),"",
+	    std::string("Seed volume or list (ascii text file) of volumes and/or surfaces"),
+	    true, Utilities::requires_argument),
 
-   simple(string("--simple"),false,
-	string("Track from a list of voxels (seed must be a ASCII list of coordinates)"),
-	false, no_argument),
-   network(string("--network"), false,
-	   string("Activate network mode - only keep paths going through at least one of the other seed masks"),
-	   false, no_argument),
-   simpleout(string("--opd"), false,
-	     string("\tOutput path distribution"),
-	     false, no_argument), 
-   pathdist(string("--pd"), false,
-	    string("\tCorrect path distribution for the length of the pathways"),
-	    false, no_argument), 
-   omeanpathlength(string("--ompl"), false,
-	    string("\tOutput mean path length from seed"),
-	    false, no_argument),
-   pathfile(string("--fopd"), "",
-	    string("\tOther mask for binning tract distribution"),
-	    false, requires_argument), 
-   s2tout(string("--os2t"), false,
-	  string("\tOutput seeds to targets"),
-	  false, no_argument),
-   s2tastext(string("--s2tastext"), false,
-	     string("Output seed-to-target counts as a text file (default in simple mode)\n\n"),
-	     false, no_argument), 
-   closestvertex(string("--closestvertex"), false,
-	     string("Count only nearest neighbour vertex when the face of a surface is crossed."),
-	     false, no_argument), 
+   simple(std::string("--simple"),false,
+	std::string("Track from a list of voxels (seed must be a ASCII list of coordinates)"),
+	false, Utilities::no_argument),
+   network(std::string("--network"), false,
+	   std::string("Activate network mode - only keep paths going through at least one of the other seed masks"),
+	   false, Utilities::no_argument),
+   simpleout(std::string("--opd"), false,
+	     std::string("\tOutput path distribution"),
+	     false, Utilities::no_argument),
+   pathdist(std::string("--pd"), false,
+	    std::string("\tCorrect path distribution for the length of the pathways"),
+	    false, Utilities::no_argument),
+   omeanpathlength(std::string("--ompl"), false,
+	    std::string("\tOutput mean path length from seed"),
+	    false, Utilities::no_argument),
+   pathfile(std::string("--fopd"), "",
+	    std::string("\tOther mask for binning tract distribution"),
+	    false, Utilities::requires_argument),
+   s2tout(std::string("--os2t"), false,
+	  std::string("\tOutput seeds to targets"),
+	  false, Utilities::no_argument),
+   s2tastext(std::string("--s2tastext"), false,
+	     std::string("Output seed-to-target counts as a text file (default in simple mode)\n\n"),
+	     false, Utilities::no_argument),
+   closestvertex(std::string("--closestvertex"), false,
+	     std::string("Count only nearest neighbour vertex when the face of a surface is crossed."),
+	     false, Utilities::no_argument),
 
-   targetfile(string("--targetmasks"),"",
-	      string("File containing a list of target masks - for seeds_to_targets classification"),
-	      false, requires_argument),
-   waypoints(string("--waypoints"), string(""),
-	     string("Waypoint mask or ascii list of waypoint masks - only keep paths going through ALL the masks"),
-	     false, requires_argument),
-   waycond(string("--waycond"),"AND",
-	   string("Waypoint condition. Either 'AND' (default) or 'OR'"),
-	   false, requires_argument),
-   wayorder(string("--wayorder"),false,
-	    string("Reject streamlines that do not hit waypoints in given order. Only valid if waycond=AND"),
-	    false,no_argument),
-   onewaycondition(string("--onewaycondition"),false,
-	    string("Apply waypoint conditions to each half tract separately"),
-	    false, no_argument),
-   rubbishfile(string("--avoid"), string(""),
-	       string("\tReject pathways passing through locations given by this mask"),
-	       false, requires_argument),
-   stopfile(string("--stop"), string(""),
-	       string("\tStop tracking at locations given by this mask file"),
-	       false, requires_argument),
-   wtstopfiles(string("--wtstop"), string(""),
-	       string("One mask or text file with mask names. Allow propagation within mask but terminate on exit. If multiple masks, non-overlapping volumes expected\n\n"),
-	       false, requires_argument),
+   targetfile(std::string("--targetmasks"),"",
+	      std::string("File containing a list of target masks - for seeds_to_targets classification"),
+	      false, Utilities::requires_argument),
+   waypoints(std::string("--waypoints"), std::string(""),
+	     std::string("Waypoint mask or ascii list of waypoint masks - only keep paths going through ALL the masks"),
+	     false, Utilities::requires_argument),
+   waycond(std::string("--waycond"),"AND",
+	   std::string("Waypoint condition. Either 'AND' (default) or 'OR'"),
+	   false, Utilities::requires_argument),
+   wayorder(std::string("--wayorder"),false,
+	    std::string("Reject streamlines that do not hit waypoints in given order. Only valid if waycond=AND"),
+	    false,Utilities::no_argument),
+   onewaycondition(std::string("--onewaycondition"),false,
+	    std::string("Apply waypoint conditions to each half tract separately"),
+	    false, Utilities::no_argument),
+   rubbishfile(std::string("--avoid"), std::string(""),
+	       std::string("\tReject pathways passing through locations given by this mask"),
+	       false, Utilities::requires_argument),
+   stopfile(std::string("--stop"), std::string(""),
+	       std::string("\tStop tracking at locations given by this mask file"),
+	       false, Utilities::requires_argument),
+   wtstopfiles(std::string("--wtstop"), std::string(""),
+	       std::string("One mask or text file with mask names. Allow propagation within mask but terminate on exit. If multiple masks, non-overlapping volumes expected\n\n"),
+	       false, Utilities::requires_argument),
 
-   matrix1out(string("--omatrix1"), false,
-	      string("Output matrix1 - SeedToSeed Connectivity"),
-	      false, no_argument), 
-   distthresh1(string("--distthresh1"), 0,
-	       string("Discards samples (in matrix1) shorter than this threshold (in mm - default=0)"),
-	       false, requires_argument),
-   matrix2out(string("--omatrix2"), false,
-	      string("Output matrix2 - SeedToLowResMask"),
-	      false, no_argument), 
-   lrmask(string("--target2"), string(""),
-	  string("Low resolution binary brain mask for storing connectivity distribution in matrix2 mode"),
-	  false, requires_argument),
-   matrix3out(string("--omatrix3"), false,
-	      string("Output matrix3 (NxN connectivity matrix)"),
-	      false, no_argument), 
-   mask3(string("--target3"), "",
-	 string("Mask used for NxN connectivity matrix (or Nxn if lrtarget3 is set)"),
-	 false, requires_argument), 
-   lrmask3(string("--lrtarget3"), "",
-	 string("Column-space mask used for Nxn connectivity matrix"),
-	 false, requires_argument), 
-   distthresh3(string("--distthresh3"), 0,
-	       string("Discards samples (in matrix3) shorter than this threshold (in mm - default=0)"),
-	       false, requires_argument),
-   matrix4out(string("--omatrix4"), false,
-	      string("Output matrix4 - DtiMaskToSeed (special Oxford Sparse Format)"),
-	      false, no_argument), 
-   mask4(string("--colmask4"), string(""),
-	 string("Mask for columns of matrix4 (default=seed mask)"),
-	 false, requires_argument),
-   dtimask(string("--target4"), string(""),
-	  string("Brain mask in DTI space\n\n"),
-	  false, requires_argument),
+   matrix1out(std::string("--omatrix1"), false,
+	      std::string("Output matrix1 - SeedToSeed Connectivity"),
+	      false, Utilities::no_argument),
+   distthresh1(std::string("--distthresh1"), 0,
+	       std::string("Discards samples (in matrix1) shorter than this threshold (in mm - default=0)"),
+	       false, Utilities::requires_argument),
+   matrix2out(std::string("--omatrix2"), false,
+	      std::string("Output matrix2 - SeedToLowResMask"),
+	      false, Utilities::no_argument),
+   lrmask(std::string("--target2"), std::string(""),
+	  std::string("Low resolution binary brain mask for storing connectivity distribution in matrix2 mode"),
+	  false, Utilities::requires_argument),
+   matrix3out(std::string("--omatrix3"), false,
+	      std::string("Output matrix3 (NxN connectivity matrix)"),
+	      false, Utilities::no_argument),
+   mask3(std::string("--target3"), "",
+	 std::string("Mask used for NxN connectivity matrix (or Nxn if lrtarget3 is set)"),
+	 false, Utilities::requires_argument),
+   lrmask3(std::string("--lrtarget3"), "",
+	 std::string("Column-space mask used for Nxn connectivity matrix"),
+	 false, Utilities::requires_argument),
+   distthresh3(std::string("--distthresh3"), 0,
+	       std::string("Discards samples (in matrix3) shorter than this threshold (in mm - default=0)"),
+	       false, Utilities::requires_argument),
+   matrix4out(std::string("--omatrix4"), false,
+	      std::string("Output matrix4 - DtiMaskToSeed (special Oxford Sparse Format)"),
+	      false, Utilities::no_argument),
+   mask4(std::string("--colmask4"), std::string(""),
+	 std::string("Mask for columns of matrix4 (default=seed mask)"),
+	 false, Utilities::requires_argument),
+   dtimask(std::string("--target4"), std::string(""),
+	  std::string("Brain mask in DTI space\n\n"),
+	  false, Utilities::requires_argument),
 
-   seeds_to_dti(string("--xfm"),"",
-		string("\tTransform taking seed space to DTI space (either FLIRT matrix or FNIRT warpfield) - default is identity"),
-		false, requires_argument),
-   dti_to_seeds(string("--invxfm"), string(""),
-		string("Transform taking DTI space to seed space (compulsory when using a warpfield for seeds_to_dti)"),
-		false, requires_argument),
-   seedref(string("--seedref"),"",
-	   string("Reference vol to define seed space in simple mode - diffusion space assumed if absent"),
-	   false, requires_argument),
-   meshspace(string("--meshspace"), string("caret"),
-	     string("Mesh reference space - either 'caret' (default) or 'freesurfer' or 'first' or 'vox' \n\n"),
-	     false, requires_argument),
+   seeds_to_dti(std::string("--xfm"),"",
+		std::string("\tTransform taking seed space to DTI space (either FLIRT matrix or FNIRT warpfield) - default is identity"),
+		false, Utilities::requires_argument),
+   dti_to_seeds(std::string("--invxfm"), std::string(""),
+		std::string("Transform taking DTI space to seed space (compulsory when using a warpfield for seeds_to_dti)"),
+		false, Utilities::requires_argument),
+   seedref(std::string("--seedref"),"",
+	   std::string("Reference vol to define seed space in simple mode - diffusion space assumed if absent"),
+	   false, Utilities::requires_argument),
+   meshspace(std::string("--meshspace"), std::string("caret"),
+	     std::string("Mesh reference space - either 'caret' (default) or 'freesurfer' or 'first' or 'vox' \n\n"),
+	     false, Utilities::requires_argument),
 
-   nparticles(string("-P,--nsamples"), 5000,
-	      string("Number of samples - default=5000"),
-	      false, requires_argument),
-   nsteps(string("-S,--nsteps"), 2000,
-	  string("Number of steps per sample - default=2000"),
-	  false, requires_argument),
-   steplength(string("--steplength"), 0.5, 
-	      string("Steplength in mm - default=0.5\n\n"), 
-	      false, requires_argument),
+   nparticles(std::string("-P,--nsamples"), 5000,
+	      std::string("Number of samples - default=5000"),
+	      false, Utilities::requires_argument),
+   nsteps(std::string("-S,--nsteps"), 2000,
+	  std::string("Number of steps per sample - default=2000"),
+	  false, Utilities::requires_argument),
+   steplength(std::string("--steplength"), 0.5,
+	      std::string("Steplength in mm - default=0.5\n\n"),
+	      false, Utilities::requires_argument),
 
-   distthresh(string("--distthresh"), 0,
-	      string("Discards samples shorter than this threshold (in mm - default=0)"),
-	      false, requires_argument),
-   c_thr(string("-c,--cthr"), 0.2, 
-	 string("Curvature threshold - default=0.2"), 
-	 false, requires_argument),
-   fibthresh(string("--fibthresh"), 0.01, 
-	     string("Volume fraction before subsidary fibre orientations are considered - default=0.01"), 
-	     false, requires_argument),
-   loopcheck(string("-l,--loopcheck"), false, 
-	     string("Perform loopchecks on paths - slower, but allows lower curvature threshold"), 
-	     false, no_argument),
-   usef(string("-f,--usef"), false, 
-	 string("Use anisotropy to constrain tracking"), 
-	 false, no_argument),
-   modeuler(string("--modeuler"), false, 
-	    string("Use modified euler streamlining\n\n"), 
-	    false, no_argument),
-
-
-   sampvox(string("--sampvox"), 0, 
-	   string("Sample random points within a sphere with radius x mm from the center of the seed voxels (e.g. --sampvox=0.5, 0.5 mm radius sphere). Default=0"), 
-	   false, requires_argument),
-   randfib(string("--randfib"), 0, 
-	   string("Default 0. Set to 1 to randomly sample initial fibres (with f > fibthresh). \n                        Set to 2 to sample in proportion fibres (with f>fibthresh) to f. \n                        Set to 3 to sample ALL populations at random (even if f<fibthresh)"), 
-	   false, requires_argument),
-   fibst(string("--fibst"),1, 
-	 string("\tForce a starting fibre for tracking - default=1, i.e. first fibre orientation. Only works if randfib==0"), 
-	 false, requires_argument),
-   rseed(string("--rseed"), 12345,
-	 string("\tRandom seed"),
-	 false, requires_argument), 
+   distthresh(std::string("--distthresh"), 0,
+	      std::string("Discards samples shorter than this threshold (in mm - default=0)"),
+	      false, Utilities::requires_argument),
+   c_thr(std::string("-c,--cthr"), 0.2,
+	 std::string("Curvature threshold - default=0.2"),
+	 false, Utilities::requires_argument),
+   fibthresh(std::string("--fibthresh"), 0.01,
+	     std::string("Volume fraction before subsidary fibre orientations are considered - default=0.01"),
+	     false, Utilities::requires_argument),
+   loopcheck(std::string("-l,--loopcheck"), false,
+	     std::string("Perform loopchecks on paths - slower, but allows lower curvature threshold"),
+	     false, Utilities::no_argument),
+   usef(std::string("-f,--usef"), false,
+	 std::string("Use anisotropy to constrain tracking"),
+	 false, Utilities::no_argument),
+   modeuler(std::string("--modeuler"), false,
+	    std::string("Use modified euler streamlining\n\n"),
+	    false, Utilities::no_argument),
 
 
-   prefdirfile(string("--prefdir"), string(""),
-	       string("Prefered orientation preset in a 4D mask"),
-	       false, requires_argument),
-   skipmask(string("--no_integrity"), string(""),
-	    string("No explanation needed"),
-	    false, requires_argument),
-   forcefirststep(string("--forcefirststep"),false,
-		  string("In case seed and (stop or exclusion) masks are the same"),
-		  false, no_argument),
-   osampfib(string("--osampfib"),false,
-	    string("Output sampled fibres"),
-	    false, no_argument),
-   onewayonly(string("--onewayonly"),false,
-	      string("Track in one direction only (towards the brain - only valid for surface seeds)"),
-	      false, no_argument),
-   opathdir(string("--opathdir"),false,
-	    string("Output average local tract orientation (tangent)"),
-	    false, no_argument),
-   save_paths(string("--savepaths"),false,
-	      string("Save path coordinates to ascii file"),
-	      false, no_argument),
-   locfibchoice(string("--locfibchoice"),string(""),
-	      string("Local rules for fibre choice - 0=closest direction(default), 1=equal prob (f>thr), 2=equal prob with angle threshold (=40 deg), 3=sample in proportion to f"),
-	      false, requires_argument),
-   loccurvthresh(string("--loccurvthresh"),string(""),
-	      string("Local curvature threshold"),
-	      false, requires_argument),
-   targetpaths(string("--otargetpaths"),false,
-	      string("Output separate fdt_paths for targets (assumes --os2t is on)"),
-	      false, no_argument),
-   noprobinterpol(string("--noprobinterpol"),false,
-	      string("Turn off probabilistic interpolation"),
-	      false, no_argument),
+   sampvox(std::string("--sampvox"), 0,
+	   std::string("Sample random points within a sphere with radius x mm from the center of the seed voxels (e.g. --sampvox=0.5, 0.5 mm radius sphere). Default=0"),
+	   false, Utilities::requires_argument),
+   randfib(std::string("--randfib"), 0,
+	   std::string("Default 0. Set to 1 to randomly sample initial fibres (with f > fibthresh). \n                        Set to 2 to sample in proportion fibres (with f>fibthresh) to f. \n                        Set to 3 to sample ALL populations at random (even if f<fibthresh)"),
+	   false, Utilities::requires_argument),
+   fibst(std::string("--fibst"),1,
+	 std::string("\tForce a starting fibre for tracking - default=1, i.e. first fibre orientation. Only works if randfib==0"),
+	 false, Utilities::requires_argument),
+   rseed(std::string("--rseed"), 12345,
+	 std::string("\tRandom seed"),
+	 false, Utilities::requires_argument),
+
+
+   prefdirfile(std::string("--prefdir"), std::string(""),
+	       std::string("Prefered orientation preset in a 4D mask"),
+	       false, Utilities::requires_argument),
+   skipmask(std::string("--no_integrity"), std::string(""),
+	    std::string("No explanation needed"),
+	    false, Utilities::requires_argument),
+   forcefirststep(std::string("--forcefirststep"),false,
+		  std::string("In case seed and (stop or exclusion) masks are the same"),
+		  false, Utilities::no_argument),
+   osampfib(std::string("--osampfib"),false,
+	    std::string("Output sampled fibres"),
+	    false, Utilities::no_argument),
+   onewayonly(std::string("--onewayonly"),false,
+	      std::string("Track in one direction only (towards the brain - only valid for surface seeds)"),
+	      false, Utilities::no_argument),
+   opathdir(std::string("--opathdir"),false,
+	    std::string("Output average local tract orientation (tangent)"),
+	    false, Utilities::no_argument),
+   save_paths(std::string("--savepaths"),false,
+	      std::string("Save path coordinates to ascii file"),
+	      false, Utilities::no_argument),
+   locfibchoice(std::string("--locfibchoice"),std::string(""),
+	      std::string("Local rules for fibre choice - 0=closest direction(default), 1=equal prob (f>thr), 2=equal prob with angle threshold (=40 deg), 3=sample in proportion to f"),
+	      false, Utilities::requires_argument),
+   loccurvthresh(std::string("--loccurvthresh"),std::string(""),
+	      std::string("Local curvature threshold"),
+	      false, Utilities::requires_argument),
+   targetpaths(std::string("--otargetpaths"),false,
+	      std::string("Output separate fdt_paths for targets (assumes --os2t is on)"),
+	      false, Utilities::no_argument),
+   noprobinterpol(std::string("--noprobinterpol"),false,
+	      std::string("Turn off probabilistic interpolation"),
+	      false, Utilities::no_argument),
 
    options("probtrackx","probtrackx2 -s <basename> -m <maskname> -x <seedfile> -o <output> --targetmasks=<textfile>\n probtrackx2 --help\n")
    {
-     
-    
+
+
      try {
        options.add(verbose);
        options.add(help);
 
        options.add(basename);
        options.add(outfile);
-       options.add(logdir); 
-       options.add(forcedir); 
- 
+       options.add(logdir);
+       options.add(forcedir);
+
        options.add(maskfile);
-       options.add(seedfile); 
- 
+       options.add(seedfile);
+
        options.add(simple);
        options.add(network);
        options.add(simpleout);
@@ -417,22 +416,15 @@ class probtrackxOptions {
        options.add(noprobinterpol);
 
      }
-     catch(X_OptionError& e) {
+     catch(Utilities::X_OptionError& e) {
        options.usage();
-       cerr << endl << e.what() << endl;
-     } 
+       std::cerr << std::endl << e.what() << std::endl;
+     }
      catch(std::exception &e) {
-       cerr << e.what() << endl;
-     }    
-     
+       std::cerr << e.what() << std::endl;
+     }
+
    }
 }
 
 #endif
-
-
-
-
-
-
-

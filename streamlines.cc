@@ -2,9 +2,24 @@
 
 /*  CCOPYRIGHT */
 
-#include "streamlines.h"
+#include <vector>
+#include <fstream>
+
+#define EXPOSE_TREACHEROUS
+
+#include "utils/log.h"
+#include "armawrap/newmat.h"
+#include "newimage/newimageall.h"
+#include "miscmaths/miscmaths.h"
 #include "warpfns/fnirt_file_reader.h"
 #include "warpfns/warpfns.h"
+#include "streamlines.h"
+
+using namespace std;
+using namespace Utilities;
+using namespace NEWMAT;
+using namespace MISCMATHS;
+using namespace NEWIMAGE;
 
 
 //*****************************************
@@ -387,7 +402,7 @@ namespace TRACT{
     rA << (sin(A(1))*cos(A(2))) << (sin(A(1))*sin(A(2))) << (cos(A(1)));
     rB << (sin(B(1))*cos(B(2))) << (sin(B(1))*sin(B(2))) << (cos(B(1)));
 
-    if(sum(SP(rA,rB)).AsScalar()>0)
+    if(MISCMATHS::sum(SP(rA,rB)).AsScalar()>0)
       cart2sph((rA+rB)/2,th,ph);
     else
       cart2sph((rA-rB)/2,th,ph);

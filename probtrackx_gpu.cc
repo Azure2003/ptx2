@@ -6,19 +6,28 @@
 
 /*  CCOPYRIGHT  */
 
+#include <vector>
+
+#include "newimage/newimage.h"
+#include "utils/log.h"
 #include "probtrackx.h"
 #include "saveResults_ptxGPU.h"
 #include "CUDA/tractographyInput.h"
 #include "CUDA/tractography_gpu.cuh"
-//#include "utils/tracer_plus.h"
+
+
+using namespace std;
+using namespace Utilities;
+using namespace NEWIMAGE;
+using namespace TRACT;
 
 void tractography(){
-  
+
   time_t _time;
   _time=time(NULL);
-  
-  probtrackxOptions& opts =probtrackxOptions::getInstance();	
-  
+
+  probtrackxOptions& opts =probtrackxOptions::getInstance();
+
   ///////////////////////
   /////// RESULTS ///////
   ///////////////////////
@@ -27,11 +36,11 @@ void tractography(){
   float**	   	ConNet;
   float**	   	ConNetb;
   int 			nRowsNet;
-  int			nColsNet;	
+  int			nColsNet;
   float**		ConMat1;
   float**	   	ConMat1b;
   int 			nRowsMat1;
-  int			nColsMat1;	
+  int			nColsMat1;
   float**	     	ConMat3;
   float**	  	ConMat3b;
   int 			nRowsMat3;
@@ -40,22 +49,22 @@ void tractography(){
   float*	 	m_s2targetsb;
   vector< vector<float> > m_save_paths;
   volume4D<float>*	m_localdir=new volume4D<float>[1];	// opathdir
-  
+
   //////////////////////////////
   /////// LOAD HOST DATA ///////
   //////////////////////////////
   tractographyData data_host;
   tractographyInput input;
-  
+
   input.load_tractographyData(data_host,m_prob,m_prob2,
 			      ConNet,ConNetb,nRowsNet,nColsNet,
 			      ConMat1,ConMat1b,nRowsMat1,nColsMat1,
 			      ConMat3,ConMat3b,nRowsMat3,nColsMat3,
 			      m_s2targets,m_s2targetsb,m_localdir);
   //printf("SIZE MATRIX %i %i\n",ConMat3.Nrows(),ConMat3.Ncols());
-  
+
   cout<<endl<<"Time Loading Data: "<<(time(NULL)-_time)<<" seconds"<<endl<<endl; _time=time(NULL);
-  
+
   int* keeptotal;
   int num_keeptotal=1;
   if(opts.network.value()){
@@ -69,15 +78,15 @@ void tractography(){
   tractography_gpu(data_host,m_prob,m_prob2,keeptotal,
   		   ConNet,ConNetb,ConMat1,ConMat1b,ConMat3,ConMat3b,m_s2targets,m_s2targetsb,m_save_paths,m_localdir);
   cout<<endl<<"Time Spent Tracking:: "<<(time(NULL)-_time)<<" seconds"<<endl<<endl;
-  
+
   /////////////////// FINISH ///////////////////
   //printf("keeptotal %i \n",keeptotal);
   // save results
   cout << "save results" << endl;
-  counter_save_total(keeptotal,num_keeptotal);  
+  counter_save_total(keeptotal,num_keeptotal);
   counter_save(data_host,m_prob,m_prob2,ConNet,ConNetb,nRowsNet,nColsNet,ConMat1,ConMat1b,nRowsMat1,nColsMat1,
 	       ConMat3,ConMat3b,nRowsMat3,nColsMat3,m_s2targets,m_s2targetsb,m_save_paths,m_localdir);
-  
+
   return;
 }
 
@@ -105,25 +114,25 @@ int main ( int argc, char **argv ){
     cerr<<"Error: option '--omatrix1' and '--omatrix3' cannot be run simultaneously in this version"<<endl;
     exit(1);
   }
-	
+
   if(opts.matrix4out.value()){
     cerr<<"Error: option '--omatrix4' is not available in this version"<<endl;
     exit(1);
   }
-	
+
   // NOT IMPLEMENTED - hidden
   if(opts.prefdirfile.value()!=""){
     cerr<<"Error: option '--prefdir' is not available in this version"<<endl;
     exit(1);
-  }    
+  }
   if(opts.skipmask.value()!=""){
     cerr<<"Error: option '--no_integrity' is not available in this version"<<endl;
     exit(1);
-  }  
+  }
   if(opts.osampfib.value()){
     cerr<<"Error: option '--osampfib' is not available in this version"<<endl;
     exit(1);
-  }    
+  }
   if(opts.onewayonly.value()){
     // Maybe useful when tracking from vertices, but need to calculate the normal (not common)
     cerr<<"Error: option '--onewayonly' is not available in this version"<<endl;
@@ -157,14 +166,14 @@ int main ( int argc, char **argv ){
     exit(1);
   }
   if(opts.matrix2out.value()){
-    try{ 
+    try{
       volume<float> vol;
       read_volume(vol,opts.lrmask.value());
     }catch(...){
       cerr<<endl<<"Error: target2 must be a single volume file"<<endl;
       exit(1);
     }
-		
+
   }
   if(opts.matrix3out.value() && opts.mask3.value()==""){
     cerr<<"Error: --target3 (or --target3 and --lrtarget3) must be specified when --omatrix3 is requested"<<endl;
@@ -192,9 +201,8 @@ int main ( int argc, char **argv ){
       tractography();
     }
   }
-  
-  cout<<endl<<"TOTAL TIME: "<<(time(NULL)-_time)<<" seconds"<<endl<<endl; 
+
+  cout<<endl<<"TOTAL TIME: "<<(time(NULL)-_time)<<" seconds"<<endl<<endl;
 
   return 0;
 }
-

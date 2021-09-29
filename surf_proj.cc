@@ -5,21 +5,25 @@
 #define EXPOSE_TREACHEROUS
 #endif
 
+#include <cstdlib>
+#include <string>
+#include <iostream>
+
 #include "utils/options.h"
-#include "newimage/newimageall.h"
-#include "csv.h"
-#include "stdlib.h"
-#include "string.h"
+#include "armawrap/newmat.h"
 #include "miscmaths/miscmaths.h"
 #include "warpfns/warpfns.h"
 #include "warpfns/fnirt_file_reader.h"
+#include "newimage/newimageall.h"
 
+#include "csv.h"
 
-
-using namespace Utilities;
 using namespace std;
-using namespace NEWIMAGE;
+using namespace Utilities;
+using namespace NEWMAT;
 using namespace MISCMATHS;
+using namespace NEWIMAGE;
+
 
 
 string title="";
@@ -86,7 +90,7 @@ float calc_median(vector<float> vec){
   {
       median = (vec[size / 2 - 1] + vec[size / 2]) / 2;
   }
-  else 
+  else
   {
       median = vec[size / 2];
   }
@@ -109,14 +113,14 @@ void outvals(const vector<float>& vals){
 int main(int argc,char *argv[]){
 
   OptionParser options(title,examples);
-  
+
   options.add(datafile);
   options.add(surf);
   options.add(surfvol);
   options.add(xfm);
   options.add(meshspace);
   options.add(out);
-  options.add(dist);  
+  options.add(dist);
   options.add(dir);
   options.add(operation);
   options.add(surfout);
@@ -127,7 +131,7 @@ int main(int argc,char *argv[]){
     options.usage();
     return(1);
   }
-  
+
   cout<<"read data"<<endl;
   volume4D<float> data;
   read_volume4D(data,datafile.value());
@@ -180,7 +184,7 @@ int main(int argc,char *argv[]){
   int ix,iy,iz;
   int nsteps=10;
   for(int i=0;i<csv.get_mesh(0).nvertices();i++){
-    
+
     x=csv.get_vertex_as_vox(0,i);
     n=csv.get_normal_as_vox(0,i);
     if(dir.value()<0) n*=-1;
@@ -201,12 +205,12 @@ int main(int argc,char *argv[]){
 	data_vox = vox_to_vox(xx,surfdim,datadim,surf2data);
       else
 	data_vox = NewimageCoord2NewimageCoord(data2surf_warp,false,refvol,data[0],xx);
-	
+
       ix = (int)MISCMATHS::round((float)data_vox(1));
       iy = (int)MISCMATHS::round((float)data_vox(2));
       iz = (int)MISCMATHS::round((float)data_vox(3));
-            
-      for(int j=0;j<data.tsize();j++){	
+
+      for(int j=0;j<data.tsize();j++){
 	vals[j].push_back(data(ix,iy,iz,j));
       }
 
@@ -223,10 +227,10 @@ int main(int argc,char *argv[]){
 	ix = (int)MISCMATHS::round((float)data_vox(1));
 	iy = (int)MISCMATHS::round((float)data_vox(2));
 	iz = (int)MISCMATHS::round((float)data_vox(3));
-	
+
 	for(int j=0;j<data.tsize();j++){
 	  vals[j].push_back(data(ix,iy,iz,j));
-	}     	
+	}
 
       }
     }
@@ -245,11 +249,11 @@ int main(int argc,char *argv[]){
 	cerr<<"Unrecognised operation " << operation.value()<<endl;
 	exit(1);
       }
-	
+
     }
-    
+
   }
-    
+
 
   cout<<"save"<<endl;
 
@@ -266,6 +270,3 @@ int main(int argc,char *argv[]){
 
   return 0;
 }
-
-
-

@@ -6,6 +6,8 @@
 #include "ptx_simple.h"
 
 using namespace std;
+using namespace NEWMAT;
+using namespace MISCMATHS;
 using namespace NEWIMAGE;
 using namespace TRACT;
 using namespace Utilities;
@@ -15,13 +17,13 @@ using namespace mesh;
 
 void track(){
   probtrackxOptions& opts =probtrackxOptions::getInstance();
-  
+
   ////////////////////////////
   Log& logger = LogSingleton::getInstance();
   if(opts.verbose.value()>1){
     logger.makeDir("particles","particle0",true,false);
   }
-  
+
   volume<short int> seedref;
   if(opts.seedref.value()!=""){
     read_volume(seedref,opts.seedref.value());
@@ -42,7 +44,7 @@ void track(){
   Seedmanager   seedmanager(counter);
 
   srand(opts.rseed.value()); // need to reinitialise random seed because of GIFTI!!
-  
+
   // convert coordinates from nifti (external) to newimage (internal)
   //   conventions - Note: for radiological files this should do nothing
   Matrix newSeeds(Seeds.Nrows(),3);
@@ -66,13 +68,13 @@ void track(){
     float zst=newSeeds(SN,3);
     keeptot += seedmanager.run(xst,yst,zst,false,-1,opts.sampvox.value());
     string add="_"+num2str(Seeds(SN,1))+"_"+num2str(Seeds(SN,2))+"_"+num2str(Seeds(SN,3));
-    
+
     if(opts.simpleout.value()||opts.omeanpathlength.value())
       counter.save_pathdist(add);
 
     counter.reset_prob();
   } //Close Seed number Loop
-  
+
   cout<<endl<<"time spent tracking: "<<(time(NULL)-_time)<<" seconds"<<endl<<endl;
 
 

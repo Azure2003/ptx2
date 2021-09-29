@@ -13,7 +13,7 @@
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 //                                                              //
-//           NB - Everything in this Class is in voxels!!       // 
+//           NB - Everything in this Class is in voxels!!       //
 //                                                              //
 //////////////////////////////////////////////////////////////////
 #include <iostream>
@@ -21,12 +21,10 @@
 #include <cmath>
 #include <vector>
 
-using namespace std;
-
 namespace PARTICLE{
 
   class Particle
-    { 
+    {
       float m_x;
       float m_y;
       float m_z;
@@ -56,14 +54,14 @@ namespace PARTICLE{
 	       const float& ydimin,
 	       const float& zdimin,
 	       const bool& hasjumpedin=false,
-	       const bool& simdiffin=false) : 
-	m_x(xin), m_y(yin), m_z(zin), m_rx(rxin),m_ry(ryin),m_rz(rzin),m_rx_init(rxin), 
+	       const bool& simdiffin=false) :
+	m_x(xin), m_y(yin), m_z(zin), m_rx(rxin),m_ry(ryin),m_rz(rzin),m_rx_init(rxin),
 	m_ry_init(ryin),m_rz_init(rzin),m_steplength(steplengthin),
 	m_xdim(xdimin),m_ydim(ydimin),m_zdim(zdimin),
 	m_has_jumped(hasjumpedin),m_simdiff(false){}
       Particle(){}
       ~Particle(){}
-      
+
       //initialise
       void initialise(const float& xin=0,const float& yin=0,
 		      const float& zin=0,const float& rxin=0,
@@ -74,11 +72,11 @@ namespace PARTICLE{
 		 const float& zdimin=2,
 		 const bool& hasjumpedin=false,
 		 const bool& simdiffin=false){
-       
+
 	m_x=xin;
 	m_y=yin;
 	m_z=zin;
-	m_rx=rxin; 
+	m_rx=rxin;
 	m_ry=ryin;
 	m_rz=rzin;
         m_rx_init=rxin;
@@ -92,24 +90,24 @@ namespace PARTICLE{
 	m_simdiff=simdiffin;
 
       }
-      
-      
+
+
       //return values
       const float& x() const { return m_x; }
       float x() { return m_x; }
-      
+
       const float& y() const { return m_y; }
       float y() { return m_y; }
-  
+
       const float& z() const { return m_z; }
       float z() { return m_z; }
-  
+
       const float& rx() const { return m_rx; }
       float rx() { return m_rx; }
-  
+
       const float& ry() const { return m_ry; }
       float ry() { return m_ry; }
-  
+
       const float& rz() const { return m_rz; }
       float rz() { return m_rz; }
 
@@ -121,10 +119,10 @@ namespace PARTICLE{
 
       const float& testz() const { return m_testz; }
       float testz() { return m_testz; }
-      
+
       const float& steplength() const { return m_steplength; }
       float steplength() { return m_steplength; }
-      
+
       //change values
       void change_x (float new_x) { m_x=new_x; }
       void change_y (float new_y) { m_y=new_y; }
@@ -133,8 +131,8 @@ namespace PARTICLE{
 	 m_x=new_x;
 	 m_y=new_y;
 	 m_z=new_z;
-      } 
-      void change_steplength (float new_sl) { m_steplength = new_sl; } 
+      }
+      void change_steplength (float new_sl) { m_steplength = new_sl; }
       void reset(){
 	m_x=0;m_y=0;m_z=0;m_rx=0;m_ry=0;m_rz=0;m_has_jumped=false;
       }
@@ -165,14 +163,14 @@ namespace PARTICLE{
 	m_y += sign*m_steplength/m_ydim*ry_new;
 	m_z += sign*m_steplength/m_zdim*rz_new;
 	m_rx=sign*rx_new; m_ry=sign*ry_new;m_rz=sign*rz_new;
-	
+
 	if(init){
 	  m_rx_init=m_rx;
 	  m_ry_init=m_ry;
 	  m_rz_init=m_rz;
 	}
       }
-     
+
 
       void testjump(const float& theta,const float& phi,bool forcedir=false){
 	float tmpsin=sin(theta);
@@ -200,30 +198,30 @@ namespace PARTICLE{
 	m_testx = m_x+sign*m_steplength/m_xdim*rx_new;
 	m_testy = m_y+sign*m_steplength/m_ydim*ry_new;
 	m_testz = m_z+sign*m_steplength/m_zdim*rz_new;
-	
+
 	if(init){
 	  m_rx_init=m_rx;
 	  m_ry_init=m_ry;
 	  m_rz_init=m_rz;
 	}
-	
+
       }
-      
-      
+
+
       void restart_reverse(){
 	if(m_has_jumped){
 	  m_rx=-m_rx_init;
 	  m_ry=-m_ry_init;
 	  m_rz=-m_rz_init;
 	}
-	
+
       }
 
       void set_dir(const float& rx,const float& ry,const float& rz){
 	m_rx=rx;m_ry=ry;m_rz=rz;m_has_jumped=true;
       }
-      
-      
+
+
       bool check_dir(const float& theta,const float& phi, const float& thr,bool forcedir=false){
 	if(m_has_jumped){
 	  float tmpsin=sin(theta);
@@ -247,31 +245,20 @@ namespace PARTICLE{
       }
 
 
-      friend ostream& operator<<(ostream& ostr,const Particle& p);
-  
+      friend std::ostream& operator<<(std::ostream& ostr,const Particle& p);
+
 
     };
 
   //overload <<
-  inline ostream& operator<<(ostream& ostr,const Particle& p){
-    ostr<<p.m_x<<" "<<p.m_y<<" "<<p.m_z<<endl;
+  inline std::ostream& operator<<(std::ostream& ostr,const Particle& p){
+    ostr<<p.m_x<<" "<<p.m_y<<" "<<p.m_z<<std::endl;
     return ostr;
   }
 
-  
+
 
 
 }
 
 #endif
-
-
-
-
-
-
-
-
-
-
-

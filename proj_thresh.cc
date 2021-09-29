@@ -4,10 +4,16 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <string>
+
+#include "miscmaths/miscmaths.h"
 #include "newimage/newimageall.h"
 #include "csv_mesh.h"
-#include <vector>
+
+
 using namespace std;
+using namespace MISCMATHS;
 using namespace NEWIMAGE;
 
 void proj_thresh_volumes(const vector<string>& innames,const float& thresh){
@@ -31,7 +37,7 @@ void proj_thresh_volumes(const vector<string>& innames,const float& thresh){
   for(unsigned int i=0;i<tmpvec.size();i++){
     total+=tmpvec[i];
   }
-  
+
   total_thresh=binarise(total,thresh);
   total.setDisplayMaximumMinimum(total.max(),total.min());
   save_volume(total,"total");
@@ -70,7 +76,7 @@ void proj_thresh_surfaces(const vector<string>& innames,const float& thresh){
     }
   }
   tot.save("total",meshFileType(innames[0]));
-  for(unsigned int i=0;i<innames.size();i++){    
+  for(unsigned int i=0;i<innames.size();i++){
     string outname =innames[i];
     make_basename(outname);
     string thrname="_thr_"+num2str(thresh);
@@ -117,15 +123,5 @@ int main ( int argc, char **argv ){
     proj_thresh_volumes(innames,thresh);
   }
 
-  
+
 }
-
-
-
-
-
-
-
-
-
-

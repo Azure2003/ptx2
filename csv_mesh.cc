@@ -1,8 +1,17 @@
 /*    Copyright (C) 2012 University of Oxford  */
 
 /*  CCOPYRIGHT  */
+
+#include <string>
+#include <fstream>
+
+#include "utils/tracer_plus.h"
+#include "armawrap/newmat.h"
 #include "csv_mesh.h"
 
+using namespace std;
+using namespace Utilities;
+using namespace NEWMAT;
 using namespace fslsurface_name;
 using namespace mesh;
 
@@ -61,14 +70,14 @@ void CsvMesh::load(const string& filename){
     cerr<<"CsvMesh::load:error reading file: "<<filename<<"  ... Unknown format"<<endl;
     exit(1);
   }
-  
+
 }
 
 void CsvMesh::load_gifti(const string& filename) {
 
   fslSurface<float,unsigned int> surf;
-  read_surface(surf,filename);        
-  
+  read_surface(surf,filename);
+
   _points.clear();
   _pvalues.clear();
   unsigned int count=0;
@@ -76,18 +85,18 @@ void CsvMesh::load_gifti(const string& filename) {
     CsvMpoint m(i->x, i->y, i->z, count);
     _points.push_back(m);
     _pvalues.push_back(0);
-  }            
+  }
   count=0;
   _triangles.clear();
   for ( vector<unsigned int>::const_iterator i = surf.const_facebegin(); i != surf.const_faceend(); i+=3,++count){
-    CsvMpoint m1 = get_point(*i);    
+    CsvMpoint m1 = get_point(*i);
     CsvMpoint m2 = get_point(*(i+1));
     CsvMpoint m3 = get_point(*(i+2));
-    
+
     CsvTriangle t(m1,m2,m3,count);
-    //_triangles.push_back(t);    
+    //_triangles.push_back(t);
     push_triangle(t);
-  }        
+  }
 
   reset_pvalues();
   count = 0;
@@ -103,7 +112,7 @@ void CsvMesh::load_vtk(const string& filename) {
   clear();
   ifstream f(filename.c_str());
   if (f.is_open())
-    {	
+    {
       //reading the header
       string header;
       getline(f, header);
@@ -115,7 +124,7 @@ void CsvMesh::load_vtk(const string& filename) {
       getline(f,header);
       getline(f,header);
       int NVertices, NFaces;
-      f>>header>>NVertices>>header;	  
+      f>>header>>NVertices>>header;
       //reading the points
       for (int i=0; i<NVertices; i++)
 	{
@@ -143,9 +152,9 @@ void CsvMesh::load_vtk(const string& filename) {
       for (int i=0; i<NVertices; i++)
 	{
 	  int val;
-	  f>>val;	      
+	  f>>val;
 	  set_pvalue(i,val);
-	}      	  
+	}
       f.close();
     }
   else {cout<<"CsvMesh::error opening file: "<<filename<<endl; exit(1);}
@@ -156,7 +165,7 @@ void CsvMesh::load_ascii(const string& filename) { //load a freesurfer ascii mes
 
   ifstream f(filename.c_str());
   if (f.is_open())
-    {	
+    {
       //reading the header
       string header;
       getline(f, header);
@@ -177,7 +186,7 @@ void CsvMesh::load_ascii(const string& filename) { //load a freesurfer ascii mes
 	  CsvMpoint m(x, y, z, i);
 	  _points.push_back(m);
 	  _pvalues.push_back(val);
-	}      
+	}
       //reading the triangles
       for (int i=0; i<NFaces; i++)
 	{
@@ -191,7 +200,7 @@ void CsvMesh::load_ascii(const string& filename) { //load a freesurfer ascii mes
       f.close();
     }
   else {cout<<"CsvMesh::load_ascii:error opening file: "<<filename<<endl; exit(1);}
- 
+
 }
 
 void CsvMesh::save(const string& filename, const int& type)const{
@@ -213,7 +222,7 @@ void CsvMesh::save_gifti(const string& s,const int& type)const{
       filename=filename+".gii";
     }
   }
-  
+
   fslSurface<float,unsigned int> surf;
   string subtype = filename.substr(filename.size()-8, 4);
 
@@ -238,7 +247,7 @@ void CsvMesh::save_vtk(const string& s)const{
   if( last_3 != "vtk" ){
     filename=filename+".vtk";
   }
-  
+
   ofstream flot(filename.c_str());
   if(flot.is_open()){
     flot<<"# vtk DataFile Version 3.0"<<endl
@@ -247,8 +256,8 @@ void CsvMesh::save_vtk(const string& s)const{
 	<<"DATASET POLYDATA"<<endl
 	<<"POINTS ";
     flot<<_points.size()<<"  float"<<endl;
-    
-    for (unsigned int i =0; i<_points.size();i++)  { 
+
+    for (unsigned int i =0; i<_points.size();i++)  {
       //	flot.precision(6);
       flot<<_points[i].get_coord().X<<" "
 	  <<_points[i].get_coord().Y<<" "
@@ -258,7 +267,7 @@ void CsvMesh::save_vtk(const string& s)const{
 #endif
     }
     flot<<"POLYGONS "<<_triangles.size()<<" "<<_triangles.size()*4<<endl;
-    for ( unsigned int i=0; i<_triangles.size(); i++) 
+    for ( unsigned int i=0; i<_triangles.size(); i++)
       flot<<"3 "
 	  <<_triangles[i].get_vertice(0).get_no()<<" "
 	  <<_triangles[i].get_vertice(1).get_no()<<" "
@@ -278,7 +287,7 @@ void CsvMesh::save_ascii(const string& s)const{
   string filename(s);
   string last_3 = filename.substr(filename.size()-3, 3);
   if( last_3 != "asc" ){filename=filename+".asc";}
-  
+
   ofstream f(filename.c_str());
   stringstream flot;
   if (f.is_open())
@@ -288,7 +297,7 @@ void CsvMesh::save_ascii(const string& s)const{
 	flot<<_points[i].get_coord().X<<" "
  	    <<_points[i].get_coord().Y<<" "
  	    <<_points[i].get_coord().Z<<" "
- 	    <<_pvalues[i]<<endl; 	  
+ 	    <<_pvalues[i]<<endl;
 	ptcount++;
       }
       for(unsigned int i=0;i<_triangles.size();i++){
@@ -351,13 +360,13 @@ const Vec operator -(const Vec& p1, const CsvMpoint &p2){
 }
 // calculate on what side of a surface a step goes to
 // a step here always starts at a vertex (vertind)
-// the sign corresponds to the sign of the dot-product with the 
+// the sign corresponds to the sign of the dot-product with the
 // normal to te closest tile
 int CsvMesh::step_sign(const int& vertind,const Vec& step)const{
   int trid;
   float d=0,dmin=0;
   for(int i=0;i<_points[vertind].ntriangles();i++){
-    trid=_points[vertind].get_trID(i);    
+    trid=_points[vertind].get_trID(i);
     d=(_triangles[trid].normal()|step);
     if(i==0||(fabs(d)<fabs(dmin))){dmin=d;}
   }
@@ -399,7 +408,7 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
   }
   u=x3-x1;
   if( ((x0-x1)|u)>0 && ((x0-x3)|u)<0 ){
-    d=(((x0-x1)*(x0-x3)).norm()/(x3-x1).norm());  
+    d=(((x0-x1)*(x0-x3)).norm()/(x3-x1).norm());
     if(d<dmin)dmin=d;
   }
   u=x3-x2;
@@ -407,7 +416,7 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
    d=(((x0-x2)*(x0-x3)).norm()/(x3-x2).norm());
    if(d<dmin)dmin=d;
   }
-  
+
   d=(x0-x1).norm();if(d<dmin)dmin=d;
   d=(x0-x2).norm();if(d<dmin)dmin=d;
   d=(x0-x3).norm();if(d<dmin)dmin=d;
@@ -434,8 +443,8 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
     v = _vertice[2]-_vertice[0];
     n = u*v;             // cross product
     if (n.norm()==0) // triangle is degenerate
-      return false;                 
-    
+      return false;
+
 
     dir = p[1]-p[0];             // ray direction vector
     w0 = p[0]-_vertice[0];
@@ -446,19 +455,19 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
 	return true;
       else return false;             // ray disjoint from plane
     }
-    
+
     // get intersect point of ray with triangle plane
     r = a / b;
     if (r < 0.0)                   // ray goes away from triangle
       return false;                  // => no intersect
 
     // for a segment, also test if (r > 1.0) => no intersect
-    if (r > 1.0)    
+    if (r > 1.0)
       return false;
-    
+
     Pt I;
     I = p[0] + r * dir;           // intersect point of ray and plane
-    
+
     // is I inside T?
     double    uu, uv, vv, wu, wv, D;
     uu = (u|u);
@@ -468,7 +477,7 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
     wu = (w|u);
     wv = (w|v);
     D = uv * uv - uu * vv;
-    
+
     // get and test parametric coords
     double s, t;
     s = (uv * wv - vv * wu) / D;
@@ -477,11 +486,11 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
     t = (uv * wu - uu * wv) / D;
     if (t < 0.0 || (s + t) > 1.0)  // I is outside T
       return false;
-    
+
     return true;                      // I is in T
-    
+
   }
-  
+
 
   const bool CsvTriangle::intersect(const vector<Pt> & p,int& ind) const {
     Tracer_Plus tr("CsvTriangle::intersect");
@@ -500,8 +509,8 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
     v = _vertice[2]-_vertice[0];
     n = u*v;             // cross product
     if (n.norm()==0) // triangle is degenerate
-      return false;                 
-    
+      return false;
+
 
     dir = p[1]-p[0];             // ray direction vector
     w0 = p[0]-_vertice[0];
@@ -512,19 +521,19 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
 	{ind=0;return true;}
       else return false;             // ray disjoint from plane
     }
-    
+
     // get intersect point of ray with triangle plane
     r = a / b;
     if (r < 0.0)                   // ray goes away from triangle
       return false;                  // => no intersect
-    
+
     // for a segment, also test if (r > 1.0) => no intersect
-    if (r > 1.0)    
+    if (r > 1.0)
       return false;
 
     Pt I;
     I = p[0] + r * dir;           // intersect point of ray and plane
-    
+
     // is I inside T?
     double    uu, uv, vv, wu, wv, D;
     uu = (u|u);
@@ -534,7 +543,7 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
     wu = (w|u);
     wv = (w|v);
     D = uv * uv - uu * vv;
-    
+
     // get and test parametric coords
     double s, t;
     s = (uv * wv - vv * wu) / D;
@@ -554,10 +563,7 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
       if( y<0 ) ind=2;
       else ind=0;
     }
-    
+
     return true;                      // I is in T
-    
+
   }
-
-
-

@@ -4,11 +4,19 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <string>
+
+#include "armawrap/newmat.h"
+#include "miscmaths/miscmaths.h"
 #include "meshclass/meshclass.h"
 #include "newimage/newimageall.h"
-#include <vector>
+
 #include "csv_mesh.h"
+
 using namespace std;
+using namespace NEWMAT;
+using namespace MISCMATHS;
 using namespace NEWIMAGE;
 using namespace mesh;
 
@@ -34,13 +42,13 @@ void biggest_from_volumes(vector<string> innames,string oname){
 	ColumnVector index;
 	for(unsigned int i=0;i<innames.size();i++ ){
 	    bum(i+1)=tmpvec[i](x,y,z);
-	} 
-	bugger=max(bum,index);
+	}
+	bugger=MISCMATHS::max(bum,index);
 	if(bum.MaximumAbsoluteValue()!=0)
 	  output(x,y,z)=(int)index.AsScalar();
 	else
 	  output(x,y,z)=0;
-      }  
+      }
     }
   }
 
@@ -69,13 +77,13 @@ void biggest_from_surfaces(vector<string> innames,string oname){
       }
     }
   }
-      
+
   Matrix allvals(nv,nt);
   for(unsigned int i=0;i<meshes.size();i++){
     int cnt=1;
     for(int j = 0; j< meshes[i].nvertices();j++){
       allvals(cnt,i+1)=meshes[i].get_pvalue(j);
-      cnt++;	
+      cnt++;
     }
   }
 
@@ -92,8 +100,8 @@ void biggest_from_surfaces(vector<string> innames,string oname){
     m.set_pvalue(i-1,jmax);
   }
 
-  m.save(oname,meshFileType(innames[0]));		      
-  
+  m.save(oname,meshFileType(innames[0]));
+
 }
 bool test_input(const vector<string>& filenames){
   int nsurfs=0,nvols=0;
@@ -137,12 +145,3 @@ int main ( int argc, char **argv ){
   return(0);
 
 }
-
-
-
-
-
-
-
-
-

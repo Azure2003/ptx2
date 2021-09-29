@@ -10,7 +10,23 @@
 #define EXPOSE_TREACHEROUS
 #endif
 
+#include <string>
+#include <vector>
+
+#include "utils/log.h"
+#include "armawrap/newmat.h"
+#include "miscmaths/miscmaths.h"
+#include "newimage/newimage.h"
+
+#include "probtrackxOptions.h"
 #include <CUDA/tractographyInput.h>
+
+using namespace std;
+using namespace Utilities;
+using namespace NEWMAT;
+using namespace MISCMATHS;
+using namespace NEWIMAGE;
+using namespace TRACT;
 
 tractographyInput::tractographyInput(){}
 

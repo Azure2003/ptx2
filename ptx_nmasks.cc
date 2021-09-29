@@ -7,6 +7,8 @@
 #include <time.h>
 
 using namespace std;
+using namespace NEWMAT;
+using namespace MISCMATHS;
 using namespace NEWIMAGE;
 using namespace TRACT;
 using namespace Utilities;
@@ -16,9 +18,9 @@ using namespace mesh;
 
 
 void nmasks()
-{ 
+{
   probtrackxOptions& opts =probtrackxOptions::getInstance();
-  
+
   // we need a reference volume for CSV
   // (in case seeds are a list of surfaces)
   volume<short int> refvol;
@@ -27,7 +29,7 @@ void nmasks()
   else
     read_volume(refvol,opts.maskfile.value());
 
-  cout<<"load seeds"<<endl;  
+  cout<<"load seeds"<<endl;
   // check if seeds are a single volume
   if(fsl_imageexists(opts.seedfile.value())){
     cerr<<"Seed is a volume file - please turn off --network option or change the seed to a list of files"<<endl;
@@ -42,7 +44,7 @@ void nmasks()
     cerr<<"Seed is a single ROI - please turn off --network option or change the seed to a list of >1 files"<<endl;
     exit(1);
   }
- 
+
   if(seeds.nVols()==0 && opts.seedref.value()==""){
     cerr<<"Warning: need to set a reference volume when defining a surface-based seed"<<endl;
   }
@@ -52,7 +54,7 @@ void nmasks()
     if(seeds.get_roitype(i)==VOLUME){roiind[iv]=i;iv++;}
     else{roiind[seeds.nVols()+is]=i;is++;}
   }
-  
+
   Streamliner  stline      (seeds);
   Counter      counter     (stline);
   counter.initialise();
@@ -66,7 +68,7 @@ void nmasks()
 
   srand(opts.rseed.value()); // need to reinitialise random seed because of GIFTI!!
 
-  seedmanager.get_stline().init_network_mat(seeds.nRois());  
+  seedmanager.get_stline().init_network_mat(seeds.nRois());
 
   // seed from volume-like ROIs
   if(seeds.nVols()>0){
@@ -96,7 +98,7 @@ void nmasks()
 	  }
 	}
       }
-      
+
     }
 
   }
@@ -108,7 +110,7 @@ void nmasks()
     for(int i=0;i<seeds.nSurfs();i++){
       cout<<"surface "<<i<<endl;
       cnt++;
-      
+
       seedmanager.get_stline().load_netmasks(opts.seedfile.value(),roiind[cnt]);
       seedmanager.get_stline().set_seed_id(roiind[cnt]);
 
@@ -119,7 +121,7 @@ void nmasks()
       }
 
       for(int p=0;p<seeds.get_mesh(i).nvertices();p++){
-	// check if active point	
+	// check if active point
 	if(seeds.get_mesh(i).get_pvalue(p)==0.0)
 	  continue;
 
@@ -153,10 +155,8 @@ void nmasks()
 
   // save results
   cout << "save results" << endl;
-  counter.save_total(keeptotal);  
+  counter.save_total(keeptotal);
   counter.save();
 
   cout<<"finished"<<endl;
 }
-
-

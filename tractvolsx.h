@@ -13,42 +13,41 @@
 //         Class TractVolsx                             //
 /////////////////////////////////////////////////////////
 
-#include "newimage/newimageall.h"
 #include <iostream>
-#include "stdlib.h"
-#include "probtrackxOptions.h"
+#include <cstdlib>
+
+#include "utils/log.h"
 #include "utils/tracer_plus.h"
-using namespace std;
-using namespace NEWIMAGE;
-using namespace TRACT;
-using namespace Utilities;
+#include "armawrap/newmat.h"
+#include "newimage/newimageall.h"
+#include "probtrackxOptions.h"
 
 namespace TRACTVOLSX{
   class Tractvolsx
     {
     private:
-      probtrackxOptions& opts;
-      Log&               logger;
+      TRACT::probtrackxOptions&   opts;
+      Utilities::Log&             logger;
 
-      vector<Matrix> thsamples;
-      vector<Matrix> phsamples;
-      vector<Matrix> fsamples;
+      std::vector<NEWMAT::Matrix> thsamples;
+      std::vector<NEWMAT::Matrix> phsamples;
+      std::vector<NEWMAT::Matrix> fsamples;
 
-      volume<int>    lut_vol2mat;
+      NEWIMAGE::volume<int>       lut_vol2mat;
 
-      int            nfibres;
-      int            nsamples;
+      int                         nfibres;
+      int                         nsamples;
 
-      bool           init_sample;
-      int            fibst;
-      bool           usef;
+      bool                        init_sample;
+      int                         fibst;
+      bool                        usef;
 
-      volume<int>    locfibchoice;
+      NEWIMAGE::volume<int>       locfibchoice;
 
     public:
       //constructors::
-      Tractvolsx(const bool& usefin=false):opts(probtrackxOptions::getInstance()),
-					   logger(LogSingleton::getInstance()),
+      Tractvolsx(const bool& usefin=false):opts(TRACT::probtrackxOptions::getInstance()),
+					   logger(Utilities::LogSingleton::getInstance()),
 					   init_sample(true),fibst(0),usef(usefin){}
       ~Tractvolsx(){}
       int get_nfibres()const{return nfibres;}
@@ -59,16 +58,16 @@ namespace TRACTVOLSX{
 	fibst=fibst_in;
       }
 
-      int sample_fibre(int col,int samp,const ColumnVector& dir){
-	float th,ph;ColumnVector x(3);
-	vector<int> fibvec;
+      int sample_fibre(int col,int samp,const NEWMAT::ColumnVector& dir){
+	float th,ph;NEWMAT::ColumnVector x(3);
+	std::vector<int> fibvec;
 	for(int fib=0;fib<nfibres;fib++){
 	  float ft=fsamples[fib](samp,col);
 	  if(ft>opts.fibthresh.value()){
 	    th=thsamples[fib](samp,col);
 	    ph=phsamples[fib](samp,col);
-	    x<<sin(th)*cos(ph)<<sin(th)*sin(ph)<<cos(th);
-	    if( fabs( x(1)*dir(1)+x(2)*dir(2)+x(3)*dir(3) ) > 0.766 ){ //hard-coded 40 deg threshold
+	    x<<std::sin(th)*std::cos(ph)<<std::sin(th)*std::sin(ph)<<std::cos(th);
+	    if( std::fabs( x(1)*dir(1)+x(2)*dir(2)+x(3)*dir(3) ) > 0.766 ){ //hard-coded 40 deg threshold
 	      fibvec.push_back(fib);
 	    }
 	  }
@@ -78,7 +77,7 @@ namespace TRACTVOLSX{
 	}
 	else{
 	  double rtmp=(rand()/(double(RAND_MAX)+1)) * fibvec.size();
-	  return (fibvec[ (int)floor(rtmp) ]);
+	  return (fibvec[ (int)std::floor(rtmp) ]);
 	}
       }
 
@@ -88,11 +87,11 @@ namespace TRACTVOLSX{
 	}
 	if(mode==3){//sample all
 	  double rtmp=(rand()/(double(RAND_MAX)+1)) * nfibres;
-	  return int(floor(rtmp));
+	  return int(std::floor(rtmp));
 	}
 	else{
 	  if(mode==1){//sample all>thresh
-	    vector<int> fibvec;
+	    std::vector<int> fibvec;
 	    for(int fib=0;fib<nfibres;fib++){
 	      float ft=fsamples[fib](samp,col);
 	      if(ft>opts.fibthresh.value()){
@@ -104,7 +103,7 @@ namespace TRACTVOLSX{
 	    }
 	    else{
 	      double rtmp=(rand()/(double(RAND_MAX)+1)) * fibvec.size();
-	      return (fibvec[ (int)floor(rtmp) ]);
+	      return (fibvec[ (int)std::floor(rtmp) ]);
 	    }
 	  }
 	  else if(mode==2){//sample all>thresh in proportion of f (default)
@@ -132,15 +131,15 @@ namespace TRACTVOLSX{
 	    }
 	  }
 	  else{
-	    cerr<<"TRACTVOLSX::sample_fibre:Error - unknown mode = "<<mode<<endl;
+	    std::cerr<<"TRACTVOLSX::sample_fibre:Error - unknown mode = "<<mode<<std::endl;
 	    exit(1);
 	  }
 	}
 	return 0;
       }
 
-      int sample_ang_prob(const vector<float>& probs){
-	float sum=0;ColumnVector cumsum(probs.size());cumsum=0;
+      int sample_ang_prob(const std::vector<float>& probs){
+	float sum=0;NEWMAT::ColumnVector cumsum(probs.size());cumsum=0;
 	int ind=0;
 	for (unsigned int i=0;i<probs.size();i++){
 	  sum += probs[i];
@@ -158,22 +157,22 @@ namespace TRACTVOLSX{
       }
 
       //Initialise
-      void initialise(const string& basename,const volume<float>& mask){
-	volume4D<float> tmpvol;
-	Matrix          tmpmat;
+      void initialise(const std::string& basename,const NEWIMAGE::volume<float>& mask){
+	NEWIMAGE::volume4D<float> tmpvol;
+	NEWMAT::Matrix            tmpmat;
 
-	cout<<"Load bedpostx samples"<<endl;
-	if(fsl_imageexists(basename+"_thsamples")){
-	  cout<<"1"<<endl;
-	  read_volume4D(tmpvol,basename+"_thsamples");
+	std::cout<<"Load bedpostx samples"<<std::endl;
+	if(NEWIMAGE::fsl_imageexists(basename+"_thsamples")){
+	  std::cout<<"1"<<std::endl;
+      NEWIMAGE::read_volume4D(tmpvol,basename+"_thsamples");
 	  tmpmat=tmpvol.matrix(mask);
 	  thsamples.push_back(tmpmat);
-	  cout<<"2"<<endl;
-	  read_volume4D(tmpvol,basename+"_phsamples");
+	  std::cout<<"2"<<std::endl;
+	  NEWIMAGE::read_volume4D(tmpvol,basename+"_phsamples");
 	  tmpmat=tmpvol.matrix(mask);
 	  phsamples.push_back(tmpmat);
-	  cout<<"3"<<endl;
-	  read_volume4D(tmpvol,basename+"_fsamples");
+	  std::cout<<"3"<<std::endl;
+	  NEWIMAGE::read_volume4D(tmpvol,basename+"_fsamples");
 	  tmpmat=tmpvol.matrix(mask);
 	  fsamples.push_back(tmpmat);
 
@@ -185,17 +184,17 @@ namespace TRACTVOLSX{
 	  int fib=1;
 	  bool fib_existed=true;
 	  while(fib_existed){
-	    if(fsl_imageexists(basename+"_th"+num2str(fib)+"samples")){
-	      cout<<fib<<"_1"<<endl;
-	      read_volume4D(tmpvol,basename+"_th"+num2str(fib)+"samples");
+	    if(NEWIMAGE::fsl_imageexists(basename+"_th"+MISCMATHS::num2str(fib)+"samples")){
+	      std::cout<<fib<<"_1"<<std::endl;
+	      NEWIMAGE::read_volume4D(tmpvol,basename+"_th"+MISCMATHS::num2str(fib)+"samples");
 	      tmpmat=tmpvol.matrix(mask);
 	      thsamples.push_back(tmpmat);
-	      cout<<fib<<"_2"<<endl;
-	      read_volume4D(tmpvol,basename+"_ph"+num2str(fib)+"samples");
+	      std::cout<<fib<<"_2"<<std::endl;
+	      NEWIMAGE::read_volume4D(tmpvol,basename+"_ph"+MISCMATHS::num2str(fib)+"samples");
 	      tmpmat=tmpvol.matrix(mask);
 	      phsamples.push_back(tmpmat);
-	      cout<<fib<<"_3"<<endl;
-	      read_volume4D(tmpvol,basename+"_f"+num2str(fib)+"samples");
+	      std::cout<<fib<<"_3"<<std::endl;
+	      NEWIMAGE::read_volume4D(tmpvol,basename+"_f"+MISCMATHS::num2str(fib)+"samples");
 	      tmpmat=tmpvol.matrix(mask);
 	      fsamples.push_back(tmpmat);
 	      fib++;
@@ -205,28 +204,28 @@ namespace TRACTVOLSX{
 	    }
 	  }
 	  if(fib==1){
-	      cerr<<"Could not find samples to load. Exit without doing anything"<<endl;
+	      std::cerr<<"Could not find samples to load. Exit without doing anything"<<std::endl;
 	      exit(1);
 	  }
 	  lut_vol2mat = tmpvol.vol2matrixkey(mask);
 	  nsamples = thsamples[0].Nrows();
 	  nfibres  = (int)thsamples.size();
 	}
-	copybasicproperties(mask,lut_vol2mat);
+	NEWIMAGE::copybasicproperties(mask,lut_vol2mat);
 
-	cout<<endl;
-	cout<<"nfibres  : "<<nfibres<<endl;
-	cout<<"nsamples : "<<nsamples<<endl;
-	cout<<endl;
-	cout<<"Done loading samples."<<endl;
+	std::cout<<std::endl;
+	std::cout<<"nfibres  : "<<nfibres<<std::endl;
+	std::cout<<"nsamples : "<<nsamples<<std::endl;
+	std::cout<<std::endl;
+	std::cout<<"Done loading samples."<<std::endl;
 
 	if(opts.locfibchoice.value()!=""){
-	  read_volume(locfibchoice,opts.locfibchoice.value());
+	  NEWIMAGE::read_volume(locfibchoice,opts.locfibchoice.value());
 	}
       }
 
 
-      ColumnVector sample(const float& x,const float& y,const float&z,
+      NEWMAT::ColumnVector sample(const float& x,const float& y,const float&z,
 			  const float& r_x,const float& r_y,const float& r_z,
 			  float& prefer_x,float& prefer_y,float& prefer_z,
 			  const int& sample_fib,int& sampled_fib,
@@ -254,7 +253,7 @@ namespace TRACTVOLSX{
 	}
 	////////////////////////////////////
 
-	ColumnVector th_ph_f(3);
+	NEWMAT::ColumnVector th_ph_f(3);
 
 	int col = lut_vol2mat(newx,newy,newz);
 	if(col==0){//outside brain mask
@@ -283,7 +282,7 @@ namespace TRACTVOLSX{
 	      phi=phsamples[fibind](samp,col);
 	    }
 	    else{
-	      if((fabs(prefer_x)+fabs(prefer_y)+fabs(prefer_z))==0){
+	      if((std::fabs(prefer_x)+std::fabs(prefer_y)+std::fabs(prefer_z))==0){
 		prefer_x=r_x;prefer_y=r_y;prefer_z=r_z;
 	      }
 	      int locrule=0;
@@ -294,7 +293,7 @@ namespace TRACTVOLSX{
 		phi=phsamples[fibind](samp,col);
 	      }
 	      else if(locrule==2){ // like locrule=1 but with angle threshold
-		ColumnVector dir(3);dir<<r_x<<r_y<<r_z;
+		NEWMAT::ColumnVector dir(3);dir<<r_x<<r_y<<r_z;
 		fibind=sample_fibre(col,samp,dir);
 		theta=thsamples[fibind](samp,col);
 		phi=phsamples[fibind](samp,col);
@@ -309,7 +308,7 @@ namespace TRACTVOLSX{
 		  if(fsamples[fib](samp,col)>opts.fibthresh.value()){
 		    float phtmp=phsamples[fib](samp,col);
 		    float thtmp=thsamples[fib](samp,col);
-		    dottmp=fabs(sin(thtmp)*(cos(phtmp)*prefer_x + sin(phtmp)*prefer_y) + cos(thtmp)*prefer_z);
+		    dottmp=std::fabs(std::sin(thtmp)*(std::cos(phtmp)*prefer_x + std::sin(phtmp)*prefer_y) + std::cos(thtmp)*prefer_z);
 		    if(dottmp>dotmax){
 		      dotmax=dottmp;
 		      theta=thtmp;
@@ -348,8 +347,8 @@ namespace TRACTVOLSX{
 	return th_ph_f;
       }
 
-      ColumnVector dimensions() const{
-	ColumnVector dims(3);
+      NEWMAT::ColumnVector dimensions() const{
+	NEWMAT::ColumnVector dims(3);
 	dims << lut_vol2mat.xdim() <<lut_vol2mat.ydim() << lut_vol2mat.zdim();
 	return dims;
       }
