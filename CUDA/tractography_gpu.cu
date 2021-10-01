@@ -17,7 +17,7 @@ void tractography_gpu(
   tractographyData&	data_host,
 	volume<float>*&		mprob,
 	volume<float>*&		mprob2,		// omeanpathlength
-	int*&			  keeptotal,
+	int*&			keeptotal,
 	float**			ConNet,
 	float**			ConNetb,	// omeanpathlength
 	float**			ConMat1,
@@ -45,8 +45,8 @@ void tractography_gpu(
   cuMemGetInfo(&free,&total);
   cout << "Device memory available after copying data (MB): "<< free/1048576 << "\n";
   
-  int MAX_SLs;
-  int THREADS_STREAM; // MAX_Streamlines and NSTREAMS must be multiples
+  long MAX_SLs;
+  long THREADS_STREAM; // MAX_Streamlines and NSTREAMS must be multiples
   
   ///// DATA in HOST ////
   int** lengths_host=new int*;			// Pinned Memory

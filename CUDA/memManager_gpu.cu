@@ -29,24 +29,24 @@ void init_gpu(){
 
 void allocate_host_mem(
 		       // Input
-		       tractographyData&	data_host,
-		       int&			          MAX_SLs,	   // MAX streamlines -  calculated here
-		       int&			          THREADS_STREAM,	   // calculated here
+		       tractographyData&		data_host,
+		       long&			        MAX_SLs,	   // MAX streamlines -  calculated here
+		       long&			        THREADS_STREAM,	   // calculated here
 		       // Input - Output allocated mem
 		       int**			        lengths_host,
-		       float**			      paths_host,
-		       float**			      mprob_host,
-		       float**			      mprob2_host,
-		       float**			      mlocaldir_host,
-		       //float**			    targvalues_host,
-		       //float**			    targvaluesB_host,
-		       float3** 		      mat_crossed_host,
+		       float**			      	paths_host,
+		       float**			      	mprob_host,
+		       float**			      	mprob2_host,
+		       float**			      	mlocaldir_host,
+		       //float**			targvalues_host,
+		       //float**			targvaluesB_host,
+		       float3** 		      	mat_crossed_host,
 		       int** 			        mat_numcrossed_host,
-		       long long& 		    size_mat_cross,
+		       long long& 		    	size_mat_cross,
 		       int& 			        max_per_jump_mat,
-		       float3** 		      lrmat_crossed_host,
+		       float3** 		      	lrmat_crossed_host,
 		       int** 			        lrmat_numcrossed_host,
-		       long long& 		    size_lrmat_cross,
+		       long long& 		    	size_lrmat_cross,
 		       int& 			        max_per_jump_lrmat)
 {
   probtrackxOptions& opts=probtrackxOptions::getInstance();
@@ -182,9 +182,9 @@ void allocate_host_mem(
   }
 }
 
-void allocate_gpu_mem(tractographyData& 	data_host,
-			int&			  MAX_SLs,
-			int			    THREADS_STREAM,
+void allocate_gpu_mem(	tractographyData& 	data_host,
+			long&			MAX_SLs,
+			long			THREADS_STREAM,
 			// Output
 			float**			mprob_gpu,
 			float**			mprob2_gpu,
@@ -192,25 +192,25 @@ void allocate_gpu_mem(tractographyData& 	data_host,
 			int** 			beenhere_gpu,
 			float**			ConNet_gpu,
 			float**			ConNetb_gpu,
-			bool&			  net_flags_in_shared,
+			bool&			net_flags_in_shared,
 			float**			net_flags_gpu,
 			float**			net_values_gpu,
 			float**			s2targets_gpu,
 			float**			s2targetsb_gpu,
-      bool&			  targ_flags_in_shared,
+                        bool&			targ_flags_in_shared,
 			float**			targ_flags_gpu,
 			float**			paths_gpu,
 			int** 			lengths_gpu,
 			// Loopcheck
-			int**			  loopcheckkeys_gpu,
+			int**			loopcheckkeys_gpu,
 			float3**		loopcheckdirs_gpu,
 			// Matrix
 			float3** 		mat_crossed_gpu,
 			int** 			mat_numcrossed_gpu,
-			int			    size_mat_cross,
+			int			size_mat_cross,
 			float3** 		lrmat_crossed_gpu,
 			int** 			lrmat_numcrossed_gpu,
-			int			    size_lrmat_cross)
+			int			size_lrmat_cross)
 {
   probtrackxOptions& opts =probtrackxOptions::getInstance();
   int nsteps=opts.nsteps.value();
@@ -508,7 +508,7 @@ size_t calculate_mem_required(tractographyData&	data_host){
 
 
 void copy_to_gpu( 	tractographyData&	data_host,
-			              tractographyData*&	data_gpu)
+			tractographyData*&	data_gpu)
 {
   probtrackxOptions& opts =probtrackxOptions::getInstance();
 
