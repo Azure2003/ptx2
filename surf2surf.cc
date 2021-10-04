@@ -1,6 +1,11 @@
 /*    Copyright (C) 2012 University of Oxford  */
 
 /*  CCOPYRIGHT  */
+
+#ifndef EXPOSE_TREACHEROUS
+#define EXPOSE_TREACHEROUS
+#endif
+
 #include "utils/options.h"
 #include "armawrap/newmat.h"
 #include "miscmaths/miscmaths.h"
