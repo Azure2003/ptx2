@@ -12,6 +12,10 @@
 # The common build files from the fsl/base project provide a number of
 # other options for compiling CUDA projects - refer to that project
 # for more details.
+
+# Note that using gpu=1 only compiles/installs the probtrackx2_gpuX.Y
+# binary - all other GPU-related scripts and binaries are compiled/
+# installed as part of the cpu=1 build.
 #
 include $(FSLCONFDIR)/default.mk
 
@@ -21,20 +25,22 @@ LIBS     = -lfsl-newmeshclass -lfsl-warpfns -lfsl-basisfield \
            -lfsl-utils -lfsl-miscmaths -lfsl-NewNifti -lfsl-giftiio \
            -lfsl-first_lib -lfsl-znz -lfsl-cprob -lfsl-utils -lexpat
 XFILES   =
+SCRIPTS  =
 
 cpu ?= 1
 gpu ?= 0
 
 ifeq (${cpu}, 1)
-    XFILES += probtrackx2 surfmaths surf2surf surf2volume \
-              surf_proj label2surf find_the_biggest proj_thresh \
-              fdt_matrix_merge
+    XFILES  += probtrackx2 surfmaths surf2surf surf2volume \
+               surf_proj label2surf find_the_biggest proj_thresh \
+               fdt_matrix_merge
+    SCRIPTS += probtrackx2_gpu
 endif
 
 # The probtrackx2_gpu executable is labelled
 # with the CUDA version it is compiled against.
 ifeq (${gpu}, 1)
-    XFILES += probtrackx2_gpu${CUDA_VER}
+    XFILES  += probtrackx2_gpu${CUDA_VER}
 endif
 
 
