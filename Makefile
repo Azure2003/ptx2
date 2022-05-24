@@ -31,8 +31,10 @@ ifeq (${cpu}, 1)
               fdt_matrix_merge
 endif
 
+# The probtrackx2_gpu executable is labelled
+# with the CUDA version it is compiled against.
 ifeq (${gpu}, 1)
-    XFILES += probtrackx2_gpu
+    XFILES += probtrackx2_gpu${CUDA_VER}
 endif
 
 
@@ -90,5 +92,5 @@ tractography_gpu.o: CUDA/tractography_gpu.cu
 probtrackx_gpu.o: probtrackx_gpu.cc
 	$(NVCC) ${NVCCFLAGS} -c -o $@ $<
 
-probtrackx2_gpu: ${PTX2GPUOBJS}
+probtrackx2_gpu${CUDA_VER}: ${PTX2GPUOBJS}
 	${NVCC} ${NVCCFLAGS} -o $@ $^ ${NVCCLDFLAGS}
