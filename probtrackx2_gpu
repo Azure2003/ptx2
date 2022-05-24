@@ -1,0 +1,29 @@
+#!/usr/bin/env fslpython
+#
+# Call an appropriate variant of probtrackx2_gpu based
+# on what is installed, and whether we have a GPU.
+
+
+import               sys
+import               os
+import os.path    as op
+import subprocess as sp
+
+
+def main():
+    """Call an appropriate variant of probtrackx2_gpu based on what is
+    installed, and whether a CUDA driver is available.
+    """
+    fsldir    = os.environ['FSLDIR']
+    find_cuda = op.join(fsldir, 'bin', 'find_cuda_exe')
+    ptx2      = sp.check_output((find_cuda, 'probtrackx2_gpu'), text=True).strip()
+
+    if ptx2 != '':
+       os.execl(ptx2, ptx2, *sys.argv[1:])
+    else:
+        print(f'Cannot find a suitable probtrackx2_gpu executable in {fsldir}!')
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
