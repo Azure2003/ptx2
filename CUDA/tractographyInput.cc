@@ -1793,25 +1793,16 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
     ///////////////////////////////////
     Matrix lrm1_coords;
     if(opts.matrix2out.value()){
-      // Matrix 2 needs space transformation ?
       volume<float> tmpvolM2;
       read_volume(tmpvolM2,opts.lrmask.value());
-      float* div = new float[3];
-      div[0]=tmpvolM2.xdim();
-      div[1]=tmpvolM2.ydim();
-      div[2]=tmpvolM2.zdim();
-      tData.Seeds_to_M2[0]=Seeds_to_DTI_read[0]*tData.Sdims[0]/div[0];
-      tData.Seeds_to_M2[1]=Seeds_to_DTI_read[1]*tData.Sdims[1]/div[0];
-      tData.Seeds_to_M2[2]=Seeds_to_DTI_read[2]*tData.Sdims[2]/div[0];
-      tData.Seeds_to_M2[3]=Seeds_to_DTI_read[3]/div[0];
-      tData.Seeds_to_M2[4]=Seeds_to_DTI_read[4]*tData.Sdims[0]/div[1];
-      tData.Seeds_to_M2[5]=Seeds_to_DTI_read[5]*tData.Sdims[1]/div[1];
-      tData.Seeds_to_M2[6]=Seeds_to_DTI_read[6]*tData.Sdims[2]/div[1];
-      tData.Seeds_to_M2[7]=Seeds_to_DTI_read[7]/div[1];
-      tData.Seeds_to_M2[8]=Seeds_to_DTI_read[8]*tData.Sdims[0]/div[2];
-      tData.Seeds_to_M2[9]=Seeds_to_DTI_read[9]*tData.Sdims[1]/div[2];
-      tData.Seeds_to_M2[10]=Seeds_to_DTI_read[10]*tData.Sdims[2]/div[2];
-      tData.Seeds_to_M2[11]=Seeds_to_DTI_read[11]/div[2];
+      // lrmask / --target2 must be defined in seed space,
+      // but may be downsampled, so the seed -> target2
+      // affine is just a scaling matrix (identity if
+      // it is the same resolution as the seed)
+      memset(tData.Seeds_to_M2, 0, 12 * sizeof(float));
+      tData.Seeds_to_M2[0]  = tData.Sdims[0] / tmpvolM2.xdim();
+      tData.Seeds_to_M2[5]  = tData.Sdims[1] / tmpvolM2.ydim();
+      tData.Seeds_to_M2[10] = tData.Sdims[2] / tmpvolM2.zdim();
       tData.M2sizes = new int[3];
       tData.M2sizes[0]=tmpvolM2.xsize();
       tData.M2sizes[1]=tmpvolM2.ysize();
