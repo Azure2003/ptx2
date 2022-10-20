@@ -1722,64 +1722,45 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
       }
     }
 
-    if (fsl_imageexists(opts.targetfile.value())||meshExists(opts.targetfile.value())){
-      string tmpname=opts.targetfile.value();
-      int pos=tmpname.find("/",0);
-      int lastpos=pos;
-      while(pos>=0){
-	      lastpos=pos;
-	      pos=tmpname.find("/",pos);
-	      // replace / with _
-	      tmpname[pos]='_';
-      }
-      //only take things after the last pos
-      tmpname=tmpname.substr(lastpos+1,tmpname.length()-lastpos-1);
-      //// remove extension
-      int size=tmpname.length();
-      if(size>4){
-	      string str = tmpname.substr(size-4,4);
-        if(str==".asc" || str==".nii") tmpname=tmpname.substr(0,size-4);
-      }
-      if(size>7){
-        string str = tmpname.substr(size-7,7);
-        if(str==".nii.gz") tmpname=tmpname.substr(0,size-7);
-      }
-      ///
+    // gather the target mask file names
+    // and extract their base names to
+    // use as names for each target.
+    vector<string> targetnames;
 
-      tData.targetnames.push_back(tmpname);
-    }else{
-      ifstream fs(opts.targetfile.value().c_str());
-      string tmp;
-      if (fs){
-	      fs>>tmp;
-	      do{
-	        string tmpname=tmp;
-	        int pos=tmpname.find("/",0);
-	        int lastpos=pos;
-	        while(pos>=0){
-	          lastpos=pos;
-	          pos=tmpname.find("/",pos);
-	          // replace / with _
-	          tmpname[pos]='_';
-	        }
-	        //only take things after the last pos
-	        tmpname=tmpname.substr(lastpos+1,tmpname.length()-lastpos-1);
-	        //// remove extension
-	        int size=tmpname.length();
-	        if(size>4){
-          	string str = tmpname.substr(size-4,4);
-	  	      if(str==".asc" || str==".nii") tmpname=tmpname.substr(0,size-4);
-	        }
-	        if(size>7){
-	  	      string str = tmpname.substr(size-7,7);
-            if(str==".nii.gz") tmpname=tmpname.substr(0,size-7);
-          }
-	        ///
-	        tData.targetnames.push_back(tmpname);
-	        fs>>tmp;
-	      }while (!fs.eof());
-      }
+    // target is single volume/mesh
+    if (fsl_imageexists(opts.targetfile.value()) ||
+        meshExists(opts.targetfile.value())) {
+      targetnames.push_back(opts.targetfile.value());
     }
+    // text file containing paths to multiple targets
+    else {
+      ifstream fs(opts.targetfile.value().c_str());
+      copy(istream_iterator<string>(fs),
+           istream_iterator<string>(),
+           back_inserter(targetnames));
+    }
+
+    // extract base name (folder/suffix
+    // stripped) of each target file
+    for (auto name : targetnames) {
+
+      size_t start = name.find_last_of("/");
+      size_t sz    = name.size();
+      if (start != string::npos) {
+        name = name.substr(start + 1, sz);
+        sz   = name.size();
+      }
+
+      if ((name.rfind(".nii") == (sz - 4)) ||
+          (name.rfind(".asc") == (sz - 4))) {
+        name = name.substr(0, sz - 4);
+      }
+      else if (name.rfind(".nii.gz") == (sz - 7)) {
+        name = name.substr(0, sz - 7);
+      }
+      tData.targetnames.push_back(name);
+    }
+
     /////// TARGET REF MASK ////////
     load_rois_mixed(opts.targetfile.value(),mm2vox,tData.Sdims,tData.Ssizes,tData.targetsREF);
   }
