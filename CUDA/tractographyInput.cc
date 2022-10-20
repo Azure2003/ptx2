@@ -1735,6 +1735,11 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
     // text file containing paths to multiple targets
     else {
       ifstream fs(opts.targetfile.value().c_str());
+
+      if (!fs.good()) {
+        cerr << "Could not open " << opts.targetfile.value() << endl;
+        exit(1);
+      }
       copy(istream_iterator<string>(fs),
            istream_iterator<string>(),
            back_inserter(targetnames));
@@ -1751,11 +1756,11 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
         sz   = name.size();
       }
 
-      if ((name.rfind(".nii") == (sz - 4)) ||
-          (name.rfind(".asc") == (sz - 4))) {
+      if (sz > 4 && ((name.rfind(".nii") == (sz - 4)) ||
+                     (name.rfind(".asc") == (sz - 4)))) {
         name = name.substr(0, sz - 4);
       }
-      else if (name.rfind(".nii.gz") == (sz - 7)) {
+      else if (sz > 7 && (name.rfind(".nii.gz") == (sz - 7))) {
         name = name.substr(0, sz - 7);
       }
       tData.targetnames.push_back(name);
