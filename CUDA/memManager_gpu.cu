@@ -143,7 +143,8 @@ void allocate_host_mem(
   // Allocate in HOST
   checkCuda(cudaMallocHost((void**)lengths_host,2*THREADS_STREAM*sizeof(float))); // 2 paths per sample
   if(opts.save_paths.value()){ // if not.. discard it when finished streamline
-    checkCuda(cudaMallocHost((void**)paths_host,THREADS_STREAM*data_host.nsteps*3*sizeof(float)));
+    size_t num = THREADS_STREAM*data_host.nsteps*3;
+    checkCuda(cudaMallocHost((void**)paths_host, num*sizeof(float)));
   }
   if(opts.simpleout.value())
     checkCuda(cudaMallocHost((void**)mprob_host,data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]*sizeof(float)));
