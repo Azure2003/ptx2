@@ -142,7 +142,6 @@ bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
 
   vector< pair<int,int> > localtriangles;
   for(unsigned int i=0;i<crossed.size();i++){
-    //OUT(crossed[i].t());
     int val=surfvol((int)MISCMATHS::round((float)crossed[i](1)),
 		    (int)MISCMATHS::round((float)crossed[i](2)),
 		    (int)MISCMATHS::round((float)crossed[i](3)))-1;
@@ -250,7 +249,6 @@ bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
   vector< pair<int,int> > localtriangles;
 
   for(unsigned int i=0;i<crossed.size();i++){
-    //OUT(crossed[i].t());
     int val=surfvol((int)MISCMATHS::round((float)crossed[i](1)),
 		    (int)MISCMATHS::round((float)crossed[i](2)),
 		    (int)MISCMATHS::round((float)crossed[i](3)))-1;
@@ -258,7 +256,6 @@ bool CSV::has_crossed_roi(const ColumnVector& x1,const ColumnVector& x2,
     localtriangles.insert(localtriangles.end(),triangles[val].begin(),triangles[val].end());
   }
 
-  //  OUT(localtriangles.size());
   if(localtriangles.size()==0){return ret;}
 
 
@@ -356,8 +353,6 @@ int CSV::coord_sign(const int& loc,const ColumnVector& x2)const{
   x1=mm2vox*x1mm;
   x2mm<<x2(1)<<x2(2)<<x2(3)<<1;
   x2mm=vox2mm*x2mm;
-//   OUT(x1mm.t());
-//   OUT(x2mm.t());
 
   CsvMpoint p = roimesh[locsubroi[loc]].get_point(locsubloc[loc]);
 
@@ -377,12 +372,9 @@ int CSV::coord_sign(const int& loc,const ColumnVector& x2)const{
     }
     //    dist=(proj-t.centroid()).norm();
     dist=t.dist_to_point(xx2);
-//     OUT(dist);
-//     OUT(d);
     if(i==0||(dist<=distmin)){dmin=d;distmin=dist;}
     if(dist==distmin){if(d<dmin)dmin=d;}
   }
-  //OUT(dmin);
   //loc_info(loc);
   //exit(1);
    if(dmin<0)return(-1);
@@ -405,7 +397,6 @@ int CSV::coord_sign(const int& loc,const ColumnVector& x2)const{
     if(val<0)continue;
     localtriangles.insert(localtriangles.end(),triangles[val].begin(),triangles[val].end());
   }
-  //  OUT(localtriangles.size());
   bool self;
   for(unsigned int i=0;i<localtriangles.size();i++){
     int indmesh=localtriangles[i].first;
@@ -698,7 +689,7 @@ float CSV::get_value(const int& loc)const{
     return(roimesh[meshind].get_pvalue(vertind));
   }
   else{
-    OUT(loc);
+    std::cout << loc << std::endl;
     cerr<<"CSV::get_value:unrecognised type "<<loctype[loc]<<endl;
     exit(1);
   }
@@ -744,17 +735,17 @@ void CSV::set_map_value(const int& loc,const float& val,const int& map){
 void CSV::loc_info(const int& loc)const{
   if(loctype[loc]==VOLUME){
     cout<<"Volume location"<<endl;
-    OUT(loccoords[loc].t());
-    OUT(locroi[loc]);
-    OUT(locsubroi[loc]);
-    OUT(locsubloc[loc]);
+    std::cout << loccoords[loc].t() << std::endl;
+    std::cout << locroi[loc] << std::endl;
+    std::cout << locsubroi[loc] << std::endl;
+    std::cout << locsubloc[loc] << std::endl;
   }
   else{
     cout<<"Surface location"<<endl;
-    OUT(loccoords[loc].t());
-    OUT(locroi[loc]);
-    OUT(locsubroi[loc]);
-    OUT(locsubloc[loc]);
+    std::cout << loccoords[loc].t() << std::endl;
+    std::cout << locroi[loc] << std::endl;
+    std::cout << locsubroi[loc] << std::endl;
+    std::cout << locsubloc[loc] << std::endl;
     cout<<"Triangles"<<endl;
     CsvMpoint p = roimesh[locsubroi[loc]].get_point(locsubloc[loc]);
     CsvTriangle t;
@@ -807,8 +798,6 @@ bool lookAtAllMesh(CsvMesh& m){
     if(m.get_pvalue(i)!=0){nnz++;}
     else{nz++;}
   }
-  //OUT(nz);
-  //OUT(nnz);
   return (nz==0 || nnz==0);
 }
 
@@ -848,7 +837,6 @@ void CSV::load_surface(const string& filename){
     }
   }
   mesh2loc.push_back(lu1);
-  //OUT(nlocs);
   roimesh.push_back(m);
   surfind.push_back(nrois);
   roitype.push_back(SURFACE);
@@ -1360,7 +1348,6 @@ void CSV::tri_crossed_voxels(float tri[3][3],vector<ColumnVector>& crossed){
     maxz=tmpi>maxz?tmpi:maxz;
     i++;
   }while(i<=2);
-  //OUT(maxx-minx);OUT(maxy-miny);OUT(maxz-minz);
 
   float boxcentre[3],boxhalfsize[3]={.5,.5,.5};
   ColumnVector v(3);int s=1;
@@ -1375,7 +1362,6 @@ void CSV::tri_crossed_voxels(float tri[3][3],vector<ColumnVector>& crossed){
 	  crossed.push_back(v);
 	}
       }
-  //OUT(crossed.size());
 }
 
 
