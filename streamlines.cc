@@ -1288,9 +1288,6 @@ namespace TRACT{
     // recalculate nmask3 if lowres surface provided
     m_ConMat3  = new SpMat<float> (nmask3,nlrmask3);
     if(opts.omeanpathlength.value()) m_ConMat3b = new SpMat<float> (nmask3,nlrmask3);
-    //OUT(m_ConMat3->Nrows());
-    //OUT(m_ConMat3->Ncols());
-    //exit(1);
 
     // save lookup tables...
 
@@ -1590,8 +1587,6 @@ namespace TRACT{
       }
     }
     if(opts.pathfile.set() && hascrossed){
-      //cout<<"reset"<<endl;
-      //OUT(crossedlocs.size());
       for(unsigned int i=0;i<crossedlocs.size();i++){
         if(m_beenhere_alt.get_value(crossedlocs[i])>1)
           m_beenhere_alt.set_value(crossedlocs[i],1);
@@ -1646,10 +1641,10 @@ namespace TRACT{
         // below gives a warning because addition of an unsigned int and a signed int is always an unsigned quantity
         if( (( i+offset ) < 0 ) || ((i+offset)>=m_crossedvox.size())){
           cout<<"-----------------------"<<endl;
-          OUT(m_path.size());
-          OUT(m_crossedvox.size());
-          OUT(i);
-          OUT(offset);
+          std::cout << m_path.size() << std::endl;
+          std::cout << m_crossedvox.size() << std::endl;
+          std::cout << i << std::endl;
+          std::cout << offset << std::endl;
           for(unsigned int ii=0;ii<m_path.size();ii++)
             cout<<m_path[ii](1)<<" "<<m_path[ii](2)<<" "<<m_path[ii](3)<<endl;
           cout<<"-----------------------"<<endl;
