@@ -216,132 +216,135 @@ bool CSV::has_crossed_roi1(const ColumnVector& x1,const ColumnVector& x2,
   bool closestvertex,
   bool flag
 )const{
-//Tracer_Plus tr("CSV::hascrossed3");
-// x1 and x2 in voxel space
-int ix,iy,iz;
-bool ret=false;
+  //Tracer_Plus tr("CSV::hascrossed3");
+  // x1 and x2 in voxel space
+  int ix,iy,iz;
+  bool ret=false;
 
-// start by looking at volume roi
-if(nvols>0){
-ix=(int)MISCMATHS::round((float)x2(1));
-iy=(int)MISCMATHS::round((float)x2(2));
-iz=(int)MISCMATHS::round((float)x2(3));
+  // start by looking at volume roi
+  if(nvols>0){
+    ix=(int)MISCMATHS::round((float)x2(1));
+    iy=(int)MISCMATHS::round((float)x2(2));
+    iz=(int)MISCMATHS::round((float)x2(3));
 
-if(roivol(ix,iy,iz)!=0){
-for(int i=1;i<=nvols;i++){
-if(isinroi(vol2mat(ix,iy,iz),i)!=0){
-ret=true;
-crossedrois.push_back(volind[i-1]);
-crossedlocs.push_back(vol2loc(ix,iy,iz,i-1));
-pair<int,int> mypair;			//only needed for surfaces,
-mypair.first=-1;			//but vectors surf_Triangle and crossedlocs need to have same size
-mypair.second=-1;			//it will check later if value is -1, and then it will assume that it is from a volume
-surf_Triangle.push_back(mypair);
-}
-}
-}
+    if(roivol(ix,iy,iz)!=0){
+      for(int i=1;i<=nvols;i++){
+        if(isinroi(vol2mat(ix,iy,iz),i)!=0){
+          ret=true;
+          crossedrois.push_back(volind[i-1]);
+          crossedlocs.push_back(vol2loc(ix,iy,iz,i-1));
+          pair<int,int> mypair;			//only needed for surfaces,
+          mypair.first=-1;			//but vectors surf_Triangle and crossedlocs need to have same size
+          mypair.second=-1;			//it will check later if value is -1, and then it will assume that it is from a volume
+          surf_Triangle.push_back(mypair);
+        }
+      }
+    }
 
-}
+  }
 if(nsurfs==0){return ret;}
 
 
 vector< pair<int,int> > localtriangles;
 bool tempflag=true;
-for(unsigned int i=0;i<crossed.size();i++){
-int val=surfvol((int)MISCMATHS::round((float)crossed[i](1)),
-  (int)MISCMATHS::round((float)crossed[i](2)),
-  (int)MISCMATHS::round((float)crossed[i](3)))-1;
-if(val<0)continue;
-localtriangles.insert(localtriangles.end(),triangles[val].begin(),triangles[val].end());
-}
+  for(unsigned int i=0;i<crossed.size();i++){
+    int val=surfvol((int)MISCMATHS::round((float)crossed[i](1)),
+    (int)MISCMATHS::round((float)crossed[i](2)),
+    (int)MISCMATHS::round((float)crossed[i](3)))-1;
+    if(val<0)continue;
+    localtriangles.insert(localtriangles.end(),triangles[val].begin(),triangles[val].end());
+  }
 
-if(localtriangles.size()==0){return ret;}
+  if(localtriangles.size()==0){return ret;}
 
 
-ColumnVector x1mm(4),x2mm(4);
+  ColumnVector x1mm(4),x2mm(4);
 // transform into mm space
-x1mm<<x1(1)<<x1(2)<<x1(3)<<1;
-x1mm=vox2mm*x1mm;
-x2mm<<x2(1)<<x2(2)<<x2(3)<<1;
-x2mm=vox2mm*x2mm;
+  x1mm<<x1(1)<<x1(2)<<x1(3)<<1;
+  x1mm=vox2mm*x1mm;
+  x2mm<<x2(1)<<x2(2)<<x2(3)<<1;
+  x2mm=vox2mm*x2mm;
 
 // for each triangle, check for intersection and stop if any
-vector<Pt> segment(2);
-Pt p1(x1mm(1),x1mm(2),x1mm(3));segment[0]=p1;
-Pt p2(x2mm(1),x2mm(2),x2mm(3));segment[1]=p2;
+  vector<Pt> segment(2);
+  Pt p1(x1mm(1),x1mm(2),x1mm(3));segment[0]=p1;
+  Pt p2(x2mm(1),x2mm(2),x2mm(3));segment[1]=p2;
 
 
-int indmesh,indtri,ind;
-for(unsigned int i=0;i<localtriangles.size();i++){
-indmesh=localtriangles[i].first;
-indtri=localtriangles[i].second-1;
+  int indmesh,indtri,ind;
+  for(unsigned int i=0;i<localtriangles.size();i++){
+    indmesh=localtriangles[i].first;
+    indtri=localtriangles[i].second-1;
 
-Vec step = Vec(x2mm(1) - x1mm(1), x2mm(2) - x1mm(2), x2mm(3) - x1mm(3));
+    Vec step = Vec(x2mm(1) - x1mm(1), x2mm(2) - x1mm(2), x2mm(3) - x1mm(3));
 
 // by default consider all active vertices as being crossed
-if(!closestvertex){
-if(roimesh[indmesh].triangle_intersect(segment,indtri)){
-  if(roimesh[indmesh].step_sign_crossing(p1, p2, indtri)<=0){flag=true; continue;}
-  tempflag=false;
-  flag=false;
-  ret=true;
-  crossedrois.push_back( surfind[indmesh] );
+    if(!closestvertex){
+      if(roimesh[indmesh].triangle_intersect(segment,indtri)){
+        //If we are crossing from grey to white, we should not count it and discard the half.
+        if(roimesh[indmesh].step_sign_crossing(p1, p2, indtri)<=0){flag=true; continue;}
+        tempflag=false;
+        flag=false;
+        ret=true;
+        crossedrois.push_back( surfind[indmesh] );
 
-  ind = roimesh[indmesh].get_triangle(indtri).get_vertice(0).get_no();
-  ind = mesh2loc[indmesh][ind];
+        ind = roimesh[indmesh].get_triangle(indtri).get_vertice(0).get_no();
+        ind = mesh2loc[indmesh][ind];
 
-  if(ind>=0){
-crossedlocs.push_back(ind);
-pair<int,int> mypair;
-mypair.first=indmesh;
-mypair.second=indtri;
-surf_Triangle.push_back(mypair);	//to avoid connections between vertices of the same triangle
-}
-  ind = roimesh[indmesh].get_triangle(indtri).get_vertice(1).get_no();
-  ind = mesh2loc[indmesh][ind];
+        if(ind>=0){
+          crossedlocs.push_back(ind);
+          pair<int,int> mypair;
+          mypair.first=indmesh;
+          mypair.second=indtri;
+          surf_Triangle.push_back(mypair);	//to avoid connections between vertices of the same triangle
+        }
+        ind = roimesh[indmesh].get_triangle(indtri).get_vertice(1).get_no();
+        ind = mesh2loc[indmesh][ind];
 
-  if(ind>=0){
-crossedlocs.push_back(ind);
-pair<int,int> mypair;
-mypair.first=indmesh;
-mypair.second=indtri;
-surf_Triangle.push_back(mypair);	//to avoid connections between vertices of the same triangle
-}
-  ind = roimesh[indmesh].get_triangle(indtri).get_vertice(2).get_no();
-  ind = mesh2loc[indmesh][ind];
+        if(ind>=0){
+          crossedlocs.push_back(ind);
+          pair<int,int> mypair;
+          mypair.first=indmesh;
+          mypair.second=indtri;
+          surf_Triangle.push_back(mypair);	//to avoid connections between vertices of the same triangle
+        }
+        ind = roimesh[indmesh].get_triangle(indtri).get_vertice(2).get_no();
+        ind = mesh2loc[indmesh][ind];
 
-  if(ind>=0){
-crossedlocs.push_back(ind);
-pair<int,int> mypair;
-mypair.first=indmesh;
-mypair.second=indtri;
-surf_Triangle.push_back(mypair);	//to avoid connections between vertices of the same triangle
-}
-}
+        if(ind>=0){
+          crossedlocs.push_back(ind);
+          pair<int,int> mypair;
+          mypair.first=indmesh;
+          mypair.second=indtri;
+          surf_Triangle.push_back(mypair);	//to avoid connections between vertices of the same triangle
+        }
+      }
 // if closestvertex option, consider only the closest vertex crossed
-}else{
-int closest;
-if(roimesh[indmesh].triangle_intersect(segment,indtri,closest)){
-  ret=true;
-  crossedrois.push_back( surfind[indmesh] );
+    }
+    else{
+      //The sign check is not implemented here, someone should do it if needed but it is not used so I am not going to do it.
+      int closest;
+      if(roimesh[indmesh].triangle_intersect(segment,indtri,closest)){
+        ret=true;
+        crossedrois.push_back( surfind[indmesh] );
 
-  ind = roimesh[indmesh].get_triangle(indtri).get_vertice(closest).get_no();
-  ind = mesh2loc[indmesh][ind];
+        ind = roimesh[indmesh].get_triangle(indtri).get_vertice(closest).get_no();
+        ind = mesh2loc[indmesh][ind];
 
-  if(ind>=0){
-crossedlocs.push_back(ind);
-pair<int,int> mypair;
-mypair.first=indmesh;
-mypair.second=indtri;
-surf_Triangle.push_back(mypair);	//to avoid connections between vertices of the same triangle
-}
-}
-}
-}
-if(tempflag==false){
-  flag=false;
-}
-return ret;
+        if(ind>=0){
+          crossedlocs.push_back(ind);
+          pair<int,int> mypair;
+          mypair.first=indmesh;
+          mypair.second=indtri;
+          surf_Triangle.push_back(mypair);	//to avoid connections between vertices of the same triangle
+        }
+      }
+    }
+  }
+  if(tempflag==false){
+    flag=false;
+  }
+  return ret;
 }
 // this one fills a vector of which rois are crossed
 // and also fills in which locations are crossed (e.g. for matrix{1,3})

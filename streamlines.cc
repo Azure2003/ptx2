@@ -738,7 +738,7 @@ namespace TRACT{
       for(unsigned int wm=0;wm<wtstopcrossed.size();wm++)
         wtstop_flags[wtstopcrossed[wm]]=0;  // seed is inside the roi, let it go out
     }
-    bool flag=true;
+    bool flag=true; 
     for(int it=1;it<=opts.nsteps.value()/2;it++){
 
       if((m_mask(x_p,y_p,z_p)!=0)){
@@ -920,11 +920,12 @@ namespace TRACT{
           bool tempflag=false;
           if(m_mask3.has_crossed_roi1(m_path[cnt-1],m_path[cnt],crossedvox,waycrossed,crossedlocs3,surf_Triangle3,opts.closestvertex.value(), tempflag)){
             if(tempflag){
-              //AKA rejecting because of gray matter.
+              //AKA rejecting because of gray matter to white matter.
               if(cnt!=1){
                continue;
               }
             }
+            //This only fills in the first time a surface is crossed.
             if(flag==true){
               fill_inmask3(crossedlocs3,surf_Triangle3,pathlength);
               flag=false;
