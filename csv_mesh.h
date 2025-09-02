@@ -97,7 +97,8 @@ class CsvTriangle {
   inline const CsvMpoint& get_vertice(const int& i) const{return _vertice[i];}
   const bool intersect(const std::vector<mesh::Pt> & p)const;          // checks if a segment intersects the triangle
   const bool intersect(const std::vector<mesh::Pt> & p,int& ind)const; // checks if a segment intersects the triangle+gives the index of the closest vertex
-  inline int get_no()const{return _no;}
+   int step_sign_crossing(const mesh::Pt& segmentA, const mesh::Pt& segmentB) const;
+   inline int get_no()const{return _no;}
 };
 
 

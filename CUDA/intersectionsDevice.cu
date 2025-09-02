@@ -4,7 +4,67 @@
 
     Copyright (C) 2015 University of Oxford  */
 
-/*  CCOPYRIGHT  */
+/*  Part of FSL - FMRIB's Software Library
+    http://www.fmrib.ox.ac.uk/fsl
+    fsl@fmrib.ox.ac.uk
+
+    Developed at FMRIB (Oxford Centre for Functional Magnetic Resonance
+    Imaging of the Brain), Department of Clinical Neurology, Oxford
+    University, Oxford, UK
+
+
+    LICENCE
+
+    FMRIB Software Library, Release 6.0 (c) 2018, The University of
+    Oxford (the "Software")
+
+    The Software remains the property of the Oxford University Innovation
+    ("the University").
+
+    The Software is distributed "AS IS" under this Licence solely for
+    non-commercial use in the hope that it will be useful, but in order
+    that the University as a charitable foundation protects its assets for
+    the benefit of its educational and research purposes, the University
+    makes clear that no condition is made or to be implied, nor is any
+    warranty given or to be implied, as to the accuracy of the Software,
+    or that it will be suitable for any particular purpose or for use
+    under any specific conditions. Furthermore, the University disclaims
+    all responsibility for the use which is made of the Software. It
+    further disclaims any liability for the outcomes arising from using
+    the Software.
+
+    The Licensee agrees to indemnify the University and hold the
+    University harmless from and against any and all claims, damages and
+    liabilities asserted by third parties (including claims for
+    negligence) which arise directly or indirectly from the use of the
+    Software or the sale of any products based on the Software.
+
+    No part of the Software may be reproduced, modified, transmitted or
+    transferred in any form or by any means, electronic or mechanical,
+    without the express permission of the University. The permission of
+    the University is not required if the said reproduction, modification,
+    transmission or transference is done without financial return, the
+    conditions of this Licence are imposed upon the receiver of the
+    product, and all original and amended source code is included in any
+    transmitted product. You may be held legally responsible for any
+    copyright infringement that is caused or encouraged by your failure to
+    abide by these terms and conditions.
+
+    You are not permitted under this Licence to use this Software
+    commercially. Use for which any financial return is received shall be
+    defined as commercial use, and includes (1) integration of all or part
+    of the source code or the Software into a product for sale or license
+    by or on behalf of Licensee to third parties or (2) use of the
+    Software or any derivative of it for research with the final aim of
+    developing software products for sale or license to a third party or
+    (3) use of the Software or any derivative of it for research with the
+    final aim of developing non-software products for sale or license to a
+    third party, or (4) use of the Software to provide any service to an
+    external organisation for which payment is received. If you are
+    interested in using the Software commercially, please contact Oxford
+    University Innovation ("OUI"), the technology transfer company of the
+    University, to negotiate a licence. Contact details are:
+    fsl@innovation.ox.ac.uk quoting Reference Project 9564, FSL.*/
 
 #include <CUDA/options/options.h>
 
@@ -62,6 +122,39 @@ __device__ inline bool has_crossed_volume_loc(	const float*	roivol,
     return false;
 }
 
+__device__ inline int step_sign(
+  const float3& A,
+  const float3& B,
+  const float3& C,
+  const float3& segmentA,
+  const float3& segmentB)
+{
+  // Compute normal vector of the triangle
+  float3 AB = make_float3(B.x - A.x, B.y - A.y, B.z - A.z);
+  float3 AC = make_float3(C.x - A.x, C.y - A.y, C.z - A.z);
+  
+  // Cross product = normal vector
+  float3 normal;
+  normal.x = AB.y * AC.z - AB.z * AC.y;
+  normal.y = AB.z * AC.x - AB.x * AC.z;
+  normal.z = AB.x * AC.y - AB.y * AC.x;
+
+  // Vector from A to segment start and end
+  float3 AS = make_float3(segmentA.x - A.x, segmentA.y - A.y, segmentA.z - A.z);
+  float3 BS = make_float3(segmentB.x - A.x, segmentB.y - A.y, segmentB.z - A.z);
+
+  // Dot products of these vectors with normal to get which side they are on
+  float dotA = normal.x * AS.x + normal.y * AS.y + normal.z * AS.z;
+  float dotB = normal.x * BS.x + normal.y * BS.y + normal.z * BS.z;
+
+  // sign of difference tells you if segment crosses the plane in positive or negative direction
+  float diff = dotB - dotA;
+  if (diff > 0.001) return 1;
+  else if (diff < -0.001) return -1;
+  else return 0;
+}
+
+
 __device__ inline bool triangle_intersect(	const float3 	triangleA,
 						const float3 	triangleB,
 						const float3	triangleC,	
@@ -111,18 +204,18 @@ __device__ inline bool triangle_intersect(	const float3 	triangleA,
   w0.z=segmentA.z-triangleA.z;
 	
   //a = -(n|w0);
-  float a= -(n.x*w0.x+ n.y*w0.y+ n.z*w0.z);
+  double a= -(n.x*w0.x+ n.y*w0.y+ n.z*w0.z);
   //b = (n|dir);	
-  float b= (n.x*dir.x+ n.y*dir.y+ n.z*dir.z);
+  double b= (n.x*dir.x+ n.y*dir.y+ n.z*dir.z);
    
-  if (fabsf(b) < 0.00000001f) { 		// ray is parallel to triangle plane
-    if (fabsf(a) < 0.00000001f)  	// ray lies in triangle plane
+  if (fabsf(b) < 0.001f) { 		// ray is parallel to triangle plane
+    if (fabsf(a) < 0.001f)  	// ray lies in triangle plane
       return true;
     else return false;             	// ray disjoint from plane
   }
 
   // get intersect point of ray with triangle plane
-  float r = a/ b;
+  double r = a/ b;
   if (r < 0.0f)                   // ray goes away from triangle
     return false;                  // => no intersect
 
@@ -157,10 +250,10 @@ __device__ inline bool triangle_intersect(	const float3 	triangleA,
     
   // get and test parametric coords
   //double s,t;
-  float s = (uv * wv - vv * wu) / D;
+  double s = (uv * wv - vv * wu) / D;
   if (s < 0.0f || s > 1.0f)        // I is outside T
     return false;
-  float t = (uv * wu - uu * wv) / D;
+  double t = (uv * wu - uu * wv) / D;
   if (t < 0.0f || (s + t) > 1.0f)  // I is outside T
     return false; 
     
@@ -222,8 +315,8 @@ __device__ inline int triangle_intersect_closest(	const float3 	triangleA,	// ve
   //b = (n|dir)/n.norm()/dir.norm();	
   float b= (n.x*dir.x+ n.y*dir.y+ n.z*dir.z);
    
-  if (fabsf(b) < 0.00000001f){ 			// ray is parallel to triangle plane
-    if (fabsf(a) < 0.00000001f)           	// ray lies in triangle plane
+  if (fabsf(b) < 0.001f){ 			// ray is parallel to triangle plane
+    if (fabsf(a) < 0.001f)           	// ray lies in triangle plane
       return 0;
     else return -1;             		// ray disjoint from plane
   }
@@ -444,7 +537,8 @@ __device__ inline void has_crossed_surface_loc(	const float*		vertices,
 						float*			segmentBz,		//in seed space, shared			
 						float3*			crossed,
 						int&			numcrossed,
-						float			value)
+						float			value,
+            bool flag)
 {   
   // SEGMENT
   // transform voxel segment coordinates into mm space
@@ -456,11 +550,12 @@ __device__ inline void has_crossed_surface_loc(	const float*		vertices,
   segmentBmm.x=C_vox2mm[0]*segmentBx[0]+C_vox2mm[1]*segmentBy[0]+C_vox2mm[2]*segmentBz[0]+C_vox2mm[3];
   segmentBmm.y=C_vox2mm[4]*segmentBx[0]+C_vox2mm[5]*segmentBy[0]+C_vox2mm[6]*segmentBz[0]+C_vox2mm[7];
   segmentBmm.z=C_vox2mm[8]*segmentBx[0]+C_vox2mm[9]*segmentBy[0]+C_vox2mm[10]*segmentBz[0]+C_vox2mm[11];
+  bool tempflag=true;
 
   // get voxels crossed
-  if((int)rintf(segmentAx[0])==(int)rintf(segmentBx[0])&&
-     (int)rintf(segmentAy[0])==(int)rintf(segmentBy[0])&&
-     (int)rintf(segmentAz[0])==(int)rintf(segmentBz[0])){
+  if((int)roundf(segmentAx[0])==(int)roundf(segmentBx[0])&&
+     (int)roundf(segmentAy[0])==(int)roundf(segmentBy[0])&&
+     (int)roundf(segmentAz[0])==(int)roundf(segmentBz[0])){
 
     // only 1 voxel crossed (current position)
     int pos;
@@ -469,9 +564,8 @@ __device__ inline void has_crossed_surface_loc(	const float*		vertices,
 	return;
       pos=(int)rintf(segmentAz[0])*C_M2sizes[1]*C_M2sizes[0]+(int)rintf(segmentAy[0])*C_M2sizes[0]+(int)rintf(segmentAx[0]);
     }else{
-      if(segmentAz[0]<0||segmentAy[0]<0||segmentAx[0]<0||segmentAz[0]>(C_Ssizes[2]-1)||segmentAy[0]>(C_Ssizes[1]-1)||segmentAx[0]>(C_Ssizes[0]-1))
-	return;
-      pos=(int)rintf(segmentAz[0])*C_Ssizes[1]*C_Ssizes[0]+(int)rintf(segmentAy[0])*C_Ssizes[0]+(int)rintf(segmentAx[0]);
+      if(segmentAz[0]<0||segmentAy[0]<0||segmentAx[0]<0||segmentAz[0]>(C_Ssizes[2]-1)||segmentAy[0]>(C_Ssizes[1]-1)||segmentAx[0]>(C_Ssizes[0]-1)) return;
+      pos=(int)roundf(segmentAz[0])*C_Ssizes[1]*C_Ssizes[0]+(int)roundf(segmentAy[0])*C_Ssizes[0]+(int)roundf(segmentAx[0]);
     }
     int ntriangles=VoxFacesIndex[pos+1]-VoxFacesIndex[pos];	
     pos=VoxFacesIndex[pos];
@@ -494,7 +588,13 @@ __device__ inline void has_crossed_surface_loc(	const float*		vertices,
 
 		
       // intersect segment with triangle?
-      if(triangle_intersect(triangleA,triangleB,triangleC,segmentAmm,segmentBmm)){					
+      if(triangle_intersect(triangleA,triangleB,triangleC,segmentAmm,segmentBmm)){	
+        if(step_sign(triangleA, triangleB, triangleC, segmentAmm, segmentBmm)<=0){
+          flag=true;
+          continue;
+        }			
+        tempflag=false;	
+        flag=false;
 	int idTri=int(VoxFaces[pos+j]/3);
 					
 	int loc=matlocs[int(faces[VoxFaces[pos+j]]/3)];
@@ -520,32 +620,35 @@ __device__ inline void has_crossed_surface_loc(	const float*		vertices,
 	}
       }
     }
+    if(tempflag==false){
+      flag=false;
+    }
     return;
   }
 
   // several voxels crossed
-  int x=rintf(segmentAx[0]);
-  int y=rintf(segmentAy[0]);
-  int z=rintf(segmentAz[0]);
+  int x=roundf(segmentAx[0]);
+  int y=roundf(segmentAy[0]);
+  int z=roundf(segmentAz[0]);
   int3 max;
   max.x=x;
   max.y=y;
   max.z=z;
 
   int tmp;
-  tmp=rintf(segmentBx[0]);
+  tmp=roundf(segmentBx[0]);
   if(tmp<x){
     x=tmp;
   }else{
     max.x=tmp;
   }
-  tmp=rintf(segmentBy[0]);
+  tmp=roundf(segmentBy[0]);
   if(tmp<y){
     y=tmp;
   }else{
     max.y=tmp;
   }	
-  tmp=rintf(segmentBz[0]);
+  tmp=roundf(segmentBz[0]);
   if(tmp<z){
     z=tmp;
   }else{
@@ -555,14 +658,14 @@ __device__ inline void has_crossed_surface_loc(	const float*		vertices,
   invdir.x=1.0f/(segmentBx[0]-segmentAx[0]);
   invdir.y=1.0f/(segmentBy[0]-segmentAy[0]);
   invdir.z=1.0f/(segmentBz[0]-segmentAz[0]);
-
   for(int ix=x;ix<=max.x;ix+=1){
     for(int iy=y;iy<=max.y;iy+=1){
       for(int iz=z;iz<=max.z;iz+=1){
 	if(M2){
 	  if(iz<0||iy<0||ix<0||iz>(C_M2sizes[2]-1)||iy>(C_M2sizes[1]-1)||ix>(C_M2sizes[0]-1)) continue;
 	}else{
-	  if(iz<0||iy<0||ix<0||iz>(C_Ssizes[2]-1)||iy>(C_Ssizes[1]-1)||ix>(C_Ssizes[0]-1)) continue;
+    if(iz<0||iy<0||ix<0||iz>(C_Ssizes[2]-1)||iy>(C_Ssizes[1]-1)||ix>(C_Ssizes[0]-1)) continue;
+
 	}				
 	if(rayBoxIntersection(segmentAx,segmentAy,segmentAz,invdir,ix,iy,iz)){
 	  int pos;
@@ -591,6 +694,12 @@ __device__ inline void has_crossed_surface_loc(	const float*		vertices,
 	    triangleC.z=vertices[faces[VoxFaces[pos+j]+2]+2];
 
 	    if(triangle_intersect(triangleA,triangleB,triangleC,segmentAmm,segmentBmm)){
+        if(step_sign(triangleA, triangleB, triangleC, segmentAmm, segmentBmm)<=0){
+          flag=true;
+          continue;
+        }	
+        tempflag=false;			
+        flag=false;
 	      int idTri=int(VoxFaces[pos+j]/3);
 			
 	      int loc=matlocs[int(faces[VoxFaces[pos+j]]/3)];
@@ -619,6 +728,9 @@ __device__ inline void has_crossed_surface_loc(	const float*		vertices,
 	}	
       }
     }
+  }
+  if(tempflag==false){
+    flag=false;
   }
 }
 
