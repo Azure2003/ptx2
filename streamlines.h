@@ -447,7 +447,6 @@ namespace TRACT{
       m_mask3.set_convention(opts.meshspace.value());
       m_mask3.load_rois(opts.mask3.value());
       if(m_mask3.nSurfs()>0){surfexists();}
-      cout<<"mask3 surfaces"<<m_mask3.nSurfs()<<endl;
       if(opts.lrmask3.value()!=""){
 	m_lrmask3.reinitialize(m_seeds.get_refvol());
 	m_lrmask3.set_convention(opts.meshspace.value());

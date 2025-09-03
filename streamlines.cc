@@ -1295,7 +1295,6 @@ namespace TRACT{
       nlrmask3 = m_stline.get_lrmask3().nLocs();
     else
       nlrmask3 = nmask3;
-    cout<<"nlocs"<<nmask3<<endl;
     // recalculate nmask3 if lowres surface provided
     m_ConMat3  = new SpMat<float> (nmask3,nlrmask3);
     if(opts.omeanpathlength.value()) m_ConMat3b = new SpMat<float> (nmask3,nlrmask3);
@@ -1956,7 +1955,6 @@ namespace TRACT{
           }
         }
       }
-      cout<<"counter "<<counter<<endl;
     }
     else{ // where we update Nxn matrix
       make_unique(inlrmask3);
