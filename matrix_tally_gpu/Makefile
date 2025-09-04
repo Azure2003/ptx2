@@ -1,6 +1,5 @@
 # File: Makefile
 include $(FSLCONFDIR)/default.mk
-NVCC = /usr/local/cuda/bin/nvcc
 TARGET = tally
 
 all: $(TARGET)
