@@ -15,6 +15,16 @@
 
 #include <probtrackxOptions.h>
 
+struct coordinate{
+	int x;
+	int y;
+	int z;
+};
+
+struct sampleResult{
+	coordinate coordinates;
+	int value;
+};
 
 struct MaskData{
 	float 		distthresh;

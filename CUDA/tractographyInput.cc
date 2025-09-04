@@ -12,6 +12,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
 #include "utils/log.h"
 #include "armawrap/newmat.h"
@@ -41,6 +42,19 @@ void applycoordchange(float* coords, const Matrix& old2new_mat)
   coords[1] = MISCMATHS::round(v(2));
   coords[2] = MISCMATHS::round(v(3));
 }
+
+void applycoordchange(Matrix& coordvol, const Matrix& old2new_mat)
+  {
+    for (int n=1; n<=coordvol.Nrows(); n++) {
+      ColumnVector v(4);
+      v << coordvol(n,1) << coordvol(n,2) << coordvol(n,3) << 1.0;
+      v = old2new_mat * v;
+      coordvol(n,1) = MISCMATHS::round(v(1));
+      coordvol(n,2) = MISCMATHS::round(v(2));
+      coordvol(n,3) = MISCMATHS::round(v(3));
+    }
+  }
+
 
 void  tractographyInput::load_mesh(	string&		      filename,
                                     vector<float>&	vertices,
@@ -598,6 +612,7 @@ void  tractographyInput::load_rois( // Input
   size_t sizeVol = Ssizes[0]*Ssizes[1]*Ssizes[2];
 
   if (fsl_imageexists(filename)){
+    cout<<"1"<<endl;
     // filename is a volume
     data.volume=new float[sizeVol];
     //memset(data.volume,-1,sizeSeed*sizeof(float));
@@ -607,6 +622,7 @@ void  tractographyInput::load_rois( // Input
     data.IndexRoi[0]=0;
     data.sizesStr[4]=1;
   }else if (meshExists(filename)){
+    cout<<"2"<<endl;
     load_mesh(filename,verticesVec,facesVec,locsVec,data.nlocs,wcoords,0,coordsV);
     size_t sizeVox2Face = sizeVol+1;
     data.VoxFacesIndex=new int[sizeVox2Face];
@@ -616,7 +632,9 @@ void  tractographyInput::load_rois( // Input
     data.IndexRoi=new int[1];
     data.IndexRoi[0]=0;
     data.sizesStr[4]=1;
+    cout<<"2 end"<<endl;
   }else{
+    cout<<"3"<<endl;
     // file name is ascii text file
     vector<string> fnames;
     ifstream fs(filename.c_str());
@@ -1310,16 +1328,15 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
                                               float**&		      ConNetb,
                                               int&			        nRowsNet,
                                               int&			        nColsNet,
-                                              float**&		      ConMat1,
-                                              float**&		      ConMat1b,
                                               int&			        nRowsMat1,
                                               int&			        nColsMat1,
-                                              float**&		      ConMat3,
-                                              float**&		      ConMat3b,
                                               int&			        nRowsMat3,
                                               int&			        nColsMat3,
+                                              int&              nRowsMat4,
+                                              int&              nColsMat4,
                                               float*&			      m_s2targets,
                                               float*&			      m_s2targetsb,
+                                              NEWIMAGE::volume<int>&          lookup4,
                                               volume4D<float>*&	m_localdir)
 {
   printf("Loading tractography data\n");
@@ -1781,20 +1798,22 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
   Matrix m1_coords;
 
   if(opts.matrix1out.value()||opts.matrix2out.value()){
-
-    load_rois_matrix1(tData,opts.seedfile.value(),mm2vox,tData.Sdims,tData.Ssizes,2,refVol,tData.lrmatrix1,m1_coords);
-
+    cout<<"checkpoint1"<<endl;
+      load_rois_matrix1(tData,opts.seedfile.value(),mm2vox,tData.Sdims,tData.Ssizes,2,refVol,tData.lrmatrix1,m1_coords);
+      cout<<"end check point"<<endl;
     if(opts.matrix1out.value())
       write_ascii_matrix(m1_coords,logger.appendDir("coords_for_fdt_matrix1"));
-    else
+    else if(opts.matrix2out.value())
       write_ascii_matrix(m1_coords,logger.appendDir("coords_for_fdt_matrix2"));
     ///////////////////////////////////
     ////////// MATRIX 2 MASKs /////////
     ///////////////////////////////////
     Matrix lrm1_coords;
     if(opts.matrix2out.value()){
+      cout<<"entering"<<endl;
       volume<float> tmpvolM2;
       read_volume(tmpvolM2,opts.lrmask.value());
+      
       // lrmask / --target2 must be defined in seed space,
       // but may be downsampled, so the seed -> target2
       // affine is just a scaling matrix (identity if
@@ -1811,7 +1830,9 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
       tData.lrmatrix1.nlocs=0;
       tData.lrmatrix1.NVols=0;
       tData.lrmatrix1.NSurfs=0;
+   
       load_rois(opts.lrmask.value(),mm2vox,tData.Sdims,tData.M2sizes,1,refVol,tData.lrmatrix1,lrm1_coords);
+      
       write_ascii_matrix(lrm1_coords,logger.appendDir("tract_space_coords_for_fdt_matrix2"));
       nColsMat1=tData.lrmatrix1.nlocs;
 
@@ -1836,27 +1857,13 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
     }else{
       nColsMat1=tData.lrmatrix1.nlocs;
     }
-
-    ConMat1 = new float*[tData.nseeds];
-    nRowsMat1=tData.nseeds;
-    for(int i=0;i<nRowsMat1;i++){
-      ConMat1[i]=new float[nColsMat1];
-      for(int j=0;j<nColsMat1;j++)
-	      ConMat1[i][j]=0;
-    }
-    if(opts.omeanpathlength.value()){
-      ConMat1b = new float*[tData.nseeds];
-      for(int i=0;i<nRowsMat1;i++){
-	      ConMat1b[i]=new float[nColsMat1];
-	      for(int j=0;j<nColsMat1;j++)
-	        ConMat1b[i][j]=0;
-      }
-    }
+    nRowsMat1=tData.nseeds; //Edit back later
     if(opts.matrix2out.value()){
       printf("Dimensions Matrix2: %i x %i\n",nRowsMat1,nColsMat1);
     }else{
       printf("Dimensions Matrix1: %i x %i\n",nRowsMat1,nColsMat1);
     }
+    cout<<"testing if wrong here"<<endl;
   }
 
   ///////////////////////////////////
@@ -1879,7 +1886,6 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
 
     write_ascii_matrix(m3_coords,logger.appendDir("coords_for_fdt_matrix3"));
 
-    ConMat3 = new float*[tData.matrix3.nlocs];
     nRowsMat3=tData.matrix3.nlocs;
 
     ///////////////////////////////////
@@ -1895,23 +1901,75 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
     }else{
       nColsMat3=tData.matrix3.nlocs;
     }
-    for(int i=0;i<nRowsMat3;i++){
-      ConMat3[i]=new float[nColsMat3];
-      for(int j=0;j<nColsMat3;j++)
-	      ConMat3[i][j]=0;
-    }
-    if(opts.omeanpathlength.value()){
-      ConMat3b = new float*[tData.matrix3.nlocs];
-      for(int i=0;i<nRowsMat3;i++){
-	      ConMat3b[i]=new float[nColsMat3];
-	      for(int j=0;j<nColsMat3;j++)
-	        ConMat3b[i][j]=0;
-      }
-    }
 
     printf("Dimensions Matrix3 %i x %i\n",nRowsMat3,nColsMat3);
   }
+if (opts.matrix4out.value()){//we need to update matrix data? I think without it, the kernal will fail.
+  cout<<"checkpoint3"<<endl;
+    NEWIMAGE::volume<int>               m_dtimask;
+    CSV                                 m_mask4;
+    NEWIMAGE::volume<int>               m_lookup4;
+    NEWIMAGE::volume<int>               m_beenhere4;
+    NEWMAT::ColumnVector                m_dtidim;
 
+  if(opts.simple.value()){
+      cerr<<"Matrix4 output not compatible with --simple mode"<<endl;
+      exit(1);
+    }
+
+    // columns are brain mask in diffusion space: initialization
+    read_volume(m_dtimask,opts.dtimask.value());
+    m_beenhere4.reinitialize(m_dtimask.xsize(),m_dtimask.ysize(),m_dtimask.zsize());
+    m_beenhere4=0;
+    m_lookup4.reinitialize(m_dtimask.xsize(),m_dtimask.ysize(),m_dtimask.zsize());
+    copybasicproperties(m_dtimask,m_lookup4);
+    m_lookup4=0;
+    m_dtidim.ReSize(3);
+    m_dtidim<<m_dtimask.xdim()<<m_dtimask.ydim()<<m_dtimask.zdim();
+    int numnz=0;
+// m_loopup4 allows for the wx, wy, wz to be the id 
+    for(int Wz=m_dtimask.minz();Wz<=m_dtimask.maxz();Wz++)
+      for(int Wy=m_dtimask.miny();Wy<=m_dtimask.maxy();Wy++)
+        for(int Wx=m_dtimask.minx();Wx<=m_dtimask.maxx();Wx++)
+          if(m_dtimask.value(Wx,Wy,Wz)!=0){
+            numnz++;
+            m_lookup4(Wx,Wy,Wz)=numnz;
+          }
+    save_volume(m_lookup4,logger.appendDir("lookup_tractspace_fdt_matrix4"));
+    Matrix CoordMat_tract4(numnz, 3);
+     int mytrow=1;
+    for(int Wz=m_dtimask.minz();Wz<=m_dtimask.maxz();Wz++)
+      for(int Wy=m_dtimask.miny();Wy<=m_dtimask.maxy();Wy++)
+        for(int Wx=m_dtimask.minx();Wx<=m_dtimask.maxx();Wx++)
+          if(m_dtimask(Wx,Wy,Wz)!=0){
+            CoordMat_tract4(mytrow,1)=Wx;
+            CoordMat_tract4(mytrow,2)=Wy;
+            CoordMat_tract4(mytrow,3)=Wz;
+            mytrow++;
+          }
+
+    lookup4=m_lookup4;
+    /*for(int Wz=m_dtimask.minz();Wz<=m_dtimask.maxz();Wz++){
+      for(int Wy=m_dtimask.miny();Wy<=m_dtimask.maxy();Wy++){
+        for(int Wx=m_dtimask.minx();Wx<=m_dtimask.maxx();Wx++){
+          printf("%d", lookup4(Wx, Wy, Wz));
+        }
+        printf("\n");
+      }
+      printf("\n");
+    }*/
+   if(opts.mask4.value()==""){
+    nRowsMat4=tData.lrmatrix1.nlocs;
+   }else{
+    nRowsMat4=tData.matrix3.nlocs;
+   }
+    nColsMat4=numnz;
+    printf("Dimensions Matrix4 %i x %i\n",nRowsMat4,nColsMat4);
+
+
+    applycoordchange(CoordMat_tract4, m_dtimask.niftivox2newimagevox_mat().i());
+    write_ascii_matrix(CoordMat_tract4,logger.appendDir("tract_space_coords_for_fdt_matrix4"));
+}
   ////////////////////////////////
   //////// NETWORK MASKs /////////
   ////////////////////////////////
@@ -1940,3 +1998,5 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
     load_rois_mixed(opts.seedfile.value(),mm2vox,tData.Sdims,tData.Ssizes,tData.networkREF);
   }
 }
+
+

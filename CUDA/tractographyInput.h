@@ -35,16 +35,15 @@ public:
                               float**&                    ConNetb,
                               int&                        nRowsNet,
                               int&                        nColsNet,
-                              float**&                    ConMat1,
-                              float**&                    ConMat1b,
                               int&                        nRowsMat1,
                               int&                        nColsMat1,
-                              float**&                    ConMat3,
-                              float**&                    ConMat3b,
                               int&                        nRowsMat3,
                               int&                        nColsMat3,
+                              int&                        nRowsMat4,
+                              int&                        nColsMat4,
                               float*&                     m_s2targets,
                               float*&                     m_s2targetsb,
+                              NEWIMAGE::volume<int>&       lookup4,
                               NEWIMAGE::volume4D<float>*& m_localdir);
 
   /// General Method to read a Surface file in ASCII, VTK or GIFTI format
@@ -170,5 +169,6 @@ public:
                   NEWIMAGE::volume<float> vol,
                   NEWMAT::Matrix&         mm2vox,   // 4x4
                   float*                  vox2mm);  // 4x4
+
 
 };

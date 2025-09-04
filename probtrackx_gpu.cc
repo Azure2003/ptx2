@@ -14,7 +14,8 @@
 #include "saveResults_ptxGPU.h"
 #include "CUDA/tractographyInput.h"
 #include "CUDA/tractography_gpu.cuh"
-
+#include <cstdint>
+#include "sparse.h"
 
 using namespace std;
 using namespace Utilities;
@@ -37,14 +38,18 @@ void tractography(){
   float**	   	ConNetb;
   int 			nRowsNet;
   int			nColsNet;
-  float**		ConMat1;
-  float**	   	ConMat1b;
   int 			nRowsMat1;
   int			nColsMat1;
-  float**	     	ConMat3;
-  float**	  	ConMat3b;
+  SparseMatrix<float> ConMat1;
+  SparseMatrix<float> ConMat1b;
+  SparseMatrix<float> ConMat3;
+  SparseMatrix<float> ConMat3b;
+  SparseMatrix<int64_t> ConMat4;
+  int      nRowsMat4;
+  int      nColsMat4;
   int 			nRowsMat3;
   int			nColsMat3;
+  NEWIMAGE::volume<int> lookup4;
   float*		m_s2targets;	// All seeds to all Targets: Nseeds x NTargets
   float*	 	m_s2targetsb;
   vector< vector<float> > m_save_paths;
@@ -58,11 +63,16 @@ void tractography(){
 
   input.load_tractographyData(data_host,m_prob,m_prob2,
 			      ConNet,ConNetb,nRowsNet,nColsNet,
-			      ConMat1,ConMat1b,nRowsMat1,nColsMat1,
-			      ConMat3,ConMat3b,nRowsMat3,nColsMat3,
-			      m_s2targets,m_s2targetsb,m_localdir);
+			      nRowsMat1,nColsMat1,
+			      nRowsMat3,nColsMat3, nRowsMat4, nColsMat4,
+			      m_s2targets,m_s2targetsb,lookup4, m_localdir);
   //printf("SIZE MATRIX %i %i\n",ConMat3.Nrows(),ConMat3.Ncols());
-
+  ConMat1.resize(nRowsMat1, nColsMat1);
+  ConMat1b.resize(nRowsMat1, nColsMat1);
+  ConMat3.resize(nRowsMat3, nColsMat3);
+  ConMat3b.resize(nRowsMat3, nColsMat3);
+  ConMat4.resize(nRowsMat4, nColsMat4);
+  
   cout<<endl<<"Time Loading Data: "<<(time(NULL)-_time)<<" seconds"<<endl<<endl; _time=time(NULL);
 
   int* keeptotal;
@@ -76,7 +86,7 @@ void tractography(){
     keeptotal[0]=0;
   }
   tractography_gpu(data_host,m_prob,m_prob2,keeptotal,
-  		   ConNet,ConNetb,ConMat1,ConMat1b,ConMat3,ConMat3b,m_s2targets,m_s2targetsb,m_save_paths,m_localdir);
+  		   ConNet,ConNetb,&ConMat1,&ConMat1b,&ConMat3,&ConMat3b,&ConMat4, m_s2targets,m_s2targetsb,m_save_paths, lookup4, m_localdir);
   cout<<endl<<"Time Spent Tracking:: "<<(time(NULL)-_time)<<" seconds"<<endl<<endl;
 
   /////////////////// FINISH ///////////////////
@@ -84,8 +94,8 @@ void tractography(){
   // save results
   cout << "save results" << endl;
   counter_save_total(keeptotal,num_keeptotal);
-  counter_save(data_host,m_prob,m_prob2,ConNet,ConNetb,nRowsNet,nColsNet,ConMat1,ConMat1b,nRowsMat1,nColsMat1,
-	       ConMat3,ConMat3b,nRowsMat3,nColsMat3,m_s2targets,m_s2targetsb,m_save_paths,m_localdir);
+  counter_save(data_host,m_prob,m_prob2,ConNet,ConNetb,nRowsNet,nColsNet,&ConMat1,&ConMat1b,nRowsMat1,nColsMat1,
+	       &ConMat3,&ConMat3b, nRowsMat3,nColsMat3,&ConMat4, nRowsMat4, nColsMat4, m_s2targets,m_s2targetsb,m_save_paths,m_localdir);
 
   return;
 }
@@ -115,9 +125,9 @@ int main ( int argc, char **argv ){
     exit(1);
   }
 
-  if(opts.matrix4out.value()){
-    cerr<<"Error: option '--omatrix4' is not available in this version"<<endl;
-    exit(1);
+ if(opts.matrix4out.value()){
+    /*cerr<<"Error: option '--omatrix4' is not available in this version"<<endl;*/
+    //exit(1);
   }
 
   // NOT IMPLEMENTED - hidden

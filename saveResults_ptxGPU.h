@@ -11,6 +11,8 @@
 #include "newimage/newimage.h"
 
 #include "CUDA/tractographyData.h"
+#include "sparse.h"
+
 
 void counter_save_total(int*& keeptotal, int numKeeptotals);
 
@@ -24,14 +26,17 @@ void counter_save(
 	float**			ConNetb,	// Network mode
 	int 			nRowsNet,	// Network mode
 	int 			nColsNet,	// Network mode
-	float**			ConMat1,
-	float**			ConMat1b,	// omeanpathlength
+	SparseMatrix<float>*			ConMat1,
+	SparseMatrix<float>*			ConMat1b,	// omeanpathlength
 	int 			nRowsMat1,
 	int 			nColsMat1,
-	float**			ConMat3,
-	float**			ConMat3b,
+	SparseMatrix<float>*			ConMat3,
+	SparseMatrix<float>*			ConMat3b,
 	int 			nRowsMat3,
 	int 			nColsMat3,
+	SparseMatrix<int64_t>*			ConMat4,
+	int 			nRowsMat4,
+	int 			nColsMat4,
 	float*			m_s2targets,
 	float*			m_s2targetsb,
 	std::vector< std::vector<float> >& m_save_paths,
