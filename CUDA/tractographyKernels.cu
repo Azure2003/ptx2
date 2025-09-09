@@ -1289,7 +1289,6 @@ __global__ void matrix_kernel(  tractographyData*     data_gpu,
   /////////////////
   uint offset_path = id*data_gpu->nsteps*3;
   float* mypath=&paths[offset_path];
-  bool rejectFlag=false;
   if(HSurfs){
     if(M2){
       vox_to_vox_S2M2(mypath,&segmentAx[threadIdx.x],&segmentAy[threadIdx.x],&segmentAz[threadIdx.x]);
@@ -1325,22 +1324,15 @@ __global__ void matrix_kernel(  tractographyData*     data_gpu,
       }
     }
     if(HSurfs){
-      int tempnumcrossed=mynumcrossed;
       for(int j=0;j<matrixData->NSurfs;j++){
 	      has_crossed_surface_loc<M2>(matrixData->vertices,matrixData->locs,
 				matrixData->faces,matrixData->VoxFaces,
 				&matrixData->VoxFacesIndex[j*(C_Ssizes[0]*C_Ssizes[1]*C_Ssizes[2]+1)],
 				&segmentAx[threadIdx.x],&segmentAy[threadIdx.x],&segmentAz[threadIdx.x],
 			  &segmentBx[threadIdx.x],&segmentBy[threadIdx.x],&segmentBz[threadIdx.x],
-				&crossed[id*data_gpu->nsteps*3],mynumcrossed,pathlength, rejectFlag);
+				&crossed[id*data_gpu->nsteps*3],mynumcrossed,pathlength);
       }
-      if(rejectFlag&&pos!=3){
-        break;
-      }
-			if(mynumcrossed!=tempnumcrossed){
-        flag=false;
-        break;
-      }
+			
       segmentAx[threadIdx.x]=segmentBx[threadIdx.x];
       segmentAy[threadIdx.x]=segmentBy[threadIdx.x];
       segmentAz[threadIdx.x]=segmentBz[threadIdx.x];	
@@ -1390,21 +1382,13 @@ rejectFlag=false;
       }
     }
     if(HSurfs){
-      int tempnumcrossed=mynumcrossed;
       for(int j=0;j<matrixData->NSurfs;j++){
 	      has_crossed_surface_loc<M2>(matrixData->vertices,matrixData->locs,
 				matrixData->faces,matrixData->VoxFaces,
 				&matrixData->VoxFacesIndex[j*(C_Ssizes[0]*C_Ssizes[1]*C_Ssizes[2]+1)],
 				&segmentAx[threadIdx.x],&segmentAy[threadIdx.x],&segmentAz[threadIdx.x],
 				&segmentBx[threadIdx.x],&segmentBy[threadIdx.x],&segmentBz[threadIdx.x],
-				&crossed[id*data_gpu->nsteps*3],mynumcrossed,pathlength, rejectFlag);
-      }
-      if(rejectFlag&&pos!=3){
-        break;
-      }
-      if(mynumcrossed!=tempnumcrossed){
-        flag=false;
-        break;
+				&crossed[id*data_gpu->nsteps*3],mynumcrossed,pathlength);
       }
       segmentAx[threadIdx.x]=segmentBx[threadIdx.x];
       segmentAy[threadIdx.x]=segmentBy[threadIdx.x];

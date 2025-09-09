@@ -609,7 +609,6 @@ void write_Matrix4(
   int** lengths_host,
   float** path_host
 ){
-  cout<<"4"<<endl;
     bool flag=true;
     int pos=0;
     vector< float3 > inmask;
