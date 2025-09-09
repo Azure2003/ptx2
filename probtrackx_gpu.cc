@@ -125,9 +125,9 @@ int main ( int argc, char **argv ){
     exit(1);
   }
 
- if(opts.matrix4out.value()){
-    /*cerr<<"Error: option '--omatrix4' is not available in this version"<<endl;*/
-    //exit(1);
+ if(opts.matrix4out.value()&&(!opts.matrix3out.value()&&!opts.matrix1out.value())){
+    cerr<<"Error: option '--omatrix4' requires matrix 1 or matrix 3 to be ran simultanously"<<endl;
+    exit(1);
   }
 
   // NOT IMPLEMENTED - hidden
