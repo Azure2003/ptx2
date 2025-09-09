@@ -722,9 +722,6 @@ void write_Matrix4(
       }
       pos=pos+2;
     }
-    if(flag){
-      cout<<"1"<<endl;
-    }
 }
 
 ////////////////////////

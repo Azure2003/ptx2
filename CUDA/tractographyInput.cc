@@ -630,7 +630,6 @@ void  tractographyInput::load_rois( // Input
     data.IndexRoi=new int[1];
     data.IndexRoi[0]=0;
     data.sizesStr[4]=1;
-    cout<<"2 end"<<endl;
   }else{
     // file name is ascii text file
     vector<string> fnames;
@@ -1898,7 +1897,6 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
     printf("Dimensions Matrix3 %i x %i\n",nRowsMat3,nColsMat3);
   }
 if (opts.matrix4out.value()){//we need to update matrix data? I think without it, the kernal will fail.
-  cout<<"checkpoint3"<<endl;
     NEWIMAGE::volume<int>               m_dtimask;
     CSV                                 m_mask4;
     NEWIMAGE::volume<int>               m_lookup4;
