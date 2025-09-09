@@ -612,7 +612,6 @@ void  tractographyInput::load_rois( // Input
   size_t sizeVol = Ssizes[0]*Ssizes[1]*Ssizes[2];
 
   if (fsl_imageexists(filename)){
-    cout<<"1"<<endl;
     // filename is a volume
     data.volume=new float[sizeVol];
     //memset(data.volume,-1,sizeSeed*sizeof(float));
@@ -622,7 +621,6 @@ void  tractographyInput::load_rois( // Input
     data.IndexRoi[0]=0;
     data.sizesStr[4]=1;
   }else if (meshExists(filename)){
-    cout<<"2"<<endl;
     load_mesh(filename,verticesVec,facesVec,locsVec,data.nlocs,wcoords,0,coordsV);
     size_t sizeVox2Face = sizeVol+1;
     data.VoxFacesIndex=new int[sizeVox2Face];
@@ -634,7 +632,6 @@ void  tractographyInput::load_rois( // Input
     data.sizesStr[4]=1;
     cout<<"2 end"<<endl;
   }else{
-    cout<<"3"<<endl;
     // file name is ascii text file
     vector<string> fnames;
     ifstream fs(filename.c_str());
@@ -1798,9 +1795,7 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
   Matrix m1_coords;
 
   if(opts.matrix1out.value()||opts.matrix2out.value()){
-    cout<<"checkpoint1"<<endl;
       load_rois_matrix1(tData,opts.seedfile.value(),mm2vox,tData.Sdims,tData.Ssizes,2,refVol,tData.lrmatrix1,m1_coords);
-      cout<<"end check point"<<endl;
     if(opts.matrix1out.value())
       write_ascii_matrix(m1_coords,logger.appendDir("coords_for_fdt_matrix1"));
     else if(opts.matrix2out.value())
@@ -1810,7 +1805,6 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
     ///////////////////////////////////
     Matrix lrm1_coords;
     if(opts.matrix2out.value()){
-      cout<<"entering"<<endl;
       volume<float> tmpvolM2;
       read_volume(tmpvolM2,opts.lrmask.value());
       
@@ -1863,7 +1857,6 @@ void tractographyInput::load_tractographyData(tractographyData&	tData,
     }else{
       printf("Dimensions Matrix1: %i x %i\n",nRowsMat1,nColsMat1);
     }
-    cout<<"testing if wrong here"<<endl;
   }
 
   ///////////////////////////////////

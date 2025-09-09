@@ -69,10 +69,6 @@ void allocate_host_mem(
   cuMemGetInfo(&free,&total); // in bytes
   int bytes_per_sl_STREAM=0; // needed for each STREAM (twice)
   int bytes_per_sl_COMMON=0; // needed in common to all STREAMS
-  printf("data_host.nsteps %i \n",data_host.nsteps);
-  printf("size of float %i \n", sizeof(float));
-  printf("size of float3 %i \n", sizeof(float3));
-  printf("size of int %i \n", sizeof(int));
 
 
   if(!opts.save_paths.value()){
@@ -142,9 +138,6 @@ void allocate_host_mem(
   }
   free=free*FREEPERCENTAGE; // 80% defined in options.h
   MAX_SLs=free/(bytes_per_sl_STREAM+(bytes_per_sl_COMMON/NSTREAMS));
-  printf("bytes_per_sl_COMMON %i \n",bytes_per_sl_COMMON);
-  printf("bytes_per_sl_STREAM %i \n",bytes_per_sl_STREAM);
-  printf("MAX_SLs %ld \n",MAX_SLs);
 
   //MAX_SLs=200001;
   if(MAX_SLs%2) MAX_SLs++;
@@ -243,9 +236,6 @@ void allocate_gpu_mem(	tractographyData& 	data_host,
 {
   probtrackxOptions& opts =probtrackxOptions::getInstance();
   int nsteps=opts.nsteps.value();
-  size_t free,total;
-  cuMemGetInfo(&free,&total); // in bytes
-  printf("init gpu free memory: %zu\n",free);
 
   // coordinate visited
   long long nbytes;
@@ -262,13 +252,11 @@ void allocate_gpu_mem(	tractographyData& 	data_host,
     nbytes*=sizeof(float);
     checkCuda(cudaMalloc((void**)paths_gpu,nbytes));
   }
-  cuMemGetInfo(&free,&total); // in bytes
-  printf("after paths_gpu free memory: %zu \n",free);
+  
   // path lenghts
-  checkCuda(cudaMalloc((void**)sampled_fib_indices_device,MAX_SLs*data_host.nsteps*sizeof(sampleResult)));
+  
   checkCuda(cudaMalloc((void**)lengths_gpu,MAX_SLs*2*sizeof(int)));
-  cuMemGetInfo(&free,&total); // in bytes
-  printf("after lengths_gpu free memory: %zu\n",free);
+  
 
   // Map probabilities
   if(opts.simpleout.value()){
@@ -278,21 +266,18 @@ void allocate_gpu_mem(	tractographyData& 	data_host,
     long long size_beenhere = THREADS_STREAM;
     size_beenhere*=data_host.nsteps;
     checkCuda(cudaMalloc((void**)beenhere_gpu,size_beenhere*sizeof(int)));
-    cuMemGetInfo(&free,&total); // in bytes
-    printf("after simpleout free memory: %zu\n",free);
+    
   }
   if(opts.omeanpathlength.value()&&opts.simpleout.value()){
     checkCuda(cudaMalloc((void**)mprob2_gpu,data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]*sizeof(float)));
     checkCuda(cudaMemset(*mprob2_gpu,0,data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]*sizeof(float)));
-    cuMemGetInfo(&free,&total); // in bytes
-    printf("after omeanpathlength free memory: %zu\n",free);
+    
   }
   // Map with average local tract orientations
   if(opts.opathdir.value()){
     checkCuda(cudaMalloc((void**)mlocaldir_gpu,data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]*6*sizeof(float)));
     checkCuda(cudaMemset(*mlocaldir_gpu,0,data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]*6*sizeof(float)));
-    cuMemGetInfo(&free,&total); // in bytes
-    printf("after opathdir free memory: %zu\n",free);
+    
   }
   if(opts.network.value()){
     // Network Matrix
@@ -316,8 +301,6 @@ void allocate_gpu_mem(	tractographyData& 	data_host,
     }else{
       net_flags_in_shared=true;
     }
-    cuMemGetInfo(&free,&total); // in bytes
-    printf("after network free memory: %zu\n",free);
 
   }
   // Seed to targets: this is for s2astext
@@ -338,15 +321,11 @@ void allocate_gpu_mem(	tractographyData& 	data_host,
     }else{
       targ_flags_in_shared=true;
     }
-    cuMemGetInfo(&free,&total); // in bytes
-    printf("after s2tout free memory: %zu\n",free);
   }
 
   if(opts.loopcheck.value()){
     checkCuda(cudaMalloc((void**)loopcheckkeys_gpu,(THREADS_STREAM*nsteps/5)*sizeof(int)));
     checkCuda(cudaMalloc((void**)loopcheckdirs_gpu,(THREADS_STREAM*nsteps/5)*sizeof(float3)));
-    cuMemGetInfo(&free,&total); // in bytes
-    printf("after loopchecking free memory: %zu\n",free);
   }
 
   // Connectivity Matrices
@@ -357,15 +336,13 @@ void allocate_gpu_mem(	tractographyData& 	data_host,
       checkCuda(cudaMalloc((void**)lrmat_crossed_gpu,NSTREAMS*size_lrmat_cross*sizeof(float3)));
       checkCuda(cudaMalloc((void**)lrmat_numcrossed_gpu,MAX_SLs*sizeof(int)));
     }
-    cuMemGetInfo(&free,&total); // in bytes
-    printf("after matrix3 free memory: %zu\n",free);
   }else if(opts.matrix1out.value()||opts.matrix2out.value()){
     checkCuda(cudaMalloc((void**)lrmat_crossed_gpu,NSTREAMS*size_lrmat_cross*sizeof(float3)));
     checkCuda(cudaMalloc((void**)lrmat_numcrossed_gpu,MAX_SLs*sizeof(int)));
-    cuMemGetInfo(&free,&total); // in bytes
-    printf("after matrix1 free memory: %zu\n",free);
   }
- 
+ if(opts.matrix4out.value()){
+  checkCuda(cudaMalloc((void**)sampled_fib_indices_device,MAX_SLs*data_host.nsteps*sizeof(sampleResult)));
+}
 }
 
 void copy_ToConstantMemory(tractographyData&	data_host)

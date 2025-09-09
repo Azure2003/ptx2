@@ -1302,7 +1302,6 @@ __global__ void matrix_kernel(  tractographyData*     data_gpu,
 
   int pos=3;
   int mynumcrossed=0;
-  bool flag=true;
   for(;pos<mylength*3;pos=pos+3){
     if(M2){
       vox_to_vox_S2M2(&mypath[pos],&segmentBx[threadIdx.x],&segmentBy[threadIdx.x],&segmentBz[threadIdx.x]);
@@ -1359,8 +1358,6 @@ __global__ void matrix_kernel(  tractographyData*     data_gpu,
     }
   }
   pos=3;
-flag=true;
-rejectFlag=false;
   for(;pos<mylength*3;pos=pos+3){
     if(M2){
       vox_to_vox_S2M2(&mypath[pos],&segmentBx[threadIdx.x],&segmentBy[threadIdx.x],&segmentBz[threadIdx.x]);
