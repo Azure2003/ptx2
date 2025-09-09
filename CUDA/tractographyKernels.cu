@@ -27,12 +27,13 @@ __global__ void get_path_kernel(
 				float3*           loopcheckdirs,						
 				//OUTPUT
 				float*            path,
-				int*              lengths)
+				int*              lengths,
+        sampleResult*              sampled_fib_indices)
 {
   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
   if(id>=maxThread) return;
   ///// TEST fibst : yo creo que esta mal en el caso de que randfib=1,2, o 3
-
+  //printf("Hellow2%d\n", id);
   float3 part_init;
   part_init.x=0;
   part_init.y=0;
@@ -66,6 +67,8 @@ __global__ void get_path_kernel(
   // We want to start at the same exact point, even if sampvox is activated
   uint offset_path_fw = id*data_gpu->nsteps*3;
   uint offset_path_bw = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
+  uint offset_fib_fw = id * data_gpu->nsteps;
+  uint offset_fib_bw = id * data_gpu->nsteps + (data_gpu->nsteps / 2);
   path[offset_path_fw]= data_gpu->seeds[numseed*3];
   path[offset_path_fw+1]= data_gpu->seeds[numseed*3+1];
   path[offset_path_fw+2]= data_gpu->seeds[numseed*3+2];
@@ -103,7 +106,7 @@ __global__ void get_path_kernel(
 						       &partRx[threadIdx.x],&partRy[threadIdx.x],&partRz[threadIdx.x],
 						       &memSH_a[threadIdx.x],&memSH_b[threadIdx.x],&memSH_c[threadIdx.x],
 						       &memSH_d[threadIdx.x],&memSH_e[threadIdx.x],&memSH_f[threadIdx.x],
-						       &path[offset_path_fw],part_init,part_has_jumped);
+						       &path[offset_path_fw],part_init,part_has_jumped, &sampled_fib_indices[offset_fib_fw]);
 
   // track in the other direction
   lengths[id*2+1]=streamline<randfib,loopcheck,modeuler>(data_gpu,
@@ -113,7 +116,7 @@ __global__ void get_path_kernel(
 							 &partRx[threadIdx.x],&partRy[threadIdx.x],&partRz[threadIdx.x],
 							 &memSH_a[threadIdx.x],&memSH_b[threadIdx.x],&memSH_c[threadIdx.x],
 							 &memSH_d[threadIdx.x],&memSH_e[threadIdx.x],&memSH_f[threadIdx.x],
-							 &path[offset_path_bw],part_init,part_has_jumped);
+							 &path[offset_path_bw],part_init,part_has_jumped, &sampled_fib_indices[offset_fib_bw]);
 
   state[id]=localState; // save state, otherwise random numbers will be repeated (start at the same point)
 }
@@ -1251,7 +1254,8 @@ __global__ void matrix_kernel(  tractographyData*     data_gpu,
                                 MaskData*             matrixData, // info vols & surfs
                                 // OUTPUT
                                 float3*               crossed,
-                                int*                   numcrossed)
+                                int*                   numcrossed
+                                )
 {	
   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
   if(id>=maxThread) return;
@@ -1267,7 +1271,6 @@ __global__ void matrix_kernel(  tractographyData*     data_gpu,
   int max_per_jump=3;  // Change THIs, should pass from min routine
   float pathlength=1.0f;
   if(pathdist||omeanpathlength) pathlength=data_gpu->steplength; // it starts with the second coordinate of the path 
-	
   // if path shorter than threshold, then ignore it
   int mylength=lengths[id*2];
   float length=0;   
@@ -1286,6 +1289,7 @@ __global__ void matrix_kernel(  tractographyData*     data_gpu,
   /////////////////
   uint offset_path = id*data_gpu->nsteps*3;
   float* mypath=&paths[offset_path];
+  bool rejectFlag=false;
   if(HSurfs){
     if(M2){
       vox_to_vox_S2M2(mypath,&segmentAx[threadIdx.x],&segmentAy[threadIdx.x],&segmentAz[threadIdx.x]);
@@ -1299,6 +1303,7 @@ __global__ void matrix_kernel(  tractographyData*     data_gpu,
 
   int pos=3;
   int mynumcrossed=0;
+  bool flag=true;
   for(;pos<mylength*3;pos=pos+3){
     if(M2){
       vox_to_vox_S2M2(&mypath[pos],&segmentBx[threadIdx.x],&segmentBy[threadIdx.x],&segmentBz[threadIdx.x]);
@@ -1320,15 +1325,22 @@ __global__ void matrix_kernel(  tractographyData*     data_gpu,
       }
     }
     if(HSurfs){
+      int tempnumcrossed=mynumcrossed;
       for(int j=0;j<matrixData->NSurfs;j++){
 	      has_crossed_surface_loc<M2>(matrixData->vertices,matrixData->locs,
 				matrixData->faces,matrixData->VoxFaces,
 				&matrixData->VoxFacesIndex[j*(C_Ssizes[0]*C_Ssizes[1]*C_Ssizes[2]+1)],
 				&segmentAx[threadIdx.x],&segmentAy[threadIdx.x],&segmentAz[threadIdx.x],
 			  &segmentBx[threadIdx.x],&segmentBy[threadIdx.x],&segmentBz[threadIdx.x],
-				&crossed[id*data_gpu->nsteps*3],mynumcrossed,pathlength);
+				&crossed[id*data_gpu->nsteps*3],mynumcrossed,pathlength, rejectFlag);
       }
-			
+      if(rejectFlag&&pos!=3){
+        break;
+      }
+			if(mynumcrossed!=tempnumcrossed){
+        flag=false;
+        break;
+      }
       segmentAx[threadIdx.x]=segmentBx[threadIdx.x];
       segmentAy[threadIdx.x]=segmentBy[threadIdx.x];
       segmentAz[threadIdx.x]=segmentBz[threadIdx.x];	
@@ -1355,7 +1367,8 @@ __global__ void matrix_kernel(  tractographyData*     data_gpu,
     }
   }
   pos=3;
-
+flag=true;
+rejectFlag=false;
   for(;pos<mylength*3;pos=pos+3){
     if(M2){
       vox_to_vox_S2M2(&mypath[pos],&segmentBx[threadIdx.x],&segmentBy[threadIdx.x],&segmentBz[threadIdx.x]);
@@ -1377,13 +1390,21 @@ __global__ void matrix_kernel(  tractographyData*     data_gpu,
       }
     }
     if(HSurfs){
+      int tempnumcrossed=mynumcrossed;
       for(int j=0;j<matrixData->NSurfs;j++){
 	      has_crossed_surface_loc<M2>(matrixData->vertices,matrixData->locs,
 				matrixData->faces,matrixData->VoxFaces,
 				&matrixData->VoxFacesIndex[j*(C_Ssizes[0]*C_Ssizes[1]*C_Ssizes[2]+1)],
 				&segmentAx[threadIdx.x],&segmentAy[threadIdx.x],&segmentAz[threadIdx.x],
 				&segmentBx[threadIdx.x],&segmentBy[threadIdx.x],&segmentBz[threadIdx.x],
-				&crossed[id*data_gpu->nsteps*3],mynumcrossed,pathlength);
+				&crossed[id*data_gpu->nsteps*3],mynumcrossed,pathlength, rejectFlag);
+      }
+      if(rejectFlag&&pos!=3){
+        break;
+      }
+      if(mynumcrossed!=tempnumcrossed){
+        flag=false;
+        break;
       }
       segmentAx[threadIdx.x]=segmentBx[threadIdx.x];
       segmentAy[threadIdx.x]=segmentBy[threadIdx.x];
@@ -1394,6 +1415,8 @@ __global__ void matrix_kernel(  tractographyData*     data_gpu,
 
   numcrossed[id]=mynumcrossed;
 }
+
+
 
 /////////////////////////////////////
 ///////// UPDATE PATHS VOLUME ///////
