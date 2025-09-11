@@ -490,7 +490,29 @@ double CsvTriangle::dist_to_point(const Vec& x0)const{
     return true;                      // I is in T
 
   }
+int CsvTriangle::step_sign_crossing(const Pt& segmentA, const Pt& segmentB) const {
+    // Compute triangle edge vectors
+    Vec u = _vertice[1] - _vertice[0];
+    Vec v = _vertice[2] - _vertice[0];
 
+    // Compute triangle normal (right-handed)
+    Vec normal = u * v;  // cross product
+    if (normal.norm() == 0) return 0;  // degenerate triangle
+
+    // Compute vectors from triangle to segment endpoints
+    Vec AS = segmentA - _vertice[0];
+    Vec BS = segmentB - _vertice[0];
+
+    // Dot products of each endpoint with triangle normal
+    float dotA = normal | AS;
+    float dotB = normal | BS;
+
+    float diff = dotB - dotA;
+
+    if (diff > 0.001) return 1;
+    else if (diff < -0.001) return -1;
+    else return 0;
+}
 
   const bool CsvTriangle::intersect(const vector<Pt> & p,int& ind) const {
     Tracer_Plus tr("CsvTriangle::intersect");

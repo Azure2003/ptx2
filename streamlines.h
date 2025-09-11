@@ -447,7 +447,6 @@ namespace TRACT{
       m_mask3.set_convention(opts.meshspace.value());
       m_mask3.load_rois(opts.mask3.value());
       if(m_mask3.nSurfs()>0){surfexists();}
-
       if(opts.lrmask3.value()!=""){
 	m_lrmask3.reinitialize(m_seeds.get_refvol());
 	m_lrmask3.set_convention(opts.meshspace.value());
@@ -662,7 +661,8 @@ namespace TRACT{
 	m_diff_path=m_stline.get_diff_path();
       m_crossedvox=m_stline.get_crossedvox();
     }
-    void append_path(){
+    int append_path(){
+      int start_indx=m_path.size();
       for(unsigned int i=0;i<m_stline.get_path_ref().size();i++){
 	m_path.push_back(m_stline.get_path_ref()[i]);
 	if(opts.matrix4out.value())
@@ -671,6 +671,7 @@ namespace TRACT{
       for(unsigned int i=0;i<m_stline.get_crossedvox_ref().size();i++){
 	m_crossedvox.push_back(m_stline.get_crossedvox_ref()[i]);
       }
+      return start_indx;
     }
     float calc_pathlength(const int& redund=0){
       return( float(m_path.size()-redund)*opts.steplength.value() );
@@ -685,7 +686,7 @@ namespace TRACT{
 
     };
 
-    void count_streamline();
+    void count_streamline(int index);
     void count_seed();
     void clear_streamline();
 
@@ -701,7 +702,7 @@ namespace TRACT{
     }
 
 
-    void update_matrix1(); //update path_dist after each streamline, only run this after each voxel!!
+    void update_matrix1(int index); //update path_dist after each streamline, only run this after each voxel!!
 
     void update_matrix2_row(); //but run this one every streamline as with the others
     void reset_beenhere2();
@@ -709,7 +710,7 @@ namespace TRACT{
     void update_matrix3();
     void reset_beenhere3();
 
-    void update_matrix4_col();
+    void update_matrix4_col(int index);
     void reset_beenhere4();
 
     void save_total(const int& keeptotal);

@@ -363,7 +363,9 @@ public:
   bool has_crossed_roi(const NEWMAT::ColumnVector& x1,const NEWMAT::ColumnVector& x2,
 		       const std::vector<NEWMAT::ColumnVector>& crossedvox,std::vector<int>& crossedrois,std::vector<int>& crossedlocs,
 		       std::vector< std::pair<int,int> >& surf_Triangle,bool closestvertex)const;
-
+  bool has_crossed_roi1(const NEWMAT::ColumnVector& x1,const NEWMAT::ColumnVector& x2,
+            const std::vector<NEWMAT::ColumnVector>& crossedvox,std::vector<int>& crossedrois,std::vector<int>& crossedlocs,
+            std::vector< std::pair<int,int> >& surf_Triangle,bool closestvertex, bool flag)const;
 
   int step_sign(const int& loc,const mesh::Vec& step)const;
   int coord_sign(const int& loc,const NEWMAT::ColumnVector& x2)const;

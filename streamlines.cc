@@ -738,7 +738,7 @@ namespace TRACT{
       for(unsigned int wm=0;wm<wtstopcrossed.size();wm++)
         wtstop_flags[wtstopcrossed[wm]]=0;  // seed is inside the roi, let it go out
     }
-
+    bool flag=true; 
     for(int it=1;it<=opts.nsteps.value()/2;it++){
 
       if((m_mask(x_p,y_p,z_p)!=0)){
@@ -917,8 +917,19 @@ namespace TRACT{
         // update locations for matrix3
         if(opts.matrix3out.value() && cnt>0){
           waycrossed.clear();crossedlocs3.clear();surf_Triangle3.clear();
-          if(m_mask3.has_crossed_roi(m_path[cnt-1],m_path[cnt],crossedvox,waycrossed,crossedlocs3,surf_Triangle3,opts.closestvertex.value())){
-            fill_inmask3(crossedlocs3,surf_Triangle3,pathlength);
+          bool tempflag=false;
+          if(m_mask3.has_crossed_roi1(m_path[cnt-1],m_path[cnt],crossedvox,waycrossed,crossedlocs3,surf_Triangle3,opts.closestvertex.value(), tempflag)){
+            if(tempflag){
+              //AKA rejecting because of gray matter to white matter.
+              if(cnt!=1){
+               continue;
+              }
+            }
+            //This only fills in the first time a surface is crossed.
+            if(flag==true){
+              fill_inmask3(crossedlocs3,surf_Triangle3,pathlength);
+              flag=false;
+            }
           }
           if(opts.lrmask3.value()!=""){
             waycrossed.clear();crossedlocs3.clear();surf_Triangle3.clear();
@@ -1284,7 +1295,6 @@ namespace TRACT{
       nlrmask3 = m_stline.get_lrmask3().nLocs();
     else
       nlrmask3 = nmask3;
-
     // recalculate nmask3 if lowres surface provided
     m_ConMat3  = new SpMat<float> (nmask3,nlrmask3);
     if(opts.omeanpathlength.value()) m_ConMat3b = new SpMat<float> (nmask3,nlrmask3);
@@ -1402,7 +1412,7 @@ namespace TRACT{
   }
 
 
-  void Counter::count_streamline(){
+  void Counter::count_streamline(int index){
     if(opts.save_paths.value()){
       add_path();
     }
@@ -1420,7 +1430,7 @@ namespace TRACT{
       update_matrix2_row();
     }
     if(opts.matrix4out.value()){
-      update_matrix4_col();
+      update_matrix4_col(index);
     }
   }
 
@@ -1744,7 +1754,7 @@ namespace TRACT{
     }
   }
 
-  void Counter::update_matrix1(){
+  void Counter::update_matrix1(int value){
     //Tracer_Plus tr("Counter::update_matrix1");
     // use path and has_crossed
     float pathlength=opts.steplength.value(),val=1;
@@ -1753,7 +1763,11 @@ namespace TRACT{
     vector< pair<int,infoVertex> > locs; //locs,values,rois and triangles
     vector<ColumnVector> crossedvox;
     int offset=-1;
+    int flag=true;
     for(unsigned int i=1;i<m_path.size();i++){
+      if(i==value){
+            flag=true;
+      }
       // check here if back to seed (not a robust way to do it...)
       if((m_path[i]-m_path[0]).MaximumAbsoluteValue()==0){
         pathlength=opts.steplength.value();
@@ -1766,8 +1780,19 @@ namespace TRACT{
       if(m_stline.get_seeds().nSurfs()>0){
         crossedvox=m_crossedvox[i+offset];
       }
-
-      if(m_stline.get_seeds().has_crossed_roi(m_path[i-1],m_path[i],crossedvox,crossedseeds,crossedlocs,surf_Triangle,opts.closestvertex.value())){
+      bool tempflag=false;
+      if(m_stline.get_seeds().has_crossed_roi1(m_path[i-1],m_path[i],crossedvox,crossedseeds,crossedlocs,surf_Triangle,opts.closestvertex.value(), tempflag)){
+        if(tempflag){
+          //AKA rejecting because of gray matter.
+          if(i<value&&i!=1){
+            i=value;
+          }else{
+            if(i>value+1){
+              break;
+            }
+          }
+        }
+        if((m_stline.get_seeds().nSurfs()>0&&flag)||m_stline.get_seeds().nSurfs()<=0){
         for(unsigned int j=0;j<crossedlocs.size();j++){
           pair<int,infoVertex> mypair;
           mypair.first=crossedlocs[j];
@@ -1776,18 +1801,20 @@ namespace TRACT{
           mypair.second.triangle=surf_Triangle[j].second;
           locs.push_back(mypair);
         }
+        flag=false;
+      }
       }
 
       val = opts.pathdist.value()?pathlength:1;
       if(opts.omeanpathlength.value()) val = pathlength;
       pathlength+=opts.steplength.value();
     }
+    
     // fill matrix1
     {
       //Tracer_Plus tr("make_unique");
       make_unique(locs);
     }
-
     vector< pair<int,int> > mytrianglesj; //list with the roi and triangles of an individual vertex
     for(unsigned int j=0;j<locs.size();j++){
       mytrianglesj.clear();
@@ -1866,10 +1893,9 @@ namespace TRACT{
     else{
       if(inmask3.size()<1 || inlrmask3.size()<1)return;
     }
-
     // remove duplicates
     make_unique(inmask3);
-
+    unsigned int counter=0;
     vector< pair<int,int> > mytrianglesi; //list with the roi and triangles of an individual vertex
     vector< pair<int,int> > mytrianglesj; //list with the roi and triangles of an individual vertex
     if(!uselr){
@@ -1909,6 +1935,7 @@ namespace TRACT{
                  mytrianglesi[ii].first==-1 || mytrianglesj[jj].first==-1){
                 //if first is -1 is because is not a vertex, it is a voxel
                 connect=true;
+                counter++;
               }
             }
           }
@@ -2011,7 +2038,7 @@ namespace TRACT{
   }
 
 
-  void Counter::update_matrix4_col(){
+  void Counter::update_matrix4_col(int index){
     //Tracer_Plus tr("Counter::update_matrix4");
     float d=opts.steplength.value();
     int x,y,z,Conrow4;
@@ -2043,8 +2070,12 @@ namespace TRACT{
       bool restarted=false;int offset=-1;
       vector<ColumnVector> crossedvox;
       vector< pair<int,int> > surf_Triangle;
+      bool flag=true;
       for(unsigned int i=0;i<m_diff_path.size();i++){
         // check here if back to seed
+        if(i==index){
+          flag=true;
+        }
         if(i>0 && (m_path[i]-m_path[0]).MaximumAbsoluteValue()==0){
           d=opts.steplength.value();restarted=true;
           offset-=1;
@@ -2066,9 +2097,23 @@ namespace TRACT{
           if(m_mask4.nSurfs()>0){
             crossedvox=m_crossedvox[i+offset];
           }
-          if(m_mask4.has_crossed_roi(m_path[i-1],m_path[i],crossedvox,crossedrois,crossedlocs,surf_Triangle,opts.closestvertex.value())){
+          bool tempflag=false;
+          if(m_mask4.has_crossed_roi1(m_path[i-1],m_path[i],crossedvox,crossedrois,crossedlocs,surf_Triangle,opts.closestvertex.value(), tempflag)){
+            if(tempflag){
+              //AKA rejecting because of gray matter.
+              if(i<index&&i!=1){
+                i=index;
+              }else{
+                if(i>index+1){
+                  break;
+                }
+              }
+            }
+            if((flag&&m_mask4.nSurfs()>0)||m_mask4.nSurfs()<=0){
             for(unsigned int j=0;j<crossedlocs.size();j++)
               cols.push_back(crossedlocs[j]+1);
+            flag=false;
+            }
           }
         }
         restarted=false;
@@ -2576,17 +2621,17 @@ namespace TRACT{
         if(rejflag1>0)
           forwardflag=false;
       }
-
+      int index=0;
       if(!forwardflag)
         m_counter.clear_path();
       if(backwardflag){
-        m_counter.append_path();
+        index=m_counter.append_path();
         if(opts.save_paths.value())
           m_counter.add_path();
       }
       if(forwardflag || backwardflag){
         nlines++;
-        m_counter.count_streamline();
+        m_counter.count_streamline(index);
 
         if(opts.matrix3out.value()||opts.matrix1out.value()){
           float pathlength;
@@ -2599,7 +2644,7 @@ namespace TRACT{
             m_counter.update_matrix3();
 
           if(opts.matrix1out.value() && pathlength>=opts.distthresh1.value())
-            m_counter.update_matrix1();
+            m_counter.update_matrix1(index);
         }
       }
 

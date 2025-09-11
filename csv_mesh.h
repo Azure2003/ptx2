@@ -97,7 +97,8 @@ class CsvTriangle {
   inline const CsvMpoint& get_vertice(const int& i) const{return _vertice[i];}
   const bool intersect(const std::vector<mesh::Pt> & p)const;          // checks if a segment intersects the triangle
   const bool intersect(const std::vector<mesh::Pt> & p,int& ind)const; // checks if a segment intersects the triangle+gives the index of the closest vertex
-  inline int get_no()const{return _no;}
+   int step_sign_crossing(const mesh::Pt& segmentA, const mesh::Pt& segmentB) const;
+   inline int get_no()const{return _no;}
 };
 
 
@@ -219,7 +220,9 @@ class CsvMesh {
   }
 
   int step_sign(const int& vertind,const mesh::Vec& step)const;
-
+ int step_sign_crossing(const mesh::Pt& segmentA, const mesh::Pt& segmentB, const int& triid) const{
+    return(_triangles[triid].step_sign_crossing(segmentA, segmentB));
+  };
   void load(const std::string& filename);
   void load_gifti(const std::string& filename);
   void load_ascii(const std::string& filename);
