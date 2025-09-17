@@ -289,7 +289,7 @@ void tractography_gpu(
       checkCuda(cudaStreamSynchronize(streams[1])); // WAIT HERE UNTIL ALL COPIES HAVE FINISHED
       // HOST work
       // Update keeptotal
-      int pos=0;
+      size_t pos=0;
       if(!opts.network.value()){
 	      for(int i=0;i<THREADS_STREAM;i++){
 	        if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){
@@ -299,9 +299,9 @@ void tractography_gpu(
 	      }
       }else{
 	      // Network mode
-        int aux=0;
+        size_t aux=0;
         for(int i=0;i<THREADS_STREAM;i++){
-          int numseed=(offset_SLs-THREADS_STREAM+aux)/data_host.nparticles;
+          size_t numseed=(offset_SLs-THREADS_STREAM+aux)/data_host.nparticles;
           if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){
             keeptotal[data_host.seeds_ROI[numseed]]++; // maybe better in GPU
             if(opts.save_paths.value()){
@@ -314,12 +314,12 @@ void tractography_gpu(
       if(opts.save_paths.value()){
 	      // save coordinates
 	      pos=0;
-	      for(int i=0;i<THREADS_STREAM;i++){
+	      for(size_t i=0;i<THREADS_STREAM;i++){
 	        if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){
 	          vector<float> tmp;
             if(lengths_host[0][pos]>0){
-              int posSEED=i*data_host.nsteps*3;
-              int posCURRENT=0;
+              size_t posSEED=i*data_host.nsteps*3;
+              size_t posCURRENT=0;
               for(;posCURRENT<lengths_host[0][pos];posCURRENT++){
                 tmp.push_back(paths_host[0][posSEED+posCURRENT*3]);
                 tmp.push_back(paths_host[0][posSEED+posCURRENT*3+1]);
@@ -327,8 +327,8 @@ void tractography_gpu(
 	            }
 	          }
 	          if(lengths_host[0][pos+1]>0){
-              int pos2=i*data_host.nsteps*3+((data_host.nsteps/2)*3);
-              int co=0;
+              size_t pos2=i*data_host.nsteps*3+((data_host.nsteps/2)*3);
+              size_t co=0;
 	            for(;co<lengths_host[0][pos+1];co++){
                 tmp.push_back(paths_host[0][pos2+co*3]);
                 tmp.push_back(paths_host[0][pos2+co*3+1]);
@@ -394,7 +394,7 @@ void tractography_gpu(
 
   // HOST work
   // Update keeptotal
-  int pos=0;
+  size_t pos=0;
   if(!opts.network.value()){
     for(int i=0;i<last_iter;i++){
       if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){
@@ -404,9 +404,9 @@ void tractography_gpu(
     }
   }else{
     // Network mode
-    int aux=0;
-    for(int i=0;i<last_iter;i++){
-      int numseed=(offset_SLs-THREADS_STREAM+aux)/data_host.nparticles;
+    size_t aux=0;
+    for(size_t i=0;i<last_iter;i++){
+      size_t numseed=(offset_SLs-THREADS_STREAM+aux)/data_host.nparticles;
       if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){
 	      keeptotal[data_host.seeds_ROI[numseed]]++;
       }
@@ -417,12 +417,12 @@ void tractography_gpu(
   if(opts.save_paths.value()){
     // save coordinates
     pos=0;
-    for(int i=0;i<last_iter;i++){
+    for(size_t i=0;i<last_iter;i++){
       if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){
         vector<float> tmp;
         if(lengths_host[0][pos]>0){
-          int posSEED=i*data_host.nsteps*3;
-          int posCURRENT=0;
+          size_t posSEED=i*data_host.nsteps*3;
+          size_t posCURRENT=0;
           for(;posCURRENT<lengths_host[0][pos];posCURRENT++){
             tmp.push_back(paths_host[0][posSEED+posCURRENT*3]);
             tmp.push_back(paths_host[0][posSEED+posCURRENT*3+1]);
@@ -430,8 +430,8 @@ void tractography_gpu(
           }
         }
 	      if(lengths_host[0][pos+1]>0){
-          int pos2=i*data_host.nsteps*3+((data_host.nsteps/2)*3);
-          int co=0;
+          size_t pos2=i*data_host.nsteps*3+((data_host.nsteps/2)*3);
+          size_t co=0;
           for(;co<lengths_host[0][pos+1];co++){
             tmp.push_back(paths_host[0][pos2+co*3]);
             tmp.push_back(paths_host[0][pos2+co*3+1]);
@@ -457,7 +457,7 @@ void tractography_gpu(
 
   if(opts.simpleout.value()){
     checkCuda(cudaMemcpy(*mprob_host,*mprob_gpu,data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]*sizeof(float),cudaMemcpyDeviceToHost));
-    int position=0;
+    size_t position=0;
     for(int z=0;z<data_host.Ssizes[2];z++){
       for(int y=0;y<data_host.Ssizes[1];y++){
 	      for(int x=0;x<data_host.Ssizes[0];x++){
@@ -469,7 +469,7 @@ void tractography_gpu(
   } // Maybe I can change the pointer and avoid the copy !!!
   if(opts.simpleout.value()&&opts.omeanpathlength.value()){
     checkCuda(cudaMemcpy(*mprob2_host,*mprob2_gpu,data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]*sizeof(float),cudaMemcpyDeviceToHost));
-    int position=0;
+    size_t position=0;
     for(int z=0;z<data_host.Ssizes[2];z++){
       for(int y=0;y<data_host.Ssizes[1];y++){
 	      for(int x=0;x<data_host.Ssizes[0];x++){
@@ -481,7 +481,7 @@ void tractography_gpu(
   }
   if(opts.opathdir.value()){
     checkCuda(cudaMemcpy(*mlocaldir_host,*mlocaldir_gpu,data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]*6*sizeof(float),cudaMemcpyDeviceToHost));
-    int position=0;
+    size_t position=0;
     for(int z=0;z<data_host.Ssizes[2];z++){
       for(int y=0;y<data_host.Ssizes[1];y++){
 	      for(int x=0;x<data_host.Ssizes[0];x++){
