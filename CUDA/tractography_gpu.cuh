@@ -12,6 +12,8 @@
 
 #include "CUDA/tractographyData.h"
 #include "newimage/newimageall.h"
+#include "../sparse.h"
+
 
 
 void tractography_gpu(tractographyData&                 data_host,
@@ -20,13 +22,15 @@ void tractography_gpu(tractographyData&                 data_host,
                       int*&                              keeptotal,
                       float**                            ConNet,
                       float**                            ConNetb,
-                      float**                            ConMat1,
-                      float**                            ConMat1b,
-                      float**                            ConMat3,
-                      float**                            ConMat3b,
+                      SparseMatrix<float>*                            ConMat1,
+                      SparseMatrix<float>*                           ConMat1b,
+                      SparseMatrix<float>*                           ConMat3,
+                      SparseMatrix<float>*                            ConMat3b,
+                      SparseMatrix<int64_t>*     ConMat4,
                       float*&                            s2targets,
                       float*&                            s2targetsb,
                       std::vector< std::vector<float> >& m_save_paths,
+                    NEWIMAGE::volume<int>& lookup4,
                       NEWIMAGE::volume4D<float>*&        m_localdir);
 
 bool compare_Vertices(const float3 &a, const float3 &b);
@@ -42,8 +46,8 @@ void write_mask3(
             int*                lrmat_numcrossed_host,
             int                 max_per_jump_lrmat,
             // Output
-            float**             ConMat3,
-            float**             ConMat3b);
+            SparseMatrix<float>*            ConMat3,
+            SparseMatrix<float>*             ConMat3b);
 
 void write_mask1(tractographyData&  data_host,
                  long long          offset_SLs,
@@ -52,8 +56,24 @@ void write_mask1(tractographyData&  data_host,
                  int*               lrmat_numcrossed_host,
                  int                max_per_jump_lrmat,
                  // Output
-                 float**            ConMat1,
-                 float**            ConMat1b);
+                 SparseMatrix<float>*            ConMat1,
+                 SparseMatrix<float>*           ConMat1b);
+
+void write_Matrix4(
+  tractographyData&	data_host,
+  sampleResult**  sampled_fib_indices_host,
+  NEWIMAGE::volume<int>& lookup4,
+  long long 		offset_SLs,
+  unsigned long long 	nstreamlines,
+  float3*			mat_crossed_host,
+  int*        mat_numcrossed_host,
+  int			            max_per_jump_mat,
+  SparseMatrix<int64_t>*     ConMat4,
+  bool        opts_Value,
+  float          steplength,
+  int** lengths_host,
+  float** path_host
+);
 
 void update_s2targets(    // Input
             tractographyData&         data_host,

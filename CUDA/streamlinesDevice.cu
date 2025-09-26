@@ -293,105 +293,85 @@ __device__ inline int sample_fibre(	tractographyData*	data_gpu,
 	return 0;
 }
 
-__device__ inline void sampleN(	tractographyData*	data_gpu,
-				curandState& 		localState,
-				float*			partCx,
-				float*			partCy,
-				float*			partCz,
-				float*	 		partRx,
-				float*			partRy,
-				float*			partRz,
-				// OUTPUT
-				float* 			sample_th,
-				float*			sample_ph,
-				float*			sample_f,		//shared
-				// to use
-				float*			memSH_d,
-				float*			memSH_e,
-				float*			memSH_f)
+__device__ inline sampleResult sampleN(tractographyData* data_gpu,
+	curandState& localState,
+	float* partCx, float* partCy, float* partCz,
+	float* partRx, float* partRy, float* partRz,
+	float* sample_th, float* sample_ph,
+	float* sample_f,
+	float* memSH_d, float* memSH_e, float* memSH_f)  // <-- UNUSED
 {
-	//////// Probabilistic interpolation
-	/// if we are not in the middle of a voxel,
-	// we want interpolate an orientation taking account the orientations of 2 voxels
-	// instead of interpolating the orientation (in the case of perpendicular orientations
-	// is not a good idea), we interpolate the coordinate, we go to one of the voxels and then
-	// take its orientation. Imagine we are just in the border of two voxels, then same probability
-	// to go to one than to other. Other wise, higher probability of taking orientation from to the closest
-	// Real interpolation ?
-	int3 newC;
-	newC.x = curand_uniform(&localState)>(partCx[0]-floorf(partCx[0]))?floorf(partCx[0]):ceilf(partCx[0]);
-	newC.y = curand_uniform(&localState)>(partCy[0]-floorf(partCy[0]))?floorf(partCy[0]):ceilf(partCy[0]);
-	newC.z = curand_uniform(&localState)>(partCz[0]-floorf(partCz[0]))?floorf(partCz[0]):ceilf(partCz[0]);
-	////////////////////////////////////
+// Probabilistic voxel interpolation
+int3 newC;
+newC.x = curand_uniform(&localState) > (partCx[0] - floorf(partCx[0])) ? floorf(partCx[0]) : ceilf(partCx[0]);
+newC.y = curand_uniform(&localState) > (partCy[0] - floorf(partCy[0])) ? floorf(partCy[0]) : ceilf(partCy[0]);
+newC.z = curand_uniform(&localState) > (partCz[0] - floorf(partCz[0])) ? floorf(partCz[0]) : ceilf(partCz[0]);
 
-	int col;
-	if( (newC.z<0) || (newC.y<0) || (newC.x<0) ||
-	(newC.z>=C_Dsizes[2]) || (newC.y>=C_Dsizes[1]) || (newC.x>=C_Dsizes[0]))
-		col=-1;
-	// what voxel? vol2mat tell us the index of the voxel inside the vector (vector does not include data outside the mask)
-	// lut_vol2mat: extrapolation method is zeropad, i.e, if any coordinate is not inbounds, then value is 0.
-	else
-		col = data_gpu->lut_vol2mat[newC.z*C_Dsizes[0]*C_Dsizes[1]+newC.y*C_Dsizes[0]+newC.x]-1;
-	sample_th[0]=0;
-	sample_ph[0]=0;
-
-	if(col==-1){ // outside brain mask. Will exit in check_dir
-		sample_f[0]=-1.0f;
-	  	return;
-	}
-
-	int samp=rintf(curand_uniform(&localState)*(data_gpu->nsamples-1));
-
-	int fibind=0;
-
-	if(data_gpu->nfibres>1){
-		// if(sample_fib>0){ // pick specified fibre 			// only happens with prefdir and it is not activated in this version
-		//	fibind=sample_fibre(fsamples,samp,col,localState,nfibres,nsamples,nvoxels,sample_fib,fibthresh);
-		//	sample[0].x=thsamples[fibind*nsamples*nvoxels+samp*nvoxels+col];
-		//	sample[0].y=phsamples[fibind*nsamples*nvoxels+samp*nvoxels+col];
-	    	// }else{
-			// prefdirfile; option deleted
-	      		// int locrule=0; option deleted locfibchoice
-
-		// pick closest direction
-		float dotmax=0.0f;
-		for(int fib=0;fib<data_gpu->nfibres;fib++){
-		 	if(data_gpu->fsamples[fib*data_gpu->nsamples*data_gpu->nvoxels+samp*data_gpu->nvoxels+col]>data_gpu->fibthresh){
-				float thtmp=data_gpu->thsamples[fib*data_gpu->nsamples*data_gpu->nvoxels+samp*data_gpu->nvoxels+col];
-		    		float phtmp=data_gpu->phsamples[fib*data_gpu->nsamples*data_gpu->nvoxels+samp*data_gpu->nvoxels+col];
-
-				sincosf(thtmp,memSH_d,memSH_e);	// use shared to store temporal results
-				sincosf(phtmp,memSH_f,sample_f);// use shared to store temporal results
-// !!! OJO SINGLE PRECISION !!
-
-				//float dottmp=fabs(sin(thtmp)*(cos(phtmp)*partRx[0] + sin(phtmp)*partRy[0]) + cos(thtmp)*partRz[0]);
-				float dottmp=fabsf(memSH_d[0]*(sample_f[0]*partRx[0] + memSH_f[0]*partRy[0]) + memSH_e[0]*partRz[0]);
-
-		    		if(dottmp>dotmax){
-		      			dotmax=dottmp;
-		      			sample_th[0]=thtmp;
-		      			sample_ph[0]=phtmp;
-		      			fibind=fib;
-		    		}
-		  	}
-		}
-		if(dotmax==0.0f){
-			sample_th[0]=data_gpu->thsamples[samp*data_gpu->nvoxels+col];
-			sample_ph[0]=data_gpu->phsamples[samp*data_gpu->nvoxels+col];
-		  	fibind=0;
-		}
-	      	// }
-	}else{
-		sample_th[0]=data_gpu->thsamples[samp*data_gpu->nvoxels+col];
-		sample_ph[0]=data_gpu->phsamples[samp*data_gpu->nvoxels+col];
-	}
-
-	if(data_gpu->usef){
-	  	sample_f[0] = data_gpu->fsamples[fibind*data_gpu->nsamples*data_gpu->nvoxels+samp*data_gpu->nvoxels+col];
-	}else{
-	  	sample_f[0]=1.0f;
-	}
+int col = -1;
+if (newC.x >= 0 && newC.x < C_Dsizes[0] &&
+newC.y >= 0 && newC.y < C_Dsizes[1] &&
+newC.z >= 0 && newC.z < C_Dsizes[2]) {
+col = data_gpu->lut_vol2mat[
+newC.z * C_Dsizes[0] * C_Dsizes[1] +
+newC.y * C_Dsizes[0] +
+newC.x] - 1;
 }
+
+sample_th[0] = 0.0f;
+sample_ph[0] = 0.0f;
+sample_f[0]  = -1.0f;
+
+if (col == -1) return {};
+
+int samp = rintf(curand_uniform(&localState) * (data_gpu->nsamples - 1));
+int fibind = 0;
+float theta = 0.0f, phi = 0.0f;
+float dotmax = 0.0f;
+
+if (data_gpu->nfibres > 1) {
+for (int fib = 0; fib < data_gpu->nfibres; fib++) {
+float fval = data_gpu->fsamples[fib * data_gpu->nsamples * data_gpu->nvoxels + samp * data_gpu->nvoxels + col];
+if (fval > data_gpu->fibthresh) {
+float thtmp = data_gpu->thsamples[fib * data_gpu->nsamples * data_gpu->nvoxels + samp * data_gpu->nvoxels + col];
+float phtmp = data_gpu->phsamples[fib * data_gpu->nsamples * data_gpu->nvoxels + samp * data_gpu->nvoxels + col];
+
+float sin_th, cos_th, sin_ph, cos_ph;
+sincosf(thtmp, &sin_th, &cos_th);
+sincosf(phtmp, &sin_ph, &cos_ph);
+
+float dottmp = fabsf(sin_th * (cos_ph * partRx[0] + sin_ph * partRy[0]) + cos_th * partRz[0]);
+
+if (dottmp > dotmax) {
+dotmax = dottmp;
+theta = thtmp;
+phi = phtmp;
+fibind = fib;
+}
+}
+}
+
+if (dotmax == 0.0f) {
+theta = data_gpu->thsamples[samp * data_gpu->nvoxels + col];
+phi   = data_gpu->phsamples[samp * data_gpu->nvoxels + col];
+fibind = 0;
+}
+} else {
+theta = data_gpu->thsamples[samp * data_gpu->nvoxels + col];
+phi   = data_gpu->phsamples[samp * data_gpu->nvoxels + col];
+}
+
+sample_th[0] = theta;
+sample_ph[0] = phi;
+sample_f[0]  = data_gpu->usef ? data_gpu->fsamples[fibind * data_gpu->nsamples * data_gpu->nvoxels + samp * data_gpu->nvoxels + col] : 1.0f;
+
+sampleResult result;
+result.coordinates.x = newC.x;
+result.coordinates.y = newC.y;
+result.coordinates.z = newC.z;
+result.value = fibind;
+return result;
+}
+
 __device__ inline void sampleN_test(	tractographyData*	data_gpu,
 					curandState& 		localState,
 					float&			partCx,		// store here results for the test
@@ -466,7 +446,7 @@ __device__ inline void sampleN_test(	tractographyData*	data_gpu,
 }
 
 template <int randfib>
-__device__ inline void init_sampleN(	tractographyData*	data_gpu,
+__device__ inline sampleResult init_sampleN(	tractographyData*	data_gpu,
 					curandState& 		localState,
 					float*			partCx,
 					float*			partCy,
@@ -478,6 +458,7 @@ __device__ inline void init_sampleN(	tractographyData*	data_gpu,
 {
 	//////// Probabilistic interpolation
 	int3 newC;
+	
 	newC.x = curand_uniform(&localState)>(partCx[0]-floorf(partCx[0]))?floorf(partCx[0]):ceilf(partCx[0]);
 	newC.y = curand_uniform(&localState)>(partCy[0]-floorf(partCy[0]))?floorf(partCy[0]):ceilf(partCy[0]);
 	newC.z = curand_uniform(&localState)>(partCz[0]-floorf(partCz[0]))?floorf(partCz[0]):ceilf(partCz[0]);
@@ -501,13 +482,15 @@ __device__ inline void init_sampleN(	tractographyData*	data_gpu,
 
 	int samp=rintf(curand_uniform(&localState)*(data_gpu->nsamples-1));
 
-	int fibind=0;
+	int fibind=0;//Is this ever used? If it is, not sure where this gets updated.
 
 	if(data_gpu->nfibres>1){
 	  	// go for the specified fibre on the first jump or generate at random
 		int myfibst=data_gpu->fibst;
+		fibind=myfibst;
 	   	if(myfibst==-1){   // not set
 	      		myfibst=sample_fibre<randfib>(data_gpu,samp,col,localState);
+				fibind=myfibst;
 		}
 		sample_th[0]=data_gpu->thsamples[myfibst*data_gpu->nsamples*data_gpu->nvoxels+samp*data_gpu->nvoxels+col];
 		sample_ph[0]=data_gpu->phsamples[myfibst*data_gpu->nsamples*data_gpu->nvoxels+samp*data_gpu->nvoxels+col];
@@ -521,6 +504,12 @@ __device__ inline void init_sampleN(	tractographyData*	data_gpu,
 	}else{
 	  	sample_f[0]=1;
 	}
+	sampleResult result = {};
+	result.coordinates.x=newC.x;
+	result.coordinates.y=newC.y;
+	result.coordinates.z=newC.z;
+	result.value=fibind;
+	return result;
 }
 
 __device__ inline void cart2sph(	float* 	dir1,
@@ -606,11 +595,14 @@ __device__ inline int streamline(
 					// OUTPUT
 					float* 			m_path,			// Main Memory
 					float3& 		part_init,
-					bool& 			part_has_jumped)
+					bool& 			part_has_jumped,
+					sampleResult* 			sampled_fib_indices)
 {
         //int sampled_fib=data_gpu->fibst;  // not used
-	int numloopcheck=0;
+	unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
 
+	int numloopcheck=0;
+	sampleResult tempind={0,0,0,0};
 	// if not jump yet, will be 0
 	partRx[0]=-part_init.x;
 	partRy[0]=-part_init.y;
@@ -646,11 +638,12 @@ __device__ inline int streamline(
 	////// end looopchecking //////
 
 	//already stored first coordinates in m_path[0]
+	//printf("Hello3%d\n",cnt);
 	cnt++;
 	// sample a new fibre orientation
-	init_sampleN<randfib>(data_gpu,localState,partCx,partCy,partCz,memSH_a,memSH_b,memSH_c);
+	tempind=init_sampleN<randfib>(data_gpu,localState,partCx,partCy,partCz,memSH_a,memSH_b,memSH_c);
 	//memSH -> samples (th,ph,f)
-
+	//sampled
 	// check new direction and jump
 	if(!first_check_dir(data_gpu,memSH_a,memSH_b,memSH_c,memSH_d,memSH_e,memSH_f,partRx,partRy,partRz,part_has_jumped,localState)){
 		// volume fraction thresholh, direction=0 (th or ph is 0), or curvature threshold
@@ -679,6 +672,8 @@ __device__ inline int streamline(
 		if(((cnt-1)*(*C_steplength)) < (*C_distthresh)) return(-1);
 			return cnt;
 	}
+	sampled_fib_indices[0]=tempind;
+
 	////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////
 
@@ -714,16 +709,18 @@ __device__ inline int streamline(
 		// now find xyz in seeds space
 		if(!data_gpu->IsNonlinXfm){
 			vox_to_vox_D2S(partCx,partCy,partCz,&m_path[cnt*3]);
+			sampled_fib_indices[cnt]=tempind;
 		}else{
 			NewimageCoord2NewimageCoord_D2S(partCx,partCy,partCz,
 			memSH_a,memSH_b,memSH_c,memSH_d,memSH_e,memSH_f,
 			&m_path[cnt*3]);
+			sampled_fib_indices[cnt]=tempind;
 		}
 		cnt++;
 
 		// sample a new fibre orientation
 		// memSH_a: thsample, memSH_b: phsample, memSH_c fsample
-		sampleN(data_gpu,localState,partCx,partCy,partCz,partRx,partRy,partRz,memSH_a,memSH_b,memSH_c,memSH_d,memSH_e,memSH_f);
+		tempind=sampleN(data_gpu,localState,partCx,partCy,partCz,partRx,partRy,partRz,memSH_a,memSH_b,memSH_c,memSH_d,memSH_e,memSH_f);
 
 		// check new direction
 		if(!check_dir(data_gpu,memSH_a,memSH_b,memSH_c,memSH_d,memSH_e,memSH_f,partRx,partRy,partRz,localState)){

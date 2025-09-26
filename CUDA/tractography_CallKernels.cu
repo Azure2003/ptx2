@@ -28,59 +28,67 @@ void calculate_path(
 			float3**					loopcheckdirs_gpu,						
 			//OUTPUT
 			float*						paths_gpu,
-			int*							lengths_gpu)
+			int*							lengths_gpu,
+			sampleResult*                     sampled_fib_indices_gpu
+			)
 {
 	probtrackxOptions& opts =probtrackxOptions::getInstance();
 	
 	int nblocks=num_threads/THREADS_BLOCK;
 	if(num_threads%THREADS_BLOCK) nblocks++;
-	
+	//todo
   if(!opts.modeuler.value()){
     if(opts.randfib.value()==0){
       if(opts.loopcheck.value()){
 				get_path_kernel<0,true,false> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
+
       }else{
 				get_path_kernel<0,false,false> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
+
+		}
       }
-    }else if(opts.randfib.value()==1){
+    else if(opts.randfib.value()==1){
       if(opts.loopcheck.value())
 				get_path_kernel<1,true,false> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
       else
 				get_path_kernel<1,false,false> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
+				
     }else if(opts.randfib.value()==2){
       if(opts.loopcheck.value())
 				get_path_kernel<2,true,false> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs, 
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
+				
       else
 				get_path_kernel<2,false,false> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,    
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
+				
     }else if(opts.randfib.value()==3){
       if(opts.loopcheck.value())
 				get_path_kernel<3,true,false> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
       else
 				get_path_kernel<3,false,false> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
     }else{
       printf("RANDFIB cannot be higher than 3\n"); exit(1);
     }
@@ -90,46 +98,46 @@ void calculate_path(
 				get_path_kernel<0,true,true> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
       }else{
 				get_path_kernel<0,false,true> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 	   		*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-	   		paths_gpu,lengths_gpu);
+	   		paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
       }
     }else if(opts.randfib.value()==1){
       if(opts.loopcheck.value())
 				get_path_kernel<1,true,true> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
       else
 				get_path_kernel<1,false,true> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
     }else if(opts.randfib.value()==2){
       if(opts.loopcheck.value())
 				get_path_kernel<2,true,true> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs, 
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
       else
 				get_path_kernel<2,false,true> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,    
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
     }else if(opts.randfib.value()==3){
       if(opts.loopcheck.value())
 				get_path_kernel<3,true,true> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
       else
 				get_path_kernel<3,false,true> <<<nblocks,THREADS_BLOCK,0,stream>>>
 	  		(data_gpu,num_threads,devStates,offset_SLs,
 				*loopcheckkeys_gpu,*loopcheckdirs_gpu,
-				paths_gpu,lengths_gpu);
+				paths_gpu,lengths_gpu, sampled_fib_indices_gpu);
     }else{
       printf("RANDFIB cannot be higher than 3\n"); exit(1);
     }
@@ -464,7 +472,6 @@ void update_path(
     }
   }
 }
-
 void matrix1(
 	    cudaStream_t				stream,
 	  	tractographyData&		data_host,			
@@ -572,3 +579,4 @@ void matrix3(
     }
   }
 }
+

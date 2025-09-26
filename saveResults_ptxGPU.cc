@@ -9,11 +9,12 @@
 #include <string>
 #include <vector>
 #include <iostream>
-
+#include <cstdint>
 #include "utils/log.h"
 #include "armawrap/newmat.h"
 #include "miscmaths/miscmaths.h"
 #include "newimage/newimage.h"
+#include "sparse.h"
 
 #include "probtrackx.h"
 #include "CUDA/tractographyInput.h"
@@ -80,21 +81,24 @@ void counter_save_pathdist(volume<float>& m_prob,volume<float>& m_prob2){
 }
 
 void counter_save(
-    	tractographyData& 	data_host,
+    tractographyData& 	data_host,
 	volume<float> 		*m_prob, 	// spatial histogram of tract location within brain mask (in seed space)
 	volume<float> 		*m_prob2,	// omeanpathlength
 	float**			ConNet,		// Network mode
 	float**			ConNetb,	// Network mode
 	int 			nRowsNet,	// Network mode
 	int 			nColsNet,	// Network mode
-	float**			ConMat1,
-	float**			ConMat1b,	// omeanpathlength
+	SparseMatrix<float>*			ConMat1,
+	SparseMatrix<float>*		ConMat1b,	// omeanpathlength
 	int 			nRowsMat1,
 	int 			nColsMat1,
-	float**			ConMat3,
-	float**			ConMat3b,
+	SparseMatrix<float>*			ConMat3,
+	SparseMatrix<float>*			ConMat3b,
 	int 			nRowsMat3,
 	int 			nColsMat3,
+	SparseMatrix<int64_t>*			ConMat4,
+	int 			nRowsMat4,
+	int 			nColsMat4,
 	float*			m_s2targets,
 	float*			m_s2targetsb,
 	vector< vector<float> >& m_save_paths,
@@ -163,6 +167,57 @@ void counter_save(
     }
 
   }
+  if (opts.matrix4out.value()) {
+    string file1 (logger.appendDir("fdt_matrix4_1.mtx"));
+    string file2 (logger.appendDir("fdt_matrix4_2.mtx"));
+    string file3 (logger.appendDir("fdt_matrix4_3.mtx"));
+    ofstream fs1, fs2, fs3;
+
+    // Write dimensions (nColsMat4 and nRowsMat4) to file1
+    try { 
+        fs1.open(file1.c_str(), ios::out | ios::binary); 
+    }
+    catch(...) { 
+        throw 1; 
+    }
+    fs1 << nColsMat4 << endl;
+    fs1 << nRowsMat4 << endl;
+    fs1.close();
+
+    // Write non-zero element counts (for each row) to file2
+    try { 
+		fs2.open(file2.c_str(), std::ios::out | std::ios::binary); 
+	} catch (...) { 
+		throw 1; 
+	}
+	
+	// Write number of non-zero elements per row
+	for (unsigned int r = 0; r < nRowsMat4; ++r) {
+		int64_t sz = ConMat4->rowSize(r);
+		fs2.write(reinterpret_cast<char*>(&sz), sizeof(sz));
+	}
+	fs2.close();
+	
+	try {
+		fs3.open(file3.c_str(), std::ios::out | std::ios::binary);
+	} catch (...) {
+		throw;
+	}
+	
+	// Write column indices and values for each row
+	for (unsigned int r = 0; r < nRowsMat4; ++r) {
+		const auto& row = ConMat4->getRow(r);
+		for (const auto& [c, val] : row) {
+			int64_t col_index = c;
+			int64_t value = val;
+			fs3.write(reinterpret_cast<char*>(&col_index), sizeof(col_index));
+			fs3.write(reinterpret_cast<char*>(&value), sizeof(value));
+		}
+	}
+	fs3.close();
+	
+}
+
   if(opts.matrix1out.value()||opts.matrix2out.value()){
     ostream* out;
     if(opts.matrix2out.value()){
@@ -176,31 +231,37 @@ void counter_save(
     }
     //(*out) << setprecision(8);
     if(!opts.omeanpathlength.value()){
-      for(int i=0;i<nRowsMat1;i++){
-	for(int j=0;j<nColsMat1;j++){
-	  if(ConMat1[i][j])
-	    (*out) << i+1 <<"  "<< j+1 <<"  "<< ConMat1[i][j] << endl;
-	}
-      }
+		for (const auto& row : ConMat1->data) {
+            int i = row.first;
+            for (const auto& col : row.second) {
+                int j = col.first;
+                float val = col.second;
+                (*out) << i + 1 << "  " << j + 1 << "  " << val << std::endl;
+            }
+        }
       (*out) << nRowsMat1 <<"  "<< nColsMat1 <<"  " << 0 << endl;
       delete out;
     }else{
       if(!opts.pathdist.value()){
-	for(int i=0;i<nRowsMat1;i++){
-	  for(int j=0;j<nColsMat1;j++){
-	    if(ConMat1b[i][j])
-	      (*out) << i+1 <<"  "<< j+1 <<"  "<< ConMat1b[i][j] << endl;
-	  }
-	}
+		for (const auto& row : ConMat1b->data) {
+            int i = row.first;
+            for (const auto& col : row.second) {
+                int j = col.first;
+                float val = col.second;
+                (*out) << i + 1 << "  " << j + 1 << "  " << val << std::endl;
+            }
+        }
 	(*out) << nRowsMat1 <<"  "<< nColsMat1 <<"  " << 0 << endl;
 	delete out;
       }else{
-	for(int i=0;i<nRowsMat1;i++){
-	  for(int j=0;j<nColsMat1;j++){
-	    if(ConMat1[i][j])
-	      (*out) << i+1 <<"  "<< j+1 <<"  "<< ConMat1[i][j] << endl;
-	  }
-	}
+		for (const auto& row : ConMat1->data) {
+            int i = row.first;
+            for (const auto& col : row.second) {
+                int j = col.first;
+                float val = col.second;
+                (*out) << i + 1 << "  " << j + 1 << "  " << val << std::endl;
+            }
+        }
 	(*out) << nRowsMat1 <<"  "<< nColsMat1 <<"  " << 0 << endl;
 	delete out;
 
@@ -217,13 +278,18 @@ void counter_save(
 	out2=0;
 	out2= new ofstream(file2.c_str());
       }
-      for(int i=0;i<nRowsMat1;i++){
-	for(int j=0;j<nColsMat1;j++){
-	  if(ConMat1b[i][j])
-	    (*out2) << i+1 <<"  "<< j+1 <<"  "<< (ConMat1[i][j]/ConMat1b[i][j]) << endl;
+	  for (const auto& row : ConMat1b->data) {
+		int i = row.first;
+		for (const auto& col : row.second) {
+			int j = col.first;
+			float val = col.second;
+			if(val!=0){
+				float numer = ConMat1->get(i, j);  // returns 0.0 if not set
+				(*out2) << i + 1 << "  " << j + 1 << "  " << numer/val << std::endl;
+			}
+		}
 	}
-      }
-      (*out2) << nRowsMat1 <<"  "<< nColsMat1 <<"  " << 0 << endl;
+  	(*out2) << nRowsMat1 <<"  "<< nColsMat1 <<"  " << 0 << endl;
       delete out2;
     }
   }
@@ -234,31 +300,37 @@ void counter_save(
     out= new ofstream(file.c_str());
     //(*out) << setprecision(8);
     if(!opts.omeanpathlength.value()){
-      for(int i=0;i<nRowsMat3;i++){
-	for(int j=0;j<nColsMat3;j++){
-	  if(ConMat3[i][j])
-	    (*out) << i+1 <<"  "<< j+1 <<"  "<< ConMat3[i][j] << endl;
-	}
-      }
+		for (const auto& row : ConMat3->data) {
+            int i = row.first;
+            for (const auto& col : row.second) {
+                int j = col.first;
+                float val = col.second;
+                (*out) << i + 1 << "  " << j + 1 << "  " << val << std::endl;
+            }
+        }
       (*out) << nRowsMat3 <<"  "<< nColsMat3 <<"  " << 0 << endl;
       delete out;
     }else{
       if(!opts.pathdist.value()){
-	for(int i=0;i<nRowsMat3;i++){
-	  for(int j=0;j<nColsMat3;j++){
-	    if(ConMat3b[i][j])
-	      (*out) << i+1 <<"  "<< j+1 <<"  "<< ConMat3b[i][j] << endl;
-	  }
-	}
+		for (const auto& row : ConMat3b->data) {
+            int i = row.first;
+            for (const auto& col : row.second) {
+                int j = col.first;
+                float val = col.second;
+                (*out) << i + 1 << "  " << j + 1 << "  " << val << std::endl;
+            }
+        }
 	(*out) << nRowsMat3 <<"  "<< nColsMat3 <<"  " << 0 << endl;
 	delete out;
       }else{
-	for(int i=0;i<nRowsMat3;i++){
-	  for(int j=0;j<nColsMat3;j++){
-	    if(ConMat3[i][j])
-	      (*out) << i+1 <<"  "<< j+1 <<"  "<< ConMat3[i][j] << endl;
-	  }
-	}
+		for (const auto& row : ConMat3->data) {
+            int i = row.first;
+            for (const auto& col : row.second) {
+                int j = col.first;
+                float val = col.second;
+                (*out) << i + 1 << "  " << j + 1 << "  " << val << std::endl;
+            }
+        }
 	(*out) << nRowsMat3 <<"  "<< nColsMat3 <<"  " << 0 << endl;
 	delete out;
       }
@@ -267,12 +339,17 @@ void counter_save(
       string file2(logger.appendDir("fdt_matrix3_lengths.dot"));
       ostream* out2=0;
       out2= new ofstream(file2.c_str());
-      for(int i=0;i<nRowsMat3;i++){
-	for(int j=0;j<nColsMat3;j++){
-	  if(ConMat3b[i][j])
-	    (*out2) << i+1 <<"  "<< j+1 <<"  "<< (ConMat3[i][j]/ConMat3b[i][j]) << endl;
+	  for (const auto& row : ConMat3b->data) {
+		int i = row.first;
+		for (const auto& col : row.second) {
+			int j = col.first;
+			float val = col.second;
+			if(val!=0){
+				float numer = ConMat3->get(i, j);  // returns 0.0 if not set
+				(*out2) << i + 1 << "  " << j + 1 << "  " << numer/val << std::endl;
+			}
+		}
 	}
-      }
       (*out2) << nRowsMat3 <<"  "<< nColsMat3 <<"  " << 0 << endl;
       delete out2;
     }

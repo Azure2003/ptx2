@@ -5,11 +5,11 @@
     Copyright (C) 2015 University of Oxford  */
 
 /*  CCOPYRIGHT  */
-
+//TODO
 #include <vector>
 #include <string>
 #include <iostream>
-
+#include <unordered_set>
 #include <CUDA/tractography_gpu.cuh>
 #include <CUDA/tractographyKernels.cu>
 #include <CUDA/memManager_gpu.cu>
@@ -28,13 +28,15 @@ void tractography_gpu(
 	int*&			keeptotal,
 	float**			ConNet,
 	float**			ConNetb,	// omeanpathlength
-	float**			ConMat1,
-	float**			ConMat1b,	// omeanpathlength
-	float**			ConMat3,
-	float**			ConMat3b,	// omeanpathlength
+	SparseMatrix<float>*		ConMat1,
+	SparseMatrix<float>*			ConMat1b,	// omeanpathlength
+	SparseMatrix<float>*			ConMat3,
+	SparseMatrix<float>*			ConMat3b,	// omeanpathlength
+  SparseMatrix<int64_t>*     ConMat4,
 	float*&			m_s2targets,	// seed 2 targets
 	float*&			m_s2targetsb,
 	vector< vector<float> >& m_save_paths,
+  NEWIMAGE::volume<int>& lookup4,
 	volume4D<float>*&	mlocaldir)
 {
   init_gpu();
@@ -46,13 +48,11 @@ void tractography_gpu(
 
   tractographyData *data_gpu;
   copy_to_gpu(data_host,data_gpu);	// Copy all the masks, seeds and other info to the GPU
-
   copy_ToConstantMemory(data_host);	// Set Constant memory
   copy_ToTextureMemory(data_host);	// Set Texture memory
-
   cuMemGetInfo(&free,&total);
   cout << "Device memory available after copying data (MB): "<< free/1048576 << "\n";
-
+  
   long MAX_SLs;
   long THREADS_STREAM; // MAX_Streamlines and NSTREAMS must be multiples
 
@@ -62,6 +62,7 @@ void tractography_gpu(
   float** mprob_host=new float*;		// Pinned Memory
   float** mprob2_host=new float*;	    	// Pinned Memory
   float** mlocaldir_host=new float*;		// Pinned Memory
+  sampleResult** sampled_fib_indices_host=new sampleResult*;
 
   float3** mat_crossed_host=new float3*; 	// .x id, .y triangle, .z value   Pinned Memory
   int** mat_numcrossed_host=new int*; 		// Pinned Memory
@@ -76,11 +77,12 @@ void tractography_gpu(
   //float** targVOLvalues_host=new float*;	// Pinned Memory
   //float** targvaluesb_host=new float*;        // Pinned Memory
 
+
   allocate_host_mem(data_host,MAX_SLs,THREADS_STREAM,
 		    lengths_host,paths_host,mprob_host,mprob2_host,mlocaldir_host,
 		    //targvalues_host,targvaluesb_host,
 		    mat_crossed_host,mat_numcrossed_host,size_mat_cross,max_per_jump_mat,
-		    lrmat_crossed_host,lrmat_numcrossed_host,size_lrmat_cross,max_per_jump_lrmat);
+		    lrmat_crossed_host,lrmat_numcrossed_host,size_lrmat_cross,max_per_jump_lrmat, sampled_fib_indices_host);
   ///////////////////////
 
   // Calculate number of Iterations
@@ -107,6 +109,7 @@ void tractography_gpu(
   float** mlocaldir_gpu=new float*;
 
   float** paths_gpu=new float*;
+  float** m_paths_gpu=new float*; //Declaration for Matrix4 needs to be completed.
   int** lengths_gpu=new int*;
   int** loopcheckkeys_gpu=new int*;
   float3** loopcheckdirs_gpu=new float3*;
@@ -115,6 +118,8 @@ void tractography_gpu(
   int** mat_numcrossed_gpu=new int*;
   float3** lrmat_crossed_gpu=new float3*;
   int** lrmat_numcrossed_gpu=new int*;
+  sampleResult** sampled_fib_indices_device= new sampleResult*;
+
 
   allocate_gpu_mem(data_host,MAX_SLs,THREADS_STREAM,
 		   mprob_gpu,mprob2_gpu,mlocaldir_gpu,beenhere_gpu,
@@ -122,7 +127,7 @@ void tractography_gpu(
 		   s2targets_gpu,s2targetsb_gpu,targ_flags_in_shared,targ_flags_gpu,
 		   paths_gpu,lengths_gpu,loopcheckkeys_gpu,loopcheckdirs_gpu,
 		   mat_crossed_gpu,mat_numcrossed_gpu,size_mat_cross,
-		   lrmat_crossed_gpu,lrmat_numcrossed_gpu,size_lrmat_cross);
+		   lrmat_crossed_gpu,lrmat_numcrossed_gpu,size_lrmat_cross, sampled_fib_indices_device); //Changes required to include m_paths_gpu
   ///////////////////////
 
   curandState* devStates;	// Random Seeds for GPU
@@ -159,6 +164,8 @@ void tractography_gpu(
   int* PTR_lrmat_numcrossed_gpuA=lrmat_numcrossed_gpu[0];
   float3* PTR_lrmat_crossed_gpuB=lrmat_crossed_gpu[0];
   int* PTR_lrmat_numcrossed_gpuB=lrmat_numcrossed_gpu[0];
+  sampleResult* PTR_sampled_fib_indeces_gpu=sampled_fib_indices_device[0];
+  sampleResult* PTR_sampled_fib_indeces_gpuB=sampled_fib_indices_device[0];
 
   //set num blocks in general (update kernel uses a different block size)
   int num_threads=THREADS_STREAM;
@@ -182,6 +189,7 @@ void tractography_gpu(
       if(opts.save_paths.value()){
 	      PTR_paths_gpuA=&paths_gpu[0][THREADS_STREAM*data_host.nsteps*3];
       }
+      PTR_sampled_fib_indeces_gpu=&sampled_fib_indices_device[0][THREADS_STREAM*data_host.nsteps];
 
       PTR_lengths_gpuB=lengths_gpu[0];			// here tranferring
       PTR_paths_gpuB=paths_gpu[0];
@@ -189,6 +197,7 @@ void tractography_gpu(
       PTR_mat_numcrossed_gpuB=mat_numcrossed_gpu[0];
       PTR_lrmat_crossed_gpuB=lrmat_crossed_gpu[0];
       PTR_lrmat_numcrossed_gpuB=lrmat_numcrossed_gpu[0];
+      PTR_sampled_fib_indeces_gpuB=sampled_fib_indices_device[0];
     }else{
       PTR_lengths_gpuA=lengths_gpu[0];			// here processing
       PTR_paths_gpuA=paths_gpu[0];
@@ -196,6 +205,7 @@ void tractography_gpu(
       PTR_mat_numcrossed_gpuA=mat_numcrossed_gpu[0];
       PTR_lrmat_crossed_gpuA=lrmat_crossed_gpu[0];
       PTR_lrmat_numcrossed_gpuA=lrmat_numcrossed_gpu[0];
+      PTR_sampled_fib_indeces_gpu=sampled_fib_indices_device[0];
 
       PTR_lengths_gpuB=&lengths_gpu[0][THREADS_STREAM*2];	// here tranferring
       PTR_paths_gpuB=&paths_gpu[0][THREADS_STREAM*data_host.nsteps*3];
@@ -203,6 +213,7 @@ void tractography_gpu(
       PTR_mat_numcrossed_gpuB=&mat_numcrossed_gpu[0][THREADS_STREAM];
       PTR_lrmat_crossed_gpuB=&lrmat_crossed_gpu[0][size_lrmat_cross];
       PTR_lrmat_numcrossed_gpuB=&lrmat_numcrossed_gpu[0][THREADS_STREAM];
+      PTR_sampled_fib_indeces_gpuB=&sampled_fib_indices_device[0][THREADS_STREAM*data_host.nsteps];
     }
 
     if(iter==(niters-1)){
@@ -214,7 +225,7 @@ void tractography_gpu(
 
     // CALCULATE PATH
     calculate_path(streams[0],data_gpu,num_threads,devStates,
-		offset_SLs,loopcheckkeys_gpu,loopcheckdirs_gpu,PTR_paths_gpuA,PTR_lengths_gpuA);
+		offset_SLs,loopcheckkeys_gpu,loopcheckdirs_gpu,PTR_paths_gpuA,PTR_lengths_gpuA, PTR_sampled_fib_indeces_gpu);
 
     // STOP MASK
     stop_mask(streams[0],data_host,data_gpu,num_threads,PTR_paths_gpuA,PTR_lengths_gpuA);
@@ -254,8 +265,12 @@ void tractography_gpu(
 	    PTR_mat_crossed_gpuA,PTR_mat_numcrossed_gpuA,
 	    PTR_lrmat_crossed_gpuA,PTR_lrmat_numcrossed_gpuA);
     }
-
-    if(iter>0){
+   /*if(opts.matrix4out.value()){
+      matrix4(streams[0],data_host,data_gpu,num_threads,PTR_paths_gpuA,PTR_lengths_gpuA,
+	    PTR_lrmat_crossed_gpuA,PTR_lrmat_numcrossed_gpuA);
+    }*/ 
+   //To be concluded, will probably use some iterations of MatrixCallKernals and have CPU
+    if(iter>0){//Needs to be changed here as well.
       // COPY GPU -> HOST
       if(opts.matrix3out.value()){
         checkCuda(cudaMemcpyAsync(*mat_crossed_host,PTR_mat_crossed_gpuB,size_mat_cross*sizeof(float3),cudaMemcpyDeviceToHost,streams[1]));
@@ -270,9 +285,8 @@ void tractography_gpu(
       if(opts.save_paths.value()){
 	      checkCuda(cudaMemcpyAsync(*paths_host,PTR_paths_gpuB,THREADS_STREAM*data_host.nsteps*3*sizeof(float),cudaMemcpyDeviceToHost,streams[1]));
       }
-
+      checkCuda(cudaMemcpyAsync(*sampled_fib_indices_host, PTR_sampled_fib_indeces_gpuB, THREADS_STREAM*data_host.nsteps*sizeof(sampleResult), cudaMemcpyDeviceToHost, streams[1]));
       checkCuda(cudaStreamSynchronize(streams[1])); // WAIT HERE UNTIL ALL COPIES HAVE FINISHED
-
       // HOST work
       // Update keeptotal
       size_t pos=0;
@@ -298,11 +312,11 @@ void tractography_gpu(
 	      }
       }
       if(opts.save_paths.value()){
-        // save coordinates
-	pos=0;
-	for(size_t i=0;i<THREADS_STREAM;i++){
-	  if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){
-	    vector<float> tmp(3*(lengths_host[0][pos] + lengths_host[0][pos+1]));
+	      // save coordinates
+	      pos=0;
+	      for(size_t i=0;i<THREADS_STREAM;i++){
+	        if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){
+	          vector<float> tmp;
             if(lengths_host[0][pos]>0){
               size_t posSEED=i*data_host.nsteps*3;
               size_t posCURRENT=0;
@@ -310,21 +324,21 @@ void tractography_gpu(
                 tmp.push_back(paths_host[0][posSEED+posCURRENT*3]);
                 tmp.push_back(paths_host[0][posSEED+posCURRENT*3+1]);
                 tmp.push_back(paths_host[0][posSEED+posCURRENT*3+2]);
-              }
-            }
-            if(lengths_host[0][pos+1]>0){
+	            }
+	          }
+	          if(lengths_host[0][pos+1]>0){
               size_t pos2=i*data_host.nsteps*3+((data_host.nsteps/2)*3);
               size_t co=0;
-              for(;co<lengths_host[0][pos+1];co++){
+	            for(;co<lengths_host[0][pos+1];co++){
                 tmp.push_back(paths_host[0][pos2+co*3]);
                 tmp.push_back(paths_host[0][pos2+co*3+1]);
                 tmp.push_back(paths_host[0][pos2+co*3+2]);
-              }
-            }
-            m_save_paths.push_back(tmp);
-          }
-          pos=pos+2;
-        }
+	            }
+	          }
+	          m_save_paths.push_back(tmp);
+	        }
+	        pos=pos+2;
+	      }
       }
       if(opts.matrix3out.value()){
 	      write_mask3(THREADS_STREAM,mat_crossed_host[0],mat_numcrossed_host[0],max_per_jump_mat,
@@ -334,6 +348,8 @@ void tractography_gpu(
 	      write_mask1(data_host,(offset_SLs-THREADS_STREAM),THREADS_STREAM,
 		    lrmat_crossed_host[0],lrmat_numcrossed_host[0],max_per_jump_lrmat,ConMat1,ConMat1b);
       }
+      bool value=opts.mask4.value()=="";
+      write_Matrix4(data_host, sampled_fib_indices_host, lookup4, (offset_SLs-THREADS_STREAM), THREADS_STREAM, mat_crossed_host[0], mat_numcrossed_host[0], max_per_jump_mat, ConMat4,value, opts.steplength.value(), lengths_host, paths_host);
     }
 
     offset_SLs+=THREADS_STREAM;
@@ -347,6 +363,8 @@ void tractography_gpu(
     PTR_mat_numcrossed_gpuB=mat_numcrossed_gpu[0];
     PTR_lrmat_crossed_gpuB=lrmat_crossed_gpu[0];
     PTR_lrmat_numcrossed_gpuB=lrmat_numcrossed_gpu[0];
+    PTR_sampled_fib_indeces_gpuB=sampled_fib_indices_device[0];
+
   }else{
     PTR_lengths_gpuB=&lengths_gpu[0][THREADS_STREAM*2];
     PTR_paths_gpuB=&paths_gpu[0][THREADS_STREAM*data_host.nsteps*3];
@@ -354,6 +372,7 @@ void tractography_gpu(
     PTR_mat_numcrossed_gpuB=&mat_numcrossed_gpu[0][THREADS_STREAM];
     PTR_lrmat_crossed_gpuB=&lrmat_crossed_gpu[0][size_lrmat_cross];
     PTR_lrmat_numcrossed_gpuB=&lrmat_numcrossed_gpu[0][THREADS_STREAM];
+    PTR_sampled_fib_indeces_gpuB=&sampled_fib_indices_device[0][THREADS_STREAM*data_host.nsteps];
   }
 
   checkCuda(cudaStreamSynchronize(streams[0]));
@@ -370,7 +389,7 @@ void tractography_gpu(
   if(opts.save_paths.value()){
     checkCuda(cudaMemcpyAsync(*paths_host,PTR_paths_gpuB,THREADS_STREAM*data_host.nsteps*3*sizeof(float),cudaMemcpyDeviceToHost,streams[1]));
   }
-
+  checkCuda(cudaMemcpyAsync(*sampled_fib_indices_host, PTR_sampled_fib_indeces_gpuB, THREADS_STREAM*data_host.nsteps*sizeof(sampleResult), cudaMemcpyDeviceToHost, streams[1]));
   checkCuda(cudaStreamSynchronize(streams[1]));
 
   // HOST work
@@ -432,6 +451,9 @@ void tractography_gpu(
     write_mask1(data_host,(offset_SLs-THREADS_STREAM),last_iter,
 		lrmat_crossed_host[0],lrmat_numcrossed_host[0],max_per_jump_lrmat,ConMat1,ConMat1b);
   }
+  bool value=opts.mask4.value()=="";
+  write_Matrix4(data_host, sampled_fib_indices_host, lookup4, (offset_SLs-THREADS_STREAM), last_iter, mat_crossed_host[0], mat_numcrossed_host[0], max_per_jump_mat, ConMat4, value, opts.steplength.value(), lengths_host, paths_host);
+
 
   if(opts.simpleout.value()){
     checkCuda(cudaMemcpy(*mprob_host,*mprob_gpu,data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]*sizeof(float),cudaMemcpyDeviceToHost));
@@ -514,7 +536,193 @@ void make_unique(vector<float3>& conns){
   }
   conns=conns2;
 }
+///////////////////////
+////Write Matrix 4/////
+///////////////////////
+//Helper functions for decoding and encoding when writing into the matrix
+void decode(int64_t incode, int& nsamples, int& fibcnt1, int& fibcnt2, float& length_tot) {
+  //undo the coding for incode
+  //code = two32*fibre_count + mult*mult*fibre_prop1 + mult*fibre_prop2 + length_val;
+  int64_t fibre_count, fibre_prop1, fibre_prop2, length_val, two32=(1LL<<32), mult=1001, multmult=mult*mult;
 
+  fibre_count = incode / two32;
+  incode = incode % two32;
+  fibre_prop1 = incode / multmult;
+  incode = incode % multmult;
+  fibre_prop2 = incode / mult;
+  incode = incode % mult;
+  length_val = incode;
+
+  fibcnt1=(int)MISCMATHS::round((float)(fibre_prop1*0.001*fibre_count));
+  fibcnt2=(int)MISCMATHS::round((float)(fibre_prop2*0.001*fibre_count));
+  length_tot=float(length_val*fibre_count);
+  nsamples=(int)fibre_count;
+}
+
+int64_t encode(const int nsamples, const int fibcnt1, const int fibcnt2, const float length_tot){
+  //store new coding in code2
+  int64_t  fibre_count, fibre_prop1, fibre_prop2, length_val, two32=(1LL<<32), mult=1001;
+  // fibre_prop1, fibre_prop2 and length_val ***MUST*** BE WITHIN 0 and 1000 INCLUSIVE
+
+  fibre_count = (int64_t)MIN((int64_t)nsamples,two32-1);
+  //Notice that every time we decode and encode there are rounding errors because of the following functions.
+  //We considered using the absolute values instead of proportions or average distances, but then the dynamic range of the values we can code is reduced.
+  fibre_prop1 = (int64_t)MIN((int64_t)(MISCMATHS::round(float(fibcnt1)/float(nsamples)*1000)),1000);
+  fibre_prop2 = (int64_t)MIN((int64_t)(MISCMATHS::round(float(fibcnt2)/float(nsamples)*1000)),1000);
+  fibre_prop2 = (int64_t)MIN(fibre_prop2, (int64_t)(1000-fibre_prop1)); //Avoid sum over 1000 due to rounding errors
+  length_val  = (int64_t)MIN((int64_t)(MISCMATHS::round((nsamples!=0?length_tot/float(nsamples):0.0))),1000);
+  int64_t code2 = two32*fibre_count + mult*mult*fibre_prop1 + mult*fibre_prop2 + length_val;
+  return code2;
+}
+
+int64_t add_one(int64_t code2, float dist,int fib){
+  int nsamples, fibcnt1, fibcnt2; float length_tot;
+
+  //Undo the coding  for current value
+  decode(code2,nsamples, fibcnt1, fibcnt2, length_tot);
+
+  //Update Values
+  if (fib==1)
+    fibcnt1+=1;
+  if (fib==2)
+    fibcnt2+=1;
+  length_tot+=dist;
+  nsamples+=1;
+
+  //Code again
+  return encode(nsamples, fibcnt1, fibcnt2, length_tot);
+}
+
+
+void write_Matrix4(
+  tractographyData&	data_host,
+  sampleResult**  sampled_fib_indices_host,
+  NEWIMAGE::volume<int>& lookup4,
+  long long 		offset_SLs,
+  unsigned long long 	nstreamlines,
+  float3*			mat_crossed_host,
+  int* 			mat_numcrossed_host,
+  int			            max_per_jump_mat,
+  SparseMatrix<int64_t>*     ConMat4,
+  bool        opts_Value,
+  float          steplength,
+  int** lengths_host,
+  float** path_host
+){
+    bool flag=true;
+    int pos=0;
+    vector< float3 > inmask;
+    float3 mytruple;
+    for(unsigned long long i=0;i<nstreamlines;i++){
+      unsigned long long numseed = (offset_SLs+i)/(data_host.nparticles);
+      if(!opts_Value){
+      inmask.clear();
+      for(int c=0; c<mat_numcrossed_host[i];c++){
+        mytruple.x=mat_crossed_host[i*data_host.nsteps*max_per_jump_mat+c].x;  // Loc
+        mytruple.y=mat_crossed_host[i*data_host.nsteps*max_per_jump_mat+c].y;  // Triangle id
+        mytruple.z=mat_crossed_host[i*data_host.nsteps*max_per_jump_mat+c].z;  // Value
+        inmask.push_back(mytruple);
+      }
+      make_unique(inmask);
+    }
+      //cout<<inmask.size()<<endl;
+      //cout<<lengths_host[0][pos]<<" "<<lengths_host[0][pos+1]<<endl;
+      if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){
+        flag=false;
+        std::unordered_set<int> seen_ids;
+        //cout<<"opts_Value "<<opts_Value<<endl;
+        if(opts_Value){
+        if(lengths_host[0][pos]>0){
+          int posSEED=i*data_host.nsteps;
+          //cout<<"posSeed "<<posSEED<<endl;
+          int loc2=mat_crossed_host[posSEED*3].x;
+          int posCURRENT=0;
+          for(;posCURRENT<lengths_host[0][pos];posCURRENT++){
+            if (posCURRENT==0){
+              continue;
+            }
+            int id=lookup4(round(sampled_fib_indices_host[0][posSEED+posCURRENT].coordinates.x), round(sampled_fib_indices_host[0][posSEED+posCURRENT].coordinates.y), round(sampled_fib_indices_host[0][posSEED+posCURRENT].coordinates.z));
+            if (seen_ids.find(id) != seen_ids.end()) {
+              continue;
+            }
+            seen_ids.insert(id);
+            ConMat4->set(numseed, id - 1, add_one(ConMat4->get(numseed, id - 1), steplength * posCURRENT,
+                                                          sampled_fib_indices_host[0][posSEED + posCURRENT].value + 1));
+
+          }
+        }
+	      if(lengths_host[0][pos+1]>0){
+          int pos2=i*data_host.nsteps+((data_host.nsteps/2));
+          int co=0;
+          int loc2=mat_crossed_host[pos2*3].x;
+          for(;co<lengths_host[0][pos+1];co++){
+            if(co==0){
+              continue;
+            }
+            
+            int id=lookup4(round(sampled_fib_indices_host[0][pos2+co].coordinates.x), round(sampled_fib_indices_host[0][pos2+co].coordinates.y), round(sampled_fib_indices_host[0][pos2+co].coordinates.z));
+            if (seen_ids.find(id) != seen_ids.end()) {
+              continue;
+            }
+            seen_ids.insert(id);
+                        ConMat4->set(numseed, id - 1, add_one(ConMat4->get(numseed, id - 1), steplength * co,
+                                                          sampled_fib_indices_host[0][pos2 + co].value + 1));          }
+	      }
+        }else{
+          if(lengths_host[0][pos]>0){
+          unsigned long long posSEED=i*data_host.nsteps;
+          //cout<<"posSeed "<<posSEED<<endl;
+          int posCURRENT=0;
+          for(;posCURRENT<lengths_host[0][pos];posCURRENT++){
+            
+            /*if (posCURRENT==0){
+              cout<<sampled_fib_indices_host[0][posSEED+posCURRENT].coordinates.x<<" "<<sampled_fib_indices_host[0][posSEED+posCURRENT].coordinates.y<<' '<<sampled_fib_indices_host[0][posSEED+posCURRENT].coordinates.z<<endl;
+            }*/            
+            int id=lookup4(round(sampled_fib_indices_host[0][posSEED+posCURRENT].coordinates.x), round(sampled_fib_indices_host[0][posSEED+posCURRENT].coordinates.y), round(sampled_fib_indices_host[0][posSEED+posCURRENT].coordinates.z));
+            /*if(posCURRENT==0){
+              cout<<id<<endl;
+            }*/
+            if (seen_ids.find(id) != seen_ids.end()) {
+              continue;
+            }
+            seen_ids.insert(id);
+            for(int j = 0; j<inmask.size(); j++){
+            ConMat4->set((int)inmask[j].x, id - 1, add_one(ConMat4->get((int)inmask[j].x, id - 1), steplength * posCURRENT,
+                                                          sampled_fib_indices_host[0][posSEED + posCURRENT].value + 1));
+            }
+
+          }
+        }
+        if(lengths_host[0][pos+1]>0){
+          unsigned long long pos2=i*data_host.nsteps+((data_host.nsteps/2));
+          int co=0;
+          int loc2=mat_crossed_host[pos2*3].x;
+          for(;co<lengths_host[0][pos+1];co++){
+            if(co==0&&lengths_host[0][pos]>0){
+              continue;
+            }/*else if (co==0){
+              cout<<sampled_fib_indices_host[0][pos2+co].coordinates.x<<" "<<sampled_fib_indices_host[0][pos2+co].coordinates.y<<' '<<sampled_fib_indices_host[0][pos2+co].coordinates.z<<endl;
+            }*/
+            int id=lookup4(round(sampled_fib_indices_host[0][pos2+co].coordinates.x), round(sampled_fib_indices_host[0][pos2+co].coordinates.y), round(sampled_fib_indices_host[0][pos2+co].coordinates.z));
+            /*if(co==0){
+              cout<<id<<endl;
+            }*/
+            if (seen_ids.find(id) != seen_ids.end()) {
+              continue;
+            }
+            seen_ids.insert(id);
+            for(int j = 0; j<inmask.size(); j++){
+              ConMat4->set((int)inmask[j].x, id - 1, add_one(ConMat4->get((int)inmask[j].x, id - 1), steplength * co,
+              sampled_fib_indices_host[0][pos2 + co].value + 1));
+              }
+          }
+	      }
+
+        }
+      }
+      pos=pos+2;
+    }
+}
 
 ////////////////////////
 ///// WRITE MASK  3 ////
@@ -528,8 +736,8 @@ void write_mask3(
 			int* 			          lrmat_numcrossed_host,
 			int			            max_per_jump_lrmat,
 			// Output
-			float**			        ConMat3,
-			float**			        ConMat3b)
+			SparseMatrix<float>*			        ConMat3,
+			SparseMatrix<float>*			        ConMat3b)
 
 {
 
@@ -544,6 +752,7 @@ void write_mask3(
     vector< int > mytrianglesj; // List with the roi and triangles of an individual vertex j
     float3 mytruple;
     for(unsigned long long sl=0;sl<nstreamlines;sl++){
+      int counter=0;
       inmask.clear();
       for(int c=0; c<mat_numcrossed_host[sl];c++){
         mytruple.x=mat_crossed_host[sl*nsteps*max_per_jump_mat+c].x;
@@ -552,7 +761,6 @@ void write_mask3(
         inmask.push_back(mytruple);
       }
       make_unique(inmask);
-
       for(unsigned int i=0;i<inmask.size();i++){
         mytrianglesi.clear();
         int index=inmask[i].x;
@@ -574,18 +782,25 @@ void write_mask3(
               if(mytrianglesi[ii]!=mytrianglesj[jj] || mytrianglesi[ii]==-1 || mytrianglesj[jj]==-1){
                 // If is -1 is because it is not a vertex, it is a voxel
                 connect=true;
+                counter++;
 	            }
 	          }
 	        }
           if(connect){
+            int row = static_cast<int>(inmask[i].x);
+            int col = static_cast<int>(inmask[j].x);
+
             if(opts.pathdist.value()||opts.omeanpathlength.value()){
               float val = fabs(inmask[i].z-inmask[j].z);
-              ConMat3[(int)inmask[i].x][(int)inmask[j].x]=ConMat3[(int)inmask[i].x][(int)inmask[j].x]+val;
+              float existing = ConMat3->get(row, col);
+              ConMat3->set(row, col, existing + val);
             }else{
-              ConMat3[(int)inmask[i].x][(int)inmask[j].x]=ConMat3[(int)inmask[i].x][(int)inmask[j].x]+1;
+              float existing = ConMat3->get(row, col);
+              ConMat3->set(row, col, existing + 1.0f);
             }
             if(opts.omeanpathlength.value()){
-              ConMat3b[(int)inmask[i].x][(int)inmask[j].x]=ConMat3b[(int)inmask[i].x][(int)inmask[j].x]+1;
+              float existing = ConMat3b->get(row, col);
+              ConMat3b->set(row, col, existing + 1.0f);
             }
 	        }
 	      }
@@ -638,14 +853,19 @@ void write_mask3(
             }
           }
 	        if(connect){
+            int row = static_cast<int>(inmask[i].x);
+            int col = static_cast<int>(inlrmask[j].x);
 	          if(opts.pathdist.value()||opts.omeanpathlength.value()){
 	            float val = fabs(inmask[i].z-inlrmask[j].z);
-	            ConMat3[(int)inmask[i].x][(int)inlrmask[j].x]=ConMat3[(int)inmask[i].x][(int)inlrmask[j].x]+val;
+              float existing = ConMat3->get(row, col);
+              ConMat3->set(row, col, existing + val);            
             }else{
-              ConMat3[(int)inmask[i].x][(int)inlrmask[j].x]=ConMat3[(int)inmask[i].x][(int)inlrmask[j].x]+1;
+              float existing = ConMat3->get(row, col);
+              ConMat3->set(row, col, existing + 1.0f);
             }
             if(opts.omeanpathlength.value()){
-              ConMat3b[(int)inmask[i].x][(int)inlrmask[j].x]=ConMat3b[(int)inmask[i].x][(int)inlrmask[j].x]+1;
+              float existing = ConMat3b->get(row, col);
+              ConMat3b->set(row, col, existing + 1.0f);
             }
 	        }
 	      }
@@ -664,8 +884,8 @@ void write_mask1(	tractographyData&	data_host,
 			int* 			lrmat_numcrossed_host,
 			int			max_per_jump_lrmat,
 			// Output
-			float**			ConMat1,
-			float**			ConMat1b)
+			SparseMatrix<float>*			        ConMat1,
+			SparseMatrix<float>*			        ConMat1b)
 
 {
 
@@ -680,7 +900,7 @@ void write_mask1(	tractographyData&	data_host,
   vector< float3 > inlrmask;
 
   for(unsigned long long sl=0;sl<nstreamlines;sl++){
-    size_t numseed = (offset_SLs+sl)/(data_host.nparticles);
+    int numseed = (offset_SLs+sl)/(data_host.nparticles);
     inmask.clear();
     for(int c=0; c<data_host.matrix1_Ntri[numseed];c++){
       mytruple.x=data_host.matrix1_locs[MAX_TRI_SEED*numseed+c];	// Loc
@@ -691,7 +911,6 @@ void write_mask1(	tractographyData&	data_host,
     //make_unique(inmask); // not needed here
 
     inlrmask.clear();
-    //printf("%i crossed\n",lrmat_numcrossed_host[sl]);
     for(int c=0; c<lrmat_numcrossed_host[sl];c++){
       mytruple.x=lrmat_crossed_host[sl*nsteps*max_per_jump_lrmat+c].x;  // Loc
       mytruple.y=lrmat_crossed_host[sl*nsteps*max_per_jump_lrmat+c].y;  // Triangle id
@@ -725,15 +944,20 @@ void write_mask1(	tractographyData&	data_host,
           }
         }
         if(connect){
+          int row = static_cast<int>(inmask[i].x);
+          int col = static_cast<int>(inlrmask[j].x);
           if(opts.pathdist.value()||opts.omeanpathlength.value()){
             float val = fabs(inmask[i].z-inlrmask[j].z);
-            ConMat1[(int)inmask[i].x][(int)inlrmask[j].x]=ConMat1[(int)inmask[i].x][(int)inlrmask[j].x]+val;
+            float existing = ConMat1->get(row, col);
+            ConMat1->set(row, col, existing + val);    
           }else{
             //printf("CONN %i-%i\n",(int)inmask[i].x,(int)inlrmask[j].x);
-            ConMat1[(int)inmask[i].x][(int)inlrmask[j].x]=ConMat1[(int)inmask[i].x][(int)inlrmask[j].x]+1;
+            float existing = ConMat1->get(row, col);
+            ConMat1->set(row, col, existing + 1.0f);    
 	        }
           if(opts.omeanpathlength.value()){
-            ConMat1b[(int)inmask[i].x][(int)inlrmask[j].x]=ConMat1b[(int)inmask[i].x][(int)inlrmask[j].x]+1;
+            float existing = ConMat1b->get(row, col);
+            ConMat1b->set(row, col, existing + 1.0f); 
           }
 	      }
       }
